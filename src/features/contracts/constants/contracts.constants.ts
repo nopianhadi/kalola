@@ -1,0 +1,32 @@
+import { Contract } from '@/types';
+
+export const initialFormState: Omit<Contract, 'id' | 'contractNumber' | 'clientId' | 'projectId' | 'createdAt'> = {
+    signingDate: new Date().toISOString().split('T')[0],
+    signingLocation: '',
+    clientName1: '',
+    clientAddress1: '',
+    clientPhone1: '',
+    clientName2: '',
+    clientAddress2: '',
+    clientPhone2: '',
+    shootingDuration: '',
+    guaranteedPhotos: '',
+    albumDetails: '',
+    digitalFilesFormat: 'JPG High-Resolution',
+    otherItems: '',
+    personnelCount: '',
+    deliveryTimeframe: '30 hari kerja',
+    dpDate: '',
+    finalPaymentDate: '',
+    cancellationPolicy: 'DP yang sudah dibayarkan tidak dapat dikembalikan.\nJika pembatalan dilakukan H-7 sebelum hari pelaksanaan, PIHAK KEDUA wajib membayar 50% dari total biaya.',
+    jurisdiction: '',
+    serviceTitle: '',
+    pasal1Content: '',
+    pasal2Content: '',
+    pasal3Content: '',
+    pasal4Content: '',
+    pasal5Content: '',
+    closingText: '',
+    includeMeterai: false,
+    meteraiPlacement: 'client'
+};

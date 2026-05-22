@@ -1,0 +1,15 @@
+export const publicRoutes = [
+  { path: "home", label: "Home" },
+  { path: "login", label: "Login" },
+  { path: "public-packages", label: "Public Packages" },
+  { path: "public-booking", label: "Public Booking" },
+  { path: "public-lead-form", label: "Public Lead Form" },
+  { path: "feedback", label: "Feedback" },
+  { path: "suggestion-form", label: "Suggestion Form" },
+  { path: "test-signature", label: "Test Signature" },
+  { path: "gallery", label: "Gallery" },
+  { path: "portal/invoice", label: "Public Invoice" },
+  { path: "portal/receipt", label: "Public Receipt" },
+  { path: "portal", label: "Client Portal" },
+  { path: "freelancer-portal", label: "Freelancer Portal" },
+];

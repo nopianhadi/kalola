@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover" />
+  <meta name="theme-color" content="#f1f5f9">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="description" content="Attera Visual - Jasa foto dan video wedding profesional di Indonesia.">
+  <title>Attera Visual | Wedding Management Dashboard</title>
+  <!-- Tailwind CSS loaded via build process -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Tenor+Sans&display=swap"
+    rel="stylesheet">
+  <!-- Global styles migrated to src/styles/ index.css -->
+
+  <script>
+    // Detect iOS and mark <html> so CSS can avoid reducing input font-size on iOS (prevents zoom)
+    (function () {
+      try {
+        var ua = navigator.userAgent || navigator.vendor || window.opera;
+        var isIOS = /iPad|iPhone|iPod/.test(ua);
+        if (isIOS) {
+          document.documentElement.classList.add('ios');
+        }
+      } catch (_) { }
+    })();
+  </script>
+  <script>
+    // Enhanced theme detection with system preference support
+    function getInitialTheme() {
+      if (localStorage.theme === 'dark' ||
+        (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        return 'dark';
+      }
+      return 'light';
+    }
+
+    function applyTheme(theme) {
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    }
+
+    // Apply initial theme
+    applyTheme(getInitialTheme());
+
+    // Listen for system theme changes
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+      if (!localStorage.theme) {
+        applyTheme(e.matches ? 'dark' : 'light');
+      }
+    });
+
+    // Optimize scrolling performance
+    document.addEventListener('DOMContentLoaded', function () {
+      // Add momentum scrolling for iOS
+      const scrollableElements = document.querySelectorAll('.overflow-y-auto, .overflow-x-auto');
+      scrollableElements.forEach(element => {
+        element.style.webkitOverflowScrolling = 'touch';
+      });
+    });
+  </script>
+</head>
+
+<body class="bg-brand-bg text-brand-text-primary">
+  <main>
+    <div id="root"></div>
+  </main>
+  <style id="public-theme-style"></style>
+  <script type="module" src="/index.tsx"></script>
+</body>
+
+</html>

@@ -1,0 +1,184 @@
+/* 
+   Indonesian Standard Print Styles (A4 Portrait)
+   Margins: 2.5cm left/right, 2cm top/bottom 
+*/
+
+@page {
+  size: A4 portrait;
+  margin: 2cm 2.5cm;
+}
+
+@media print {
+  /* Core Print Reset */
+  html,
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-family: 'Manrope', sans-serif !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 12pt !important;
+    line-height: 1.2 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide Non-Printable Elements */
+  .bottom-nav,
+  .mobile-header,
+  .sidebar,
+  .app-sidebar,
+  .app-header,
+  .non-printable,
+  button,
+  nav,
+  header[role="banner"],
+  footer[role="contentinfo"],
+  .button-primary,
+  .button-secondary,
+  [data-non-print] {
+    display: none !important;
+  }
+
+  /* Visibility Logic: Hide all, show only printable area */
+  body * {
+    visibility: hidden !important;
+  }
+
+  .printable-area,
+  .printable-area *,
+  .print-invoice,
+  .print-invoice *,
+  .print-receipt,
+  .print-receipt * {
+    visibility: visible !important;
+  }
+
+  /* Position & Animation Reset */
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    box-shadow: none !important;
+    filter: none !important;
+  }
+
+  .fixed, .sticky {
+    position: static !important;
+  }
+
+  /* Layout Overrides */
+  .printable-area {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+  }
+
+  /* ===== Invoice Specific Print Styles ===== */
+  .print-invoice {
+    background: transparent !important;
+    color: #1e293b !important;
+    font-size: 11pt !important;
+    line-height: 1.15 !important;
+  }
+
+  .print-invoice header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+    margin-bottom: 12pt !important;
+  }
+
+  .print-invoice header h2 {
+    font-size: 18pt !important;
+    color: #cbd5e1 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.2em !important;
+    margin: 0 !important;
+  }
+
+  .print-invoice .invoice-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin: 12pt 0 !important;
+  }
+
+  .print-invoice .invoice-table th {
+    background: #f8fafc !important;
+    border-bottom: 1pt solid #e2e8f0 !important;
+    padding: 8pt 6pt !important;
+    font-size: 8pt !important;
+    color: #94a3b8 !important;
+    text-transform: uppercase !important;
+  }
+
+  .print-invoice .invoice-table td {
+    padding: 8pt 6pt !important;
+    border-bottom: 0.5pt solid #f1f5f9 !important;
+    font-size: 10pt !important;
+  }
+
+  .print-invoice .invoice-totals {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-end !important;
+  }
+
+  .print-invoice .invoice-totals .flex {
+    display: flex !important;
+    justify-content: space-between !important;
+    width: 200pt !important;
+    padding: 3pt 0 !important;
+  }
+
+  /* ===== Receipt Specific Print Styles ===== */
+  .print-receipt header {
+    text-align: center !important;
+    border-bottom: 2pt solid #059669 !important;
+    margin-bottom: 15pt !important;
+  }
+
+  .print-receipt .printable-bg-green-light {
+    background: #d1fae5 !important;
+    border: 2pt solid #059669 !important;
+    padding: 15pt !important;
+    text-align: center !important;
+  }
+
+  /* Utility Classes for Print */
+  .avoid-break {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .printable-bg-blue { background: #2563eb !important; color: white !important; }
+  .print-text-green { color: #16a34a !important; }
+
+  /* Compact Print Slip Utility */
+  .print-slip-compact {
+    font-size: 0.9rem;
+  }
+
+  .print-slip-compact h1 { font-size: 1.5rem; }
+  .print-slip-compact h2 { font-size: 1.1rem; }
+  .print-slip-compact h3 { font-size: 1rem; }
+
+  .print-slip-compact p,
+  .print-slip-compact span,
+  .print-slip-compact li {
+    font-size: 0.9rem;
+    line-height: 1.35;
+  }
+
+  .print-slip-compact table { font-size: 0.85rem; }
+  .print-slip-compact th,
+  .print-slip-compact td { padding: 6px 8px; }
+
+  @media print {
+    .print-slip-compact { font-size: 10pt !important; }
+    .print-slip-compact table { font-size: 9pt !important; }
+    .print-slip-compact .invoice-totals .font-bold { font-size: 11pt !important; }
+  }
+}

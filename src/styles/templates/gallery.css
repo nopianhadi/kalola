@@ -1,0 +1,41 @@
+@layer components {
+  /* Gallery Template - Visual & Immersive */
+  .gallery-template {
+    @apply font-sans;
+    font-family: 'Poppins', 'Segoe UI', sans-serif;
+    background-color: #fff9f0;
+    color: #78350f;
+  }
+
+  .gallery-template h1 {
+    font-size: clamp(3rem, 6vw + 2.5rem, 5rem);
+    @apply font-bold mb-4 italic;
+  }
+
+  .gallery-template .animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  /* Custom scrollbar for gallery */
+  .gallery-template::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .gallery-template::-webkit-scrollbar-track {
+    background: #fef3c7;
+  }
+
+  .gallery-template::-webkit-scrollbar-thumb {
+    background: #f59e0b;
+    border-radius: 4px;
+  }
+
+  .gallery-template::-webkit-scrollbar-thumb:hover {
+    background: #d97706;
+  }
+}

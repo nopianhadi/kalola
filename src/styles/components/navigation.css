@@ -1,0 +1,38 @@
+@layer components {
+  /* Navigation Layouts */
+  .bottom-nav {
+    @apply fixed bottom-0 left-0 right-0 z-40;
+    @apply bg-white/80 backdrop-blur-lg border-t border-slate-200;
+    @apply flex items-center justify-around px-4 py-2;
+    padding-bottom: calc(0.5rem + var(--safe-area-inset-bottom, 0px));
+  }
+
+  .nav-item {
+    @apply flex flex-col items-center gap-1 text-slate-500 transition-colors;
+    @apply hover:text-blue-600;
+  }
+
+  .nav-item.active {
+    @apply text-blue-600;
+  }
+
+  /* Sidebar Layouts for Desktop */
+  @media (min-width: 1024px) {
+    .sidebar {
+      @apply w-64 h-screen bg-slate-900 text-white;
+    }
+  }
+
+  /* Mobile Enhancements */
+  @media (max-width: 480px) {
+    .bottom-nav {
+      padding: 6px 8px !important;
+      min-height: 52px !important;
+    }
+
+    .bottom-nav svg {
+      width: 18px !important;
+      height: 18px !important;
+    }
+  }
+}

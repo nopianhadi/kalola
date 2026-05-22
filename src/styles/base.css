@@ -1,0 +1,49 @@
+@layer base {
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    min-height: 100%;
+    font-family: 'Manrope', 'sans-serif';
+    background-color: var(--color-bg);
+    color: var(--color-text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-touch-callout: none;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    overflow-x: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    scroll-behavior: smooth;
+  }
+
+  /* iOS Safe Area Support */
+  body.app-theme {
+    padding-bottom: var(--safe-area-inset-bottom);
+    padding-left: var(--safe-area-inset-left);
+    padding-right: var(--safe-area-inset-right);
+  }
+
+  /* Headings */
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--color-text-light);
+  }
+
+  h1 { font-size: clamp(1.8rem, 2vw + 1.5rem, 2.5rem); }
+  h2 { font-size: clamp(1.5rem, 1.5vw + 1.2rem, 2rem); }
+  h3 { font-size: clamp(1.2rem, 1vw + 1rem, 1.5rem); }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Hide scrollbar while maintaining scroll functionality */
+  ::-webkit-scrollbar {
+    display: none;
+  }
+}

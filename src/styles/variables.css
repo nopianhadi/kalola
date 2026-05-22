@@ -1,0 +1,63 @@
+@layer base {
+  :root {
+    /* App Dashboard Colors */
+    --color-bg: #f1f5f9; /* slate-100 */
+    --color-surface: #ffffff;
+    --color-text-light: #020617; /* slate-950 */
+    --color-text-primary: #334155; /* slate-700 */
+    --color-text-secondary: #64748b; /* slate-500 */
+    --color-accent: #3b82f6; /* blue-500 */
+    --color-accent-hover: #2563eb; /* blue-600 */
+    --color-accent-light: #73a7f8;
+    --color-accent-dark: #3575dc;
+    --color-accent-hsl: 217 91% 60%;
+    --color-border: #e2e8f0; /* slate-200 */
+    --color-input-bg: #f8fafc; /* slate-50 */
+    --color-success: #16a34a; /* green-600 */
+    --color-danger: #dc2626; /* red-600 */
+
+    /* Public Pages (Portals, Forms) High-Contrast Defaults */
+    --public-bg: #f6f9fc; /* slightly darker than slate-50 for separation */
+    --public-surface: #ffffff;
+    --public-border: #cbd5e1; /* slate-300 for clearer delineation */
+    --public-text-primary: #0f172a; /* slate-900 */
+    --public-text-secondary: #475569; /* slate-600 (darker than slate-500) */
+    --public-accent: #2563eb; /* blue-600 */
+    --public-accent-hover: #1d4ed8; /* blue-700 */
+    --public-accent-hsl: 221 83% 53%;
+
+    /* iOS Safe Area Variables */
+    --safe-area-inset-top: env(safe-area-inset-top, 0px);
+    --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-area-inset-left: env(safe-area-inset-left, 0px);
+    --safe-area-inset-right: env(safe-area-inset-right, 0px);
+
+    color-scheme: light;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    font-family: 'Manrope', 'sans-serif';
+    background-color: var(--color-bg);
+    color: var(--color-text-primary);
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-touch-callout: none;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    overflow-x: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    overscroll-behavior-y: none; /* Prevent Overscroll Bounce on iOS */
+  }
+
+  /* Hide scrollbar while maintaining scroll functionality */
+  ::-webkit-scrollbar {
+    display: none;
+  }
+}

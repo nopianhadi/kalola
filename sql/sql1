@@ -1,0 +1,519 @@
+-- ==========================================
+-- 1. CORE TABLES (MySQL / MariaDB Compatible)
+-- ==========================================
+-- Note: In XAMPP (MySQL), we use VARCHAR(36) for UUIDs.
+-- Prisma or your Node.js backend will generate the UUID strings automatically.
+
+-- Users (Custom table for extending auth, replacing Supabase auth.users)
+CREATE TABLE IF NOT EXISTS users (
+    id VARCHAR(36) PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255),
+    full_name VARCHAR(255),
+    company_name VARCHAR(255),
+    role VARCHAR(50) DEFAULT 'Member',
+    permissions JSON,
+    restricted_cards JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Profiles (Main Vendor/Admin data)
+CREATE TABLE IF NOT EXISTS profiles (
+    id VARCHAR(36) PRIMARY KEY,
+    admin_user_id VARCHAR(36),
+    full_name VARCHAR(255),
+    email VARCHAR(255) UNIQUE,
+    phone VARCHAR(50),
+    company_name VARCHAR(255),
+    website VARCHAR(255),
+    address TEXT,
+    bank_account VARCHAR(255),
+    authorized_signer VARCHAR(255),
+    id_number VARCHAR(100),
+    bio TEXT,
+    income_categories JSON,
+    expense_categories JSON,
+    project_types JSON,
+    event_types JSON,
+    asset_categories JSON,
+    sop_categories JSON,
+    package_categories JSON,
+    project_status_config JSON,
+    notification_settings JSON,
+    security_settings JSON,
+    briefing_template TEXT,
+    terms_and_conditions TEXT,
+    logo_base64 LONGTEXT,
+    signature_base64 LONGTEXT,
+    brand_color VARCHAR(50),
+    public_page_config JSON,
+    package_share_template TEXT,
+    booking_form_template TEXT,
+    chat_templates JSON,
+    billing_templates JSON,
+    invoice_share_template TEXT,
+    receipt_share_template TEXT,
+    expense_share_template TEXT,
+    portal_share_template TEXT,
+    contract_share_template TEXT,
+    billing_share_template TEXT,
+    checklist_templates JSON,
+    contract_template TEXT,
+    contract_pasal1_defaults TEXT,
+    contract_pasal2_defaults TEXT,
+    contract_pasal3_defaults TEXT,
+    contract_pasal4_defaults TEXT,
+    contract_pasal5_defaults TEXT,
+    contract_closing_defaults TEXT,
+    signature TEXT,
+    role VARCHAR(50),
+    permissions JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (admin_user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+-- Clients
+CREATE TABLE IF NOT EXISTS clients (
+    id VARCHAR(36) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255),
+    phone VARCHAR(50),
+    whatsapp VARCHAR(50),
+    since DATE,
+    instagram VARCHAR(255),
+    status VARCHAR(50) DEFAULT 'Aktif',
+    client_type VARCHAR(50) DEFAULT 'Langsung',
+    last_contact TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    portal_access_id VARCHAR(20) UNIQUE,
+    address TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Packages
+CREATE TABLE IF NOT EXISTS packages (
+    id VARCHAR(36) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    price DECIMAL(15,2) DEFAULT 0,
+    category VARCHAR(100),
+    region VARCHAR(100),
+    physical_items JSON,
+    digital_items JSON,
+    processing_time VARCHAR(100),
+    default_printing_cost DECIMAL(15,2) DEFAULT 0,
+    default_transport_cost DECIMAL(15,2) DEFAULT 0,
+    photographers VARCHAR(255),
+    videographers VARCHAR(255),
+    cover_image TEXT,
+    duration_options JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Add Ons
+CREATE TABLE IF NOT EXISTS add_ons (
+    id VARCHAR(36) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    price DECIMAL(15,2) DEFAULT 0,
+    region VARCHAR(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Promo Codes
+CREATE TABLE IF NOT EXISTS promo_codes (
+    id VARCHAR(36) PRIMARY KEY,
+    code VARCHAR(100) UNIQUE NOT NULL,
+    discount_type VARCHAR(50) NOT NULL,
+    discount_value DECIMAL(15,2) NOT NULL,
+    is_active BOOLEAN DEFAULT true,
+    usage_count INT DEFAULT 0,
+    max_usage INT,
+    expiry_date DATE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ==========================================
+-- 2. PROJECT & OPERATIONS
+-- ==========================================
+
+-- Projects
+CREATE TABLE IF NOT EXISTS projects (
+    id VARCHAR(36) PRIMARY KEY,
+    project_name VARCHAR(255) NOT NULL,
+    client_name VARCHAR(255),
+    client_id VARCHAR(36),
+    project_type VARCHAR(100),
+    package_name VARCHAR(255),
+    package_id VARCHAR(36),
+    date DATE NOT NULL,
+    deadline_date DATE,
+    location VARCHAR(255),
+    address TEXT,
+    progress INT DEFAULT 0,
+    status VARCHAR(50) DEFAULT 'Baru',
+    booking_status VARCHAR(50),
+    rejection_reason TEXT,
+    total_cost DECIMAL(15,2) DEFAULT 0,
+    amount_paid DECIMAL(15,2) DEFAULT 0,
+    payment_status VARCHAR(50) DEFAULT 'Belum Bayar',
+    notes TEXT,
+    accommodation TEXT,
+    drive_link TEXT,
+    client_drive_link TEXT,
+    final_drive_link TEXT,
+    start_time TIME,
+    end_time TIME,
+    image TEXT,
+    color VARCHAR(50),
+    promo_code_id VARCHAR(36),
+    discount_amount DECIMAL(15,2) DEFAULT 0,
+    printing_details JSON,
+    custom_costs JSON,
+    printing_cost DECIMAL(15,2) DEFAULT 0,
+    transport_cost DECIMAL(15,2) DEFAULT 0,
+    transport_paid BOOLEAN DEFAULT false,
+    transport_note TEXT,
+    transport_details JSON,
+    transport_used BOOLEAN DEFAULT false,
+    printing_card_id VARCHAR(36),
+    transport_card_id VARCHAR(36),
+    completed_digital_items JSON,
+    dp_proof_url TEXT,
+    shipping_details TEXT,
+    active_sub_statuses JSON,
+    custom_sub_statuses JSON,
+    confirmed_sub_statuses JSON,
+    client_sub_status_notes JSON,
+    sub_status_confirmation_sent_at JSON,
+    invoice_signature TEXT,
+    is_editing_confirmed_by_client BOOLEAN DEFAULT false,
+    is_printing_confirmed_by_client BOOLEAN DEFAULT false,
+    is_delivery_confirmed_by_client BOOLEAN DEFAULT false,
+    status_history JSON,
+    chat_history JSON,
+    duration_selection VARCHAR(100),
+    unit_price DECIMAL(15,2),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE,
+    FOREIGN KEY (package_id) REFERENCES packages(id) ON DELETE SET NULL,
+    FOREIGN KEY (promo_code_id) REFERENCES promo_codes(id) ON DELETE SET NULL
+);
+
+-- Project Add-Ons (Junction)
+CREATE TABLE IF NOT EXISTS project_add_ons (
+    project_id VARCHAR(36),
+    add_on_id VARCHAR(36),
+    PRIMARY KEY (project_id, add_on_id),
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+    FOREIGN KEY (add_on_id) REFERENCES add_ons(id) ON DELETE CASCADE
+);
+
+-- Team Members
+CREATE TABLE IF NOT EXISTS team_members (
+    id VARCHAR(36) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    role VARCHAR(100),
+    email VARCHAR(255),
+    phone VARCHAR(50),
+    standard_fee DECIMAL(15,2) DEFAULT 0,
+    no_rek VARCHAR(100),
+    bank_name VARCHAR(100),
+    specialization VARCHAR(255),
+    location VARCHAR(255),
+    emergency_contact VARCHAR(255),
+    rating DECIMAL(3,2) DEFAULT 0,
+    portal_access_id VARCHAR(20) UNIQUE,
+    category VARCHAR(50) DEFAULT 'Tim',
+    performance_notes JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Project Team Assignments
+CREATE TABLE IF NOT EXISTS project_team_assignments (
+    id VARCHAR(36) PRIMARY KEY,
+    project_id VARCHAR(36),
+    member_id VARCHAR(36),
+    member_name VARCHAR(255),
+    member_role VARCHAR(100),
+    member_category VARCHAR(50) DEFAULT 'Tim',
+    fee DECIMAL(15,2) DEFAULT 0,
+    sub_job VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+    FOREIGN KEY (member_id) REFERENCES team_members(id) ON DELETE CASCADE
+);
+
+-- Wedding Day Checklist
+CREATE TABLE IF NOT EXISTS wedding_day_checklists (
+    id VARCHAR(36) PRIMARY KEY,
+    project_id VARCHAR(36),
+    category VARCHAR(100),
+    item_name VARCHAR(255) NOT NULL,
+    is_completed BOOLEAN DEFAULT false,
+    assigned_to VARCHAR(255),
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+);
+
+-- ==========================================
+-- 3. FINANCE
+-- ==========================================
+
+-- Cards
+CREATE TABLE IF NOT EXISTS cards (
+    id VARCHAR(36) PRIMARY KEY,
+    card_holder_name VARCHAR(255) NOT NULL,
+    bank_name VARCHAR(100),
+    card_type VARCHAR(50),
+    last_four_digits VARCHAR(20),
+    expiry_date VARCHAR(20),
+    balance DECIMAL(15,2) DEFAULT 0,
+    color_gradient VARCHAR(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Financial Pockets
+CREATE TABLE IF NOT EXISTS financial_pockets (
+    id VARCHAR(36) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    icon VARCHAR(50) DEFAULT 'piggy-bank',
+    type VARCHAR(50),
+    amount DECIMAL(15,2) DEFAULT 0,
+    goal_amount DECIMAL(15,2),
+    lock_end_date DATE,
+    members JSON,
+    source_card_id VARCHAR(36),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (source_card_id) REFERENCES cards(id) ON DELETE SET NULL
+);
+
+-- Transactions
+CREATE TABLE IF NOT EXISTS transactions (
+    id VARCHAR(36) PRIMARY KEY,
+    date DATE NOT NULL,
+    description TEXT,
+    amount DECIMAL(15,2) NOT NULL,
+    type VARCHAR(50) NOT NULL,
+    project_id VARCHAR(36),
+    category VARCHAR(100),
+    method VARCHAR(50) DEFAULT 'Transfer Bank',
+    pocket_id VARCHAR(36),
+    card_id VARCHAR(36),
+    printing_item_id VARCHAR(36),
+    vendor_signature TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL,
+    FOREIGN KEY (pocket_id) REFERENCES financial_pockets(id) ON DELETE SET NULL,
+    FOREIGN KEY (card_id) REFERENCES cards(id) ON DELETE SET NULL
+);
+
+-- ==========================================
+-- 4. LEGAL & ASSETS
+-- ==========================================
+
+-- Contracts
+CREATE TABLE IF NOT EXISTS contracts (
+    id VARCHAR(36) PRIMARY KEY,
+    contract_number VARCHAR(100) UNIQUE NOT NULL,
+    client_id VARCHAR(36),
+    project_id VARCHAR(36),
+    signing_date DATE,
+    signing_location VARCHAR(255),
+    service_title VARCHAR(255),
+    client_name_1 VARCHAR(255) NOT NULL,
+    client_address_1 TEXT,
+    client_phone_1 VARCHAR(50),
+    client_name_2 VARCHAR(255),
+    client_address_2 TEXT,
+    client_phone_2 VARCHAR(50),
+    shooting_duration VARCHAR(255),
+    guaranteed_photos TEXT,
+    album_details TEXT,
+    digital_files_format VARCHAR(255),
+    other_items TEXT,
+    personnel_count VARCHAR(255),
+    delivery_timeframe VARCHAR(255),
+    dp_date DATE,
+    final_payment_date DATE,
+    cancellation_policy TEXT,
+    jurisdiction VARCHAR(255),
+    pasal_1_content TEXT,
+    pasal_2_content TEXT,
+    pasal_3_content TEXT,
+    pasal_4_content TEXT,
+    pasal_5_content TEXT,
+    closing_text TEXT,
+    vendor_signature TEXT,
+    client_signature TEXT,
+    include_meterai BOOLEAN DEFAULT false,
+    meterai_placement VARCHAR(50),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE SET NULL,
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+);
+
+-- Galleries
+CREATE TABLE IF NOT EXISTS galleries (
+    id VARCHAR(36) PRIMARY KEY,
+    user_id VARCHAR(36),
+    title VARCHAR(255) NOT NULL,
+    region VARCHAR(100),
+    description TEXT,
+    is_public BOOLEAN DEFAULT true,
+    public_id VARCHAR(100) UNIQUE NOT NULL,
+    booking_link TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Gallery Images
+CREATE TABLE IF NOT EXISTS gallery_images (
+    id VARCHAR(36) PRIMARY KEY,
+    gallery_id VARCHAR(36),
+    url TEXT NOT NULL,
+    thumbnail_url TEXT,
+    caption TEXT,
+    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (gallery_id) REFERENCES galleries(id) ON DELETE CASCADE
+);
+
+-- ==========================================
+-- 5. ADDITIONAL TABLES (SaaS Features)
+-- ==========================================
+
+-- Team Project Payments
+CREATE TABLE IF NOT EXISTS team_project_payments (
+    id VARCHAR(36) PRIMARY KEY,
+    project_id VARCHAR(36),
+    team_member_id VARCHAR(36),
+    team_member_name VARCHAR(255),
+    date DATE,
+    status VARCHAR(50) DEFAULT 'Belum Bayar',
+    fee DECIMAL(15,2) DEFAULT 0,
+    amount_paid DECIMAL(15,2) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+    FOREIGN KEY (team_member_id) REFERENCES team_members(id) ON DELETE CASCADE
+);
+
+-- Team Payment Records
+CREATE TABLE IF NOT EXISTS team_payment_records (
+    id VARCHAR(36) PRIMARY KEY,
+    record_number VARCHAR(100) UNIQUE NOT NULL,
+    team_member_id VARCHAR(36),
+    team_member_name VARCHAR(255),
+    team_member_role VARCHAR(100),
+    date DATE,
+    total_amount DECIMAL(15,2) DEFAULT 0,
+    project_payment_ids JSON,
+    items JSON,
+    vendor_signature TEXT,
+    recipient_signature TEXT,
+    source_type VARCHAR(50),
+    source_id VARCHAR(36),
+    source_name VARCHAR(255),
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (team_member_id) REFERENCES team_members(id) ON DELETE CASCADE
+);
+
+-- Client Feedback
+CREATE TABLE IF NOT EXISTS client_feedback (
+    id VARCHAR(36) PRIMARY KEY,
+    client_name VARCHAR(255) NOT NULL,
+    satisfaction VARCHAR(50),
+    rating INT,
+    feedback TEXT,
+    date DATE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Freelancer Feedback
+CREATE TABLE IF NOT EXISTS freelancer_feedback (
+    id VARCHAR(36) PRIMARY KEY,
+    freelancer_id VARCHAR(36),
+    team_member_name VARCHAR(255),
+    message TEXT,
+    date DATE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (freelancer_id) REFERENCES team_members(id) ON DELETE CASCADE
+);
+
+-- Social Media Posts
+CREATE TABLE IF NOT EXISTS social_media_posts (
+    id VARCHAR(36) PRIMARY KEY,
+    project_id VARCHAR(36),
+    client_name VARCHAR(255),
+    post_type VARCHAR(100),
+    platform VARCHAR(100),
+    scheduled_date TIMESTAMP,
+    caption TEXT,
+    media_url TEXT,
+    status VARCHAR(50) DEFAULT 'Draf',
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL
+);
+
+-- Notifications
+CREATE TABLE IF NOT EXISTS notifications (
+    id VARCHAR(36) PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    message TEXT,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_read BOOLEAN DEFAULT false,
+    icon VARCHAR(50),
+    link JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Calendar Events
+CREATE TABLE IF NOT EXISTS calendar_events (
+    id VARCHAR(36) PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    event_type VARCHAR(100),
+    date DATE NOT NULL,
+    start_time VARCHAR(50),
+    end_time VARCHAR(50),
+    notes TEXT,
+    team JSON,
+    image TEXT,
+    location VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Suggestions
+CREATE TABLE IF NOT EXISTS suggestions (
+    id VARCHAR(36) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    contact VARCHAR(255),
+    message TEXT,
+    date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    channel VARCHAR(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Project Print Items
+CREATE TABLE IF NOT EXISTS project_print_items (
+    id VARCHAR(36) PRIMARY KEY,
+    project_id VARCHAR(36),
+    item_type VARCHAR(100),
+    custom_name VARCHAR(255),
+    details TEXT,
+    cost DECIMAL(15,2) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+);

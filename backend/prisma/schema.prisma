@@ -1,0 +1,543 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model add_ons {
+  id              Int               @id @default(autoincrement())
+  name            String            @db.VarChar(255)
+  price           Decimal?          @default(0.00) @db.Decimal(15, 2)
+  region          String?           @db.VarChar(100)
+  created_at      DateTime          @default(now()) @db.Timestamp(0)
+  project_add_ons project_add_ons[]
+}
+
+model calendar_events {
+  id         Int      @id @default(autoincrement())
+  title      String   @db.VarChar(255)
+  event_type String?  @db.VarChar(100)
+  date       DateTime @db.Date
+  start_time String?  @db.VarChar(50)
+  end_time   String?  @db.VarChar(50)
+  notes      String?  @db.Text
+  team       String?  @db.LongText
+  image      String?  @db.Text
+  location   String?  @db.VarChar(255)
+  created_at DateTime @default(now()) @db.Timestamp(0)
+  updated_at DateTime @default(now()) @db.Timestamp(0)
+}
+
+model cards {
+  id                Int                 @id @default(autoincrement())
+  card_holder_name  String              @db.VarChar(255)
+  bank_name         String?             @db.VarChar(100)
+  card_type         String?             @db.VarChar(50)
+  last_four_digits  String?             @db.VarChar(20)
+  expiry_date       String?             @db.VarChar(20)
+  balance           Decimal?            @default(0.00) @db.Decimal(15, 2)
+  color_gradient    String?             @db.VarChar(100)
+  created_at        DateTime            @default(now()) @db.Timestamp(0)
+  updated_at        DateTime            @default(now()) @db.Timestamp(0)
+  financial_pockets financial_pockets[]
+  transactions      transactions[]
+}
+
+model client_feedback {
+  id           Int       @id @default(autoincrement())
+  client_name  String    @db.VarChar(255)
+  satisfaction String?   @db.VarChar(50)
+  rating       Int?
+  feedback     String?   @db.Text
+  date         DateTime? @db.Date
+  created_at   DateTime  @default(now()) @db.Timestamp(0)
+}
+
+model clients {
+  id               Int            @id @default(autoincrement())
+  name             String         @db.VarChar(255)
+  email            String?        @db.VarChar(255)
+  phone            String?        @db.VarChar(50)
+  whatsapp         String?        @db.VarChar(50)
+  since            DateTime?      @db.Date
+  instagram        String?        @db.VarChar(255)
+  status           String?        @default("Aktif") @db.VarChar(50)
+  client_type      String?        @default("Langsung") @db.VarChar(50)
+  last_contact     DateTime       @default(now()) @db.Timestamp(0)
+  portal_access_id String?        @unique(map: "portal_access_id") @db.VarChar(20)
+  address          String?        @db.Text
+  created_at       DateTime       @default(now()) @db.Timestamp(0)
+  updated_at       DateTime       @default(now()) @db.Timestamp(0)
+  contracts        contracts[]
+  projects         projects[]
+  transactions     transactions[]
+}
+
+model contracts {
+  id                   Int       @id @default(autoincrement())
+  contract_number      String    @unique(map: "contract_number") @db.VarChar(100)
+  client_id            Int?
+  project_id           Int?
+  signing_date         DateTime? @db.Date
+  signing_location     String?   @db.VarChar(255)
+  service_title        String?   @db.VarChar(255)
+  client_name_1        String    @db.VarChar(255)
+  client_address_1     String?   @db.Text
+  client_phone_1       String?   @db.VarChar(50)
+  client_name_2        String?   @db.VarChar(255)
+  client_address_2     String?   @db.Text
+  client_phone_2       String?   @db.VarChar(50)
+  shooting_duration    String?   @db.VarChar(255)
+  guaranteed_photos    String?   @db.Text
+  album_details        String?   @db.Text
+  digital_files_format String?   @db.VarChar(255)
+  other_items          String?   @db.Text
+  personnel_count      String?   @db.VarChar(255)
+  delivery_timeframe   String?   @db.VarChar(255)
+  dp_date              DateTime? @db.Date
+  final_payment_date   DateTime? @db.Date
+  cancellation_policy  String?   @db.Text
+  jurisdiction         String?   @db.VarChar(255)
+  pasal_1_content      String?   @db.Text
+  pasal_2_content      String?   @db.Text
+  pasal_3_content      String?   @db.Text
+  pasal_4_content      String?   @db.Text
+  pasal_5_content      String?   @db.Text
+  closing_text         String?   @db.Text
+  vendor_signature     String?   @db.Text
+  client_signature     String?   @db.Text
+  include_meterai      Boolean?  @default(false)
+  meterai_placement    String?   @db.VarChar(50)
+  created_at           DateTime  @default(now()) @db.Timestamp(0)
+  clients              clients?  @relation(fields: [client_id], references: [id], onUpdate: Restrict, map: "contracts_ibfk_1")
+  projects             projects? @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "contracts_ibfk_2")
+
+  @@index([client_id], map: "client_id")
+  @@index([project_id], map: "project_id")
+}
+
+model financial_pockets {
+  id             Int            @id @default(autoincrement())
+  name           String         @db.VarChar(255)
+  description    String?        @db.Text
+  icon           String?        @default("piggy-bank") @db.VarChar(50)
+  type           String?        @db.VarChar(50)
+  amount         Decimal?       @default(0.00) @db.Decimal(15, 2)
+  goal_amount    Decimal?       @db.Decimal(15, 2)
+  lock_end_date  DateTime?      @db.Date
+  members        String?        @db.LongText
+  source_card_id Int?
+  created_at     DateTime       @default(now()) @db.Timestamp(0)
+  updated_at     DateTime       @default(now()) @db.Timestamp(0)
+  cards          cards?         @relation(fields: [source_card_id], references: [id], onUpdate: Restrict, map: "financial_pockets_ibfk_1")
+  transactions   transactions[]
+
+  @@index([source_card_id], map: "source_card_id")
+}
+
+model freelancer_feedback {
+  id               Int           @id @default(autoincrement())
+  freelancer_id    Int?
+  team_member_name String?       @db.VarChar(255)
+  message          String?       @db.Text
+  date             DateTime?     @db.Date
+  created_at       DateTime      @default(now()) @db.Timestamp(0)
+  team_members     team_members? @relation(fields: [freelancer_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "freelancer_feedback_ibfk_1")
+
+  @@index([freelancer_id], map: "freelancer_id")
+}
+
+model galleries {
+  id             Int              @id @default(autoincrement())
+  user_id        Int?
+  title          String           @db.VarChar(255)
+  region         String?          @db.VarChar(100)
+  description    String?          @db.Text
+  is_public      Boolean?         @default(true)
+  public_id      String           @unique(map: "public_id") @db.VarChar(100)
+  booking_link   String?          @db.Text
+  created_at     DateTime         @default(now()) @db.Timestamp(0)
+  updated_at     DateTime         @default(now()) @db.Timestamp(0)
+  users          users?           @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "galleries_ibfk_1")
+  gallery_images gallery_images[]
+
+  @@index([user_id], map: "user_id")
+}
+
+model gallery_images {
+  id            Int        @id @default(autoincrement())
+  gallery_id    Int?
+  url           String     @db.LongText
+  thumbnail_url String?    @db.LongText
+  caption       String?    @db.Text
+  uploaded_at   DateTime   @default(now()) @db.Timestamp(0)
+  galleries     galleries? @relation(fields: [gallery_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "gallery_images_ibfk_1")
+
+  @@index([gallery_id], map: "gallery_id")
+}
+
+model notifications {
+  id         Int      @id @default(autoincrement())
+  title      String   @db.VarChar(255)
+  message    String?  @db.Text
+  timestamp  DateTime @default(now()) @db.Timestamp(0)
+  is_read    Boolean? @default(false)
+  icon       String?  @db.VarChar(50)
+  link       String?  @db.LongText
+  created_at DateTime @default(now()) @db.Timestamp(0)
+}
+
+model packages {
+  id                     Int        @id @default(autoincrement())
+  name                   String     @db.VarChar(255)
+  price                  Decimal?   @default(0.00) @db.Decimal(15, 2)
+  category               String?    @db.VarChar(100)
+  region                 String?    @db.VarChar(100)
+  physical_items         String?    @db.LongText
+  digital_items          String?    @db.LongText
+  processing_time        String?    @db.VarChar(100)
+  default_printing_cost  Decimal?   @default(0.00) @db.Decimal(15, 2)
+  default_transport_cost Decimal?   @default(0.00) @db.Decimal(15, 2)
+  photographers          String?    @db.VarChar(255)
+  videographers          String?    @db.VarChar(255)
+  cover_image            String?    @db.Text
+  duration_options       String?    @db.LongText
+  created_at             DateTime   @default(now()) @db.Timestamp(0)
+  updated_at             DateTime   @default(now()) @db.Timestamp(0)
+  projects               projects[]
+}
+
+model profiles {
+  id                        Int      @id @default(autoincrement())
+  admin_user_id             Int?
+  full_name                 String?  @db.VarChar(255)
+  email                     String?  @unique(map: "email") @db.VarChar(255)
+  phone                     String?  @db.VarChar(50)
+  company_name              String?  @db.VarChar(255)
+  website                   String?  @db.VarChar(255)
+  address                   String?  @db.Text
+  bank_account              String?  @db.VarChar(255)
+  authorized_signer         String?  @db.VarChar(255)
+  id_number                 String?  @db.VarChar(100)
+  bio                       String?  @db.Text
+  income_categories         String?  @db.LongText
+  expense_categories        String?  @db.LongText
+  project_types             String?  @db.LongText
+  event_types               String?  @db.LongText
+  asset_categories          String?  @db.LongText
+  sop_categories            String?  @db.LongText
+  package_categories        String?  @db.LongText
+  project_status_config     String?  @db.LongText
+  notification_settings     String?  @db.LongText
+  security_settings         String?  @db.LongText
+  briefing_template         String?  @db.Text
+  terms_and_conditions      String?  @db.Text
+  logo_base64               String?  @db.LongText
+  signature_base64          String?  @db.LongText
+  brand_color               String?  @db.VarChar(50)
+  public_page_config        String?  @db.LongText
+  package_share_template    String?  @db.Text
+  booking_form_template     String?  @db.Text
+  chat_templates            String?  @db.LongText
+  billing_templates         String?  @db.LongText
+  invoice_share_template    String?  @db.Text
+  receipt_share_template    String?  @db.Text
+  expense_share_template    String?  @db.Text
+  portal_share_template     String?  @db.Text
+  contract_share_template   String?  @db.Text
+  billing_share_template    String?  @db.Text
+  checklist_templates       String?  @db.LongText
+  contract_template         String?  @db.Text
+  contract_pasal1_defaults  String?  @db.Text
+  contract_pasal2_defaults  String?  @db.Text
+  contract_pasal3_defaults  String?  @db.Text
+  contract_pasal4_defaults  String?  @db.Text
+  contract_pasal5_defaults  String?  @db.Text
+  contract_closing_defaults String?  @db.Text
+  signature                 String?  @db.Text
+  role                      String?  @db.VarChar(50)
+  permissions               String?  @db.LongText
+  created_at                DateTime @default(now()) @db.Timestamp(0)
+  updated_at                DateTime @default(now()) @db.Timestamp(0)
+  users                     users?   @relation(fields: [admin_user_id], references: [id], onUpdate: Restrict, map: "profiles_ibfk_1")
+
+  @@index([admin_user_id], map: "admin_user_id")
+}
+
+model project_add_ons {
+  project_id Int
+  add_on_id  Int
+  projects   projects @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "project_add_ons_ibfk_1")
+  add_ons    add_ons  @relation(fields: [add_on_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "project_add_ons_ibfk_2")
+
+  @@id([project_id, add_on_id])
+  @@index([add_on_id], map: "add_on_id")
+}
+
+model project_print_items {
+  id          Int       @id @default(autoincrement())
+  project_id  Int?
+  item_type   String?   @db.VarChar(100)
+  custom_name String?   @db.VarChar(255)
+  details     String?   @db.Text
+  cost        Decimal?  @default(0.00) @db.Decimal(15, 2)
+  created_at  DateTime  @default(now()) @db.Timestamp(0)
+  projects    projects? @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "project_print_items_ibfk_1")
+
+  @@index([project_id], map: "project_id")
+}
+
+model project_team_assignments {
+  id              Int           @id @default(autoincrement())
+  project_id      Int?
+  member_id       Int?
+  member_name     String?       @db.VarChar(255)
+  member_role     String?       @db.VarChar(100)
+  member_category String?       @default("Tim") @db.VarChar(50)
+  fee             Decimal?      @default(0.00) @db.Decimal(15, 2)
+  sub_job         String?       @db.VarChar(255)
+  created_at      DateTime      @default(now()) @db.Timestamp(0)
+  projects        projects?     @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "project_team_assignments_ibfk_1")
+  team_members    team_members? @relation(fields: [member_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "project_team_assignments_ibfk_2")
+
+  @@index([member_id], map: "member_id")
+  @@index([project_id], map: "project_id")
+}
+
+model projects {
+  id                              Int                        @id @default(autoincrement())
+  project_name                    String                     @db.VarChar(255)
+  client_name                     String?                    @db.VarChar(255)
+  client_id                       Int?
+  project_type                    String?                    @db.VarChar(100)
+  package_name                    String?                    @db.VarChar(255)
+  package_id                      Int?
+  date                            DateTime                   @db.Date
+  deadline_date                   DateTime?                  @db.Date
+  location                        String?                    @db.VarChar(255)
+  address                         String?                    @db.Text
+  progress                        Int?                       @default(0)
+  status                          String?                    @default("Baru") @db.VarChar(50)
+  booking_status                  String?                    @db.VarChar(50)
+  rejection_reason                String?                    @db.Text
+  total_cost                      Decimal?                   @default(0.00) @db.Decimal(15, 2)
+  amount_paid                     Decimal?                   @default(0.00) @db.Decimal(15, 2)
+  payment_status                  String?                    @default("Belum Bayar") @db.VarChar(50)
+  notes                           String?                    @db.Text
+  accommodation                   String?                    @db.Text
+  drive_link                      String?                    @db.Text
+  client_drive_link               String?                    @db.Text
+  final_drive_link                String?                    @db.Text
+  start_time                      DateTime?                  @db.Time(0)
+  end_time                        DateTime?                  @db.Time(0)
+  image                           String?                    @db.Text
+  color                           String?                    @db.VarChar(50)
+  promo_code_id                   Int?
+  discount_amount                 Decimal?                   @default(0.00) @db.Decimal(15, 2)
+  printing_details                String?                    @db.LongText
+  custom_costs                    String?                    @db.LongText
+  printing_cost                   Decimal?                   @default(0.00) @db.Decimal(15, 2)
+  transport_cost                  Decimal?                   @default(0.00) @db.Decimal(15, 2)
+  transport_paid                  Boolean?                   @default(false)
+  transport_note                  String?                    @db.Text
+  transport_details               String?                    @db.LongText
+  transport_used                  Boolean?                   @default(false)
+  printing_card_id                String?                    @db.VarChar(36)
+  transport_card_id               String?                    @db.VarChar(36)
+  completed_digital_items         String?                    @db.LongText
+  dp_proof_url                    String?                    @db.Text
+  active_sub_statuses             String?                    @db.LongText
+  custom_sub_statuses             String?                    @db.LongText
+  confirmed_sub_statuses          String?                    @db.LongText
+  client_sub_status_notes         String?                    @db.LongText
+  sub_status_confirmation_sent_at String?                    @db.LongText
+  invoice_signature               String?                    @db.Text
+  is_editing_confirmed_by_client  Boolean?                   @default(false)
+  is_printing_confirmed_by_client Boolean?                   @default(false)
+  is_delivery_confirmed_by_client Boolean?                   @default(false)
+  status_history                  String?                    @db.LongText
+  chat_history                    String?                    @db.LongText
+  duration_selection              String?                    @db.VarChar(100)
+  unit_price                      Decimal?                   @db.Decimal(15, 2)
+  created_at                      DateTime                   @default(now()) @db.Timestamp(0)
+  updated_at                      DateTime                   @default(now()) @db.Timestamp(0)
+  contracts                       contracts[]
+  project_add_ons                 project_add_ons[]
+  project_print_items             project_print_items[]
+  project_team_assignments        project_team_assignments[]
+  clients                         clients?                   @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "projects_ibfk_1")
+  packages                        packages?                  @relation(fields: [package_id], references: [id], onUpdate: Restrict, map: "projects_ibfk_2")
+  promo_codes                     promo_codes?               @relation(fields: [promo_code_id], references: [id], onUpdate: Restrict, map: "projects_ibfk_3")
+  social_media_posts              social_media_posts[]
+  team_project_payments           team_project_payments[]
+  transactions                    transactions[]
+  wedding_day_checklists          wedding_day_checklists[]
+
+  @@index([client_id], map: "client_id")
+  @@index([package_id], map: "package_id")
+  @@index([promo_code_id], map: "promo_code_id")
+}
+
+model promo_codes {
+  id             Int        @id @default(autoincrement())
+  code           String     @unique(map: "code") @db.VarChar(100)
+  discount_type  String     @db.VarChar(50)
+  discount_value Decimal    @db.Decimal(15, 2)
+  is_active      Boolean?   @default(true)
+  usage_count    Int?       @default(0)
+  max_usage      Int?
+  expiry_date    DateTime?  @db.Date
+  created_at     DateTime   @default(now()) @db.Timestamp(0)
+  projects       projects[]
+}
+
+model social_media_posts {
+  id             Int       @id @default(autoincrement())
+  project_id     Int?
+  client_name    String?   @db.VarChar(255)
+  post_type      String?   @db.VarChar(100)
+  platform       String?   @db.VarChar(100)
+  scheduled_date DateTime  @default(now()) @db.Timestamp(0)
+  caption        String?   @db.Text
+  media_url      String?   @db.Text
+  status         String?   @default("Draf") @db.VarChar(50)
+  notes          String?   @db.Text
+  created_at     DateTime  @default(now()) @db.Timestamp(0)
+  updated_at     DateTime  @default(now()) @db.Timestamp(0)
+  projects       projects? @relation(fields: [project_id], references: [id], onUpdate: Restrict, map: "social_media_posts_ibfk_1")
+
+  @@index([project_id], map: "project_id")
+}
+
+model suggestions {
+  id         Int      @id @default(autoincrement())
+  name       String   @db.VarChar(255)
+  contact    String?  @db.VarChar(255)
+  message    String?  @db.Text
+  date       DateTime @default(now()) @db.Timestamp(0)
+  channel    String?  @db.VarChar(100)
+  created_at DateTime @default(now()) @db.Timestamp(0)
+}
+
+model team_members {
+  id                       Int                        @id @default(autoincrement())
+  name                     String                     @db.VarChar(255)
+  role                     String?                    @db.VarChar(100)
+  email                    String?                    @db.VarChar(255)
+  phone                    String?                    @db.VarChar(50)
+  standard_fee             Decimal?                   @default(0.00) @db.Decimal(15, 2)
+  no_rek                   String?                    @db.VarChar(100)
+  bank_name                String?                    @db.VarChar(100)
+  specialization           String?                    @db.VarChar(255)
+  location                 String?                    @db.VarChar(255)
+  emergency_contact        String?                    @db.VarChar(255)
+  rating                   Decimal?                   @default(0.00) @db.Decimal(3, 2)
+  portal_access_id         String?                    @unique(map: "portal_access_id") @db.VarChar(20)
+  category                 String?                    @default("Tim") @db.VarChar(50)
+  performance_notes        String?                    @db.LongText
+  created_at               DateTime                   @default(now()) @db.Timestamp(0)
+  updated_at               DateTime                   @default(now()) @db.Timestamp(0)
+  freelancer_feedback      freelancer_feedback[]
+  project_team_assignments project_team_assignments[]
+  team_payment_records     team_payment_records[]
+  team_project_payments    team_project_payments[]
+}
+
+model team_payment_records {
+  id                  Int           @id @default(autoincrement())
+  record_number       String        @unique(map: "record_number") @db.VarChar(100)
+  team_member_id      Int?
+  team_member_name    String?       @db.VarChar(255)
+  team_member_role    String?       @db.VarChar(100)
+  date                DateTime?     @db.Date
+  total_amount        Decimal?      @default(0.00) @db.Decimal(15, 2)
+  project_payment_ids String?       @db.LongText
+  items               String?       @db.LongText
+  vendor_signature    String?       @db.Text
+  recipient_signature String?       @db.Text
+  source_type         String?       @db.VarChar(50)
+  source_id           String?       @db.VarChar(36)
+  source_name         String?       @db.VarChar(255)
+  notes               String?       @db.Text
+  created_at          DateTime      @default(now()) @db.Timestamp(0)
+  team_members        team_members? @relation(fields: [team_member_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "team_payment_records_ibfk_1")
+
+  @@index([team_member_id], map: "team_member_id")
+}
+
+model team_project_payments {
+  id               Int           @id @default(autoincrement())
+  project_id       Int?
+  team_member_id   Int?
+  team_member_name String?       @db.VarChar(255)
+  date             DateTime?     @db.Date
+  status           String?       @default("Belum Bayar") @db.VarChar(50)
+  fee              Decimal?      @default(0.00) @db.Decimal(15, 2)
+  amount_paid      Decimal?      @default(0.00) @db.Decimal(15, 2)
+  created_at       DateTime      @default(now()) @db.Timestamp(0)
+  updated_at       DateTime      @default(now()) @db.Timestamp(0)
+  projects         projects?     @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "team_project_payments_ibfk_1")
+  team_members     team_members? @relation(fields: [team_member_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "team_project_payments_ibfk_2")
+
+  @@index([project_id], map: "project_id")
+  @@index([team_member_id], map: "team_member_id")
+}
+
+model transactions {
+  id                Int                @id @default(autoincrement())
+  date              DateTime           @db.Date
+  description       String?            @db.Text
+  amount            Decimal            @db.Decimal(15, 2)
+  type              String             @db.VarChar(50)
+  project_id        Int?
+  category          String?            @db.VarChar(100)
+  method            String?            @default("Transfer Bank") @db.VarChar(50)
+  pocket_id         Int?
+  card_id           Int?
+  printing_item_id  Int?
+  vendor_signature  String?            @db.Text
+  created_at        DateTime           @default(now()) @db.Timestamp(0)
+  client_id         Int?
+  projects          projects?          @relation(fields: [project_id], references: [id], onUpdate: Restrict, map: "transactions_ibfk_1")
+  financial_pockets financial_pockets? @relation(fields: [pocket_id], references: [id], onUpdate: Restrict, map: "transactions_ibfk_2")
+  cards             cards?             @relation(fields: [card_id], references: [id], onUpdate: Restrict, map: "transactions_ibfk_3")
+  clients           clients?           @relation(fields: [client_id], references: [id], onUpdate: Restrict, map: "transactions_ibfk_4")
+
+  @@index([card_id], map: "card_id")
+  @@index([pocket_id], map: "pocket_id")
+  @@index([project_id], map: "project_id")
+  @@index([client_id], map: "client_id")
+}
+
+model users {
+  id               Int         @id @default(autoincrement())
+  email            String      @unique(map: "email") @db.VarChar(255)
+  password         String?     @db.VarChar(255)
+  full_name        String?     @db.VarChar(255)
+  company_name     String?     @db.VarChar(255)
+  role             String?     @default("Member") @db.VarChar(50)
+  permissions      String?     @db.LongText
+  restricted_cards String?     @db.LongText
+  created_at       DateTime    @default(now()) @db.Timestamp(0)
+  updated_at       DateTime    @default(now()) @db.Timestamp(0)
+  galleries        galleries[]
+  profiles         profiles[]
+}
+
+model wedding_day_checklists {
+  id           Int       @id @default(autoincrement())
+  project_id   Int?
+  category     String?   @db.VarChar(100)
+  item_name    String    @db.VarChar(255)
+  is_completed Boolean?  @default(false)
+  assigned_to  String?   @db.VarChar(255)
+  notes        String?   @db.Text
+  created_at   DateTime  @default(now()) @db.Timestamp(0)
+  updated_at   DateTime  @default(now()) @db.Timestamp(0)
+  projects     projects? @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "wedding_day_checklists_ibfk_1")
+
+  @@index([project_id], map: "project_id")
+}

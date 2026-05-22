@@ -1,0 +1,43 @@
+@layer components {
+  /* Classic Template - Elegant & Timeless */
+  .classic-template {
+    @apply font-serif;
+    font-family: 'Georgia', 'Times New Roman', serif;
+    background-color: #f8fafc;
+    color: #1e293b;
+  }
+
+  .classic-template h1 {
+    font-size: clamp(2.5rem, 5vw + 2rem, 4rem);
+    @apply font-bold mb-6;
+  }
+
+  .classic-template .text-gradient {
+    background: linear-gradient(135deg, #374151, #1f2937);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .classic-template .text-shadow-lg { text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); }
+  .classic-template .text-shadow-md { text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); }
+  .classic-template .text-shadow-sm { text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); }
+
+  /* Custom scrollbar for classic */
+  .classic-template::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .classic-template::-webkit-scrollbar-track {
+    background: #f1f5f9;
+  }
+
+  .classic-template::-webkit-scrollbar-thumb {
+    background: #94a3b8;
+    border-radius: 4px;
+  }
+
+  .classic-template::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+  }
+}

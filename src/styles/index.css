@@ -1,0 +1,17 @@
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+@import "./variables.css";
+@import "./base.css";
+@import "./animations.css";
+@import "./utilities.css";
+@import "./components/navigation.css";
+@import "./components/button.css";
+@import "./components/form.css";
+@import "./components/table.css";
+@import "./components/invoice.css";
+@import "./templates/classic.css";
+@import "./templates/modern.css";
+@import "./templates/gallery.css";
+@import "./print/print.css";

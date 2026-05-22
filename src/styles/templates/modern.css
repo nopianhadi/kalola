@@ -1,0 +1,59 @@
+@layer components {
+  /* Modern Template - Clean & Bold */
+  .modern-template {
+    @apply font-sans;
+    font-family: 'Inter', 'Segoe UI', 'Roboto', sans-serif;
+    background-color: #0f172a;
+    color: #f1f5f9;
+  }
+
+  .modern-template h1 {
+    font-size: clamp(3rem, 6vw + 2.5rem, 5rem);
+    @apply font-extrabold mb-8 uppercase tracking-tighter;
+  }
+
+  .modern-template .animate-fade-in-up {
+    animation: fadeInUp 0.8s ease-out forwards;
+  }
+
+  .modern-template .animate-gradient {
+    background: linear-gradient(-45deg, #3b82f6, #8b5cf6, #ec4899, #3b82f6);
+    background-size: 400% 400%;
+    animation: gradientShift 3s ease infinite;
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  /* Custom scrollbar for modern */
+  .modern-template::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .modern-template::-webkit-scrollbar-track {
+    background: #1e293b;
+  }
+
+  .modern-template::-webkit-scrollbar-thumb {
+    background: #475569;
+    border-radius: 4px;
+  }
+
+  .modern-template::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+  }
+}

@@ -1,0 +1,111 @@
+@layer components {
+  /* Invoice & Receipts - Modern & Clean */
+  .print-invoice, .print-receipt {
+    @apply bg-white text-slate-900 mx-auto;
+    max-width: 800px;
+    padding: 2rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border-radius: 0.5rem;
+  }
+
+  /* Invoice Header */
+  .doc-header-grid {
+    @apply grid grid-cols-1 md:grid-cols-2 gap-8 mb-8;
+  }
+
+  .doc-header-info {
+    @apply flex flex-col gap-1;
+  }
+
+  /* Invoice Table */
+  .invoice-table {
+    @apply w-full border-collapse my-8 transition-all duration-300;
+  }
+
+  .invoice-table th {
+    @apply bg-slate-50 text-slate-500 font-semibold text-xs uppercase tracking-wider p-4 text-left border-b border-slate-200;
+  }
+
+  .invoice-table td {
+    @apply p-4 border-b border-slate-100 text-sm align-top;
+  }
+
+  .invoice-item-description .font-semibold {
+    @apply block text-slate-900 mb-0.5;
+  }
+
+  .invoice-item-description .text-xs {
+    @apply text-slate-500 italic;
+  }
+
+  /* Totals Section */
+  .totals-section {
+    @apply flex flex-col md:flex-row justify-between items-start gap-8 mt-8;
+  }
+
+  .invoice-totals {
+    @apply bg-slate-50 p-6 rounded-xl border border-slate-100 min-w-[300px];
+  }
+
+  .signature-section {
+    @apply flex flex-col sm:flex-row justify-between items-end mt-12 gap-8;
+  }
+
+  /* Status Badges within Invoice */
+  .invoice-status-badge {
+    @apply inline-flex px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider;
+  }
+
+  .invoice-status-paid { @apply bg-green-100 text-green-700; }
+  .invoice-status-pending { @apply bg-yellow-100 text-yellow-700; }
+
+  /* Tabular numbers for clean alignment */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Mobile Adjustments */
+  @media (max-width: 768px) {
+    .print-invoice, .print-receipt {
+      @apply p-4 w-full max-w-none shadow-none rounded-none;
+    }
+
+    .doc-header-grid {
+      grid-template-columns: 1fr !important;
+      gap: 1.5rem !important;
+    }
+
+    .totals-section {
+      flex-direction: column !important;
+      gap: 1.5rem !important;
+    }
+
+    .invoice-totals {
+      width: 100% !important;
+    }
+
+    .invoice-table {
+      font-size: 12px !important;
+    }
+
+    .invoice-table th,
+    .invoice-table td {
+      padding: 8px 4px !important;
+    }
+
+    .invoice-table td::before {
+      content: attr(data-label) !important;
+      display: block;
+      font-size: 0.75rem; /* text-xs */
+      font-weight: 700;    /* font-bold */
+      color: #94a3b8;      /* text-slate-400 */
+      margin-bottom: 0.25rem; /* mb-1 */
+    }
+  }
+
+  @media (max-width: 480px) {
+    .print-invoice header h1 {
+      font-size: 1.25rem !important;
+    }
+  }
+}
