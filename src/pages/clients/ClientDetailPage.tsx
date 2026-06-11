@@ -23,10 +23,12 @@ import { InvoicePreviewModal } from '@/features/clients/components/InvoicePrevie
 import { ReceiptPreviewModal } from '@/features/clients/components/ReceiptPreviewModal';
 import { createTransaction, updateCardBalance } from '@/services/transactions';
 import { updateProject as updateProjectRow } from '@/services/projects';
+import { updateClient, syncClientStatusFromProjects } from '@/services/clients';
 import { useQueryClient } from '@tanstack/react-query';
 import { TransactionType, PaymentStatus, Project, Transaction } from '@/types';
 import ProjectDashboardCard from '@/features/clients/components/ProjectDashboardCard';
 import { useApp } from '@/app/AppContext';
+import { CloudinaryAvatarUpload } from '@/shared/ui/CloudinaryAvatarUpload';
 
 const ClientDetailPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -36,7 +38,7 @@ const ClientDetailPage: React.FC = () => {
 
     const { data: client, isLoading: isClientLoading } = useClient(id ? Number(id) : undefined);
     const { data: projects = [] } = useProjects();
-    const { data: transactions = [] } = useTransactions({ clientId: id ? Number(id) : undefined });
+    const { data: allTransactions = [] } = useTransactions({ clientId: id ? Number(id) : undefined, limit: 500 });
     const { data: packages = [] } = usePackages();
     const { data: cards = [] } = useCards();
     const { data: profile } = useProfile();
@@ -61,7 +63,11 @@ const ClientDetailPage: React.FC = () => {
     }
 
     const clientProjects = projects.filter(p => String(p.clientId) === String(client.id)).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    const clientTransactions = transactions.filter(t => clientProjects.some(p => String(p.id) === String(t.projectId))).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const clientProjectIds = new Set(clientProjects.map(p => String(p.id)));
+    // Include transactions matched by clientId OR by projectId belonging to this client
+    const clientTransactions = allTransactions
+        .filter(t => clientProjectIds.has(String(t.projectId)))
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     const handleRecordPayment = async (projectId: number, amount: number, destinationCardId: number) => {
         try {
@@ -106,7 +112,17 @@ const ClientDetailPage: React.FC = () => {
             await queryClient.invalidateQueries({ queryKey: ['finance'] });
             await queryClient.invalidateQueries({ queryKey: ['projects'] });
             await queryClient.invalidateQueries({ queryKey: ['clients', client.id] });
-            
+
+            // Sync client status after payment update
+            try {
+                console.log(`🔄 Syncing client status after payment for client ID: ${proj.clientId}`);
+                await syncClientStatusFromProjects(proj.clientId);
+                console.log(`✅ Client status sync completed after payment for client ID: ${proj.clientId}`);
+                queryClient.invalidateQueries({ queryKey: ['clients'] });
+            } catch (syncErr) {
+                console.error('❌ Failed to sync client status after payment:', syncErr);
+            }
+
             showNotification("Pembayaran berhasil dicatat.");
         } catch (e) {
             showNotification("Gagal mencatat pembayaran.");
@@ -293,6 +309,20 @@ const ClientDetailPage: React.FC = () => {
             } as any);
             queryClient.invalidateQueries();
             showNotification(`Status proyek berhasil diperbarui ke ${newStatus}.`);
+
+            // Sync client status after project status update
+            try {
+                console.log(`🔄 Syncing client status for client ID: ${project.clientId}`);
+                await syncClientStatusFromProjects(project.clientId);
+                console.log(`✅ Client status sync completed for client ID: ${project.clientId}`);
+                
+                // Force refresh semua cache yang berkaitan dengan clients
+                queryClient.invalidateQueries({ queryKey: ['clients'] });
+                queryClient.invalidateQueries({ queryKey: ['projects'] });
+                queryClient.refetchQueries({ queryKey: ['clients'] });
+            } catch (syncErr) {
+                console.error('❌ Failed to sync client status:', syncErr);
+            }
         } catch (err) {
             showNotification("Gagal memperbarui status.");
         }
@@ -336,10 +366,11 @@ const ClientDetailPage: React.FC = () => {
     };
 
     return (
-        <div className="relative overflow-x-hidden">
-            {/* Background Decorative Elements */}
-            <div className="absolute top-0 left-0 w-full h-[400px] bg-gradient-to-b from-brand-accent/10 to-transparent pointer-events-none"></div>
-            <div className="absolute top-[-10%] right-[-5%] w-[40%] h-[40%] bg-brand-accent/5 rounded-full blur-[120px] pointer-events-none"></div>
+        <div className="relative overflow-x-hidden min-h-screen bg-brand-bg">
+            {/* Background Decorative Elements - Rich Dynamic Blue Glows */}
+            <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-brand-accent/[0.08] via-brand-accent/[0.02] to-transparent pointer-events-none"></div>
+            <div className="absolute top-[-8%] left-[-5%] w-[35%] h-[35%] bg-gradient-to-tr from-brand-accent/10 to-indigo-500/5 rounded-full blur-[140px] pointer-events-none opacity-80 animate-pulse-soft"></div>
+            <div className="absolute top-[-12%] right-[-8%] w-[45%] h-[45%] bg-gradient-to-bl from-cyan-400/8 to-brand-accent/12 rounded-full blur-[130px] pointer-events-none opacity-70"></div>
 
             {/* Breadcrumb / Local Navigation */}
             <div className="mb-8 flex items-center justify-between relative z-20">
@@ -369,201 +400,229 @@ const ClientDetailPage: React.FC = () => {
             </div>
 
             <div className="relative z-10">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                    {/* Sidebar */}
-                    <aside className="lg:col-span-3 space-y-6">
-                        <div className="bg-brand-surface border border-brand-border rounded-[2.5rem] p-8 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                                <UsersIcon className="w-24 h-24 text-brand-accent -mr-8 -mt-8 rotate-12" />
+                <div className="space-y-8">
+                    {/* Top Row: Profile Summary */}
+                    <div className="bg-brand-surface border border-brand-border/60 rounded-[2.5rem] p-6 md:p-8 shadow-lg hover:shadow-xl hover:border-brand-accent/30 transition-all duration-300 relative overflow-hidden group flex flex-col md:flex-row items-center gap-8">
+                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                            <UsersIcon className="w-24 h-24 text-brand-accent -mr-8 -mt-8 rotate-12" />
+                        </div>
+
+                        <div className="relative z-10 text-center md:text-left flex flex-col items-center md:items-start shrink-0 min-w-[250px]">
+                            {/* Avatar Upload */}
+                            <div className="flex justify-center mb-4">
+                                <CloudinaryAvatarUpload
+                                    value={client.avatar}
+                                    context="client"
+                                    onChange={async (url) => {
+                                        try {
+                                            await updateClient(client.id, { avatar: url });
+                                            queryClient.invalidateQueries({ queryKey: ['clients'] });
+                                            queryClient.invalidateQueries({ queryKey: ['clients', client.id] });
+                                            showNotification(url ? 'Foto profil diperbarui.' : 'Foto profil dihapus.');
+                                        } catch {
+                                            showNotification('Gagal menyimpan foto profil.');
+                                        }
+                                    }}
+                                    name={client.name}
+                                    size="xl"
+                                    variant="client"
+                                    label="Foto Pengantin"
+                                />
                             </div>
-
-                            <div className="relative z-10">
-                                <h2 className="text-2xl font-black text-brand-text-light leading-tight mb-2">{client.name}</h2>
-                                <p className="text-brand-text-secondary font-semibold flex items-center gap-2 mb-8">
-                                    <CalendarIcon className="w-4 h-4 text-brand-accent" />
-                                    Terdaftar sejak {new Date(client.since).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
-                                </p>
-
-                                <div className="space-y-4">
-                                    <ClientInfoTab client={client} onSharePortal={handleSharePortal} />
-                                </div>
-
-                                <div className="mt-8 pt-8 border-t border-brand-border/30 flex gap-3">
-                                    <button
-                                        onClick={() => navigate(`/client/${client.id}/edit`)}
-                                        className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-brand-surface border border-brand-border text-sm font-bold text-brand-text-light hover:bg-brand-bg transition-all active:scale-95"
-                                    >
-                                        <PencilIcon className="w-4 h-4" />
-                                        Edit Profil
-                                    </button>
-                                    <button
-                                        onClick={handleSharePortal}
-                                        className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-brand-accent text-white font-bold hover:shadow-lg hover:shadow-brand-accent/25 transition-all active:scale-95"
-                                    >
-                                        <Share2Icon className="w-4 h-4" />
-                                        Portal
-                                    </button>
-                                </div>
+                            <h2 className="text-2xl font-black text-brand-text-light leading-tight mb-1">{client.name}</h2>
+                            <p className="text-brand-text-secondary font-semibold flex items-center justify-center md:justify-start gap-1 text-[10px]">
+                                <CalendarIcon className="w-3 h-3 text-brand-accent" />
+                                {new Date(client.since).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                            </p>
+                            
+                            <div className="mt-4 flex gap-2 w-full">
+                                <button
+                                    onClick={() => navigate(`/client/${client.id}/edit`)}
+                                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-brand-bg border border-brand-border text-xs font-bold text-brand-text-light hover:bg-brand-surface transition-all active:scale-95"
+                                >
+                                    <PencilIcon className="w-3 h-3" />
+                                    Edit
+                                </button>
+                                <button
+                                    onClick={handleSharePortal}
+                                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-brand-accent/10 border border-brand-accent/20 text-brand-accent text-xs font-bold hover:bg-brand-accent/20 transition-all active:scale-95"
+                                >
+                                    <Share2Icon className="w-3 h-3" />
+                                    Portal
+                                </button>
                             </div>
                         </div>
 
+                        <div className="relative z-10 w-full flex-1">
+                            <ClientInfoTab client={client} onSharePortal={handleSharePortal} />
+                        </div>
+                    </div>
 
-                    </aside>
-
-                    {/* Main Content Dashboard */}
-                    <div className="lg:col-span-9 space-y-6">
-                        {/* Tab Navigation */}
-                        <div className="flex items-center gap-1 p-1.5 bg-brand-surface border border-brand-border rounded-2xl w-fit">
-                            {[
-                                { id: 'overview', label: 'Ringkasan & Progres', icon: LayoutIcon },
-                                { id: 'finance', label: 'Keuangan', icon: CreditCardIcon },
-                                { id: 'documents', label: 'Dokumen', icon: FileTextIcon },
-                            ].map((tab) => (
+                    {/* Horizontal Tab Navigation */}
+                    <div className="flex items-center gap-2 sm:gap-3 bg-brand-surface border border-brand-border/40 p-1.5 rounded-2xl w-fit overflow-x-auto scrollbar-hide">
+                        {[
+                            { id: 'overview', label: 'Ringkasan & Progres', icon: LayoutIcon },
+                            { id: 'finance', label: 'Keuangan', icon: CreditCardIcon },
+                            { id: 'documents', label: 'Dokumen', icon: FileTextIcon },
+                        ].map((tab) => {
+                            const isActive = activeTab === tab.id;
+                            return (
                                 <button
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id as any)}
-                                    className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black transition-all ${activeTab === tab.id
-                                            ? 'bg-brand-accent text-white shadow-lg shadow-brand-accent/20'
-                                            : 'text-brand-text-secondary hover:text-brand-text-light hover:bg-brand-bg'
-                                        }`}
+                                    className={`flex items-center gap-2 px-4 py-2.5 text-xs font-black rounded-xl transition-all duration-300 relative whitespace-nowrap ${
+                                        isActive
+                                        ? 'bg-gradient-to-r from-brand-accent to-blue-600 text-white shadow-md shadow-brand-accent/15'
+                                        : 'text-brand-text-secondary hover:text-brand-text-light hover:bg-white/40'
+                                    }`}
                                 >
-                                    <tab.icon className="w-4 h-4" />
+                                    <tab.icon className="w-3.5 h-3.5" />
                                     {tab.label}
                                 </button>
-                            ))}
-                        </div>
+                             );
+                        })}
+                    </div>
 
+                    {/* Main Content Dashboard (Full Width) */}
+                    <div className="w-full">
                         {/* Tab Content */}
-                        <div className="animate-in fade-in slide-in-from-top-2 duration-500">
-                            {activeTab === 'overview' && (
-                                <div className="space-y-6">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-xl bg-brand-accent/10 flex items-center justify-center">
-                                                <HistoryIcon className="w-5 h-5 text-brand-accent" />
-                                            </div>
-                                            <h3 className="text-xl font-black text-brand-text-light tracking-tight">Progres Proyek Aktif</h3>
-                                        </div>
-                                        <button
-                                            onClick={() => navigate('/project/add')}
-                                            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-accent text-white text-xs font-black shadow-lg shadow-brand-accent/25 hover:scale-105 transition-all"
-                                        >
-                                            <PlusIcon className="w-4 h-4" />
-                                            Proyek Baru
-                                        </button>
-                                    </div>
-
-                                    {clientProjects.length === 0 ? (
-                                        <div className="text-center py-20 bg-brand-surface border-2 border-dashed border-brand-border rounded-[2.5rem]">
-                                            <p className="text-brand-text-secondary font-medium">Belum ada proyek terdaftar.</p>
-                                        </div>
-                                    ) : (
-                                        clientProjects.map(p => (
-                                            <ProjectDashboardCard
-                                                key={p.id}
-                                                project={p}
-                                                profile={profile}
-                                                transactions={clientTransactions.filter(t => t.projectId === p.id)}
-                                                onStatusUpdate={(status) => handleStatusUpdate(p.id, status)}
-                                                onSubStatusToggle={(name, checked) => handleSubStatusToggle(p.id, name, checked)}
-                                                onSendWhatsApp={() => handleSendProjectUpdate(p)}
-                                            />
-                                        ))
-                                    )}
-                                </div>
-                            )}
-
-                            {activeTab === 'finance' && (
-                                <div className="bg-brand-surface border border-brand-border rounded-[2.5rem] shadow-sm overflow-hidden flex flex-col">
-                                    <div className="h-1.5 w-full bg-gradient-to-r from-green-500/20 via-green-500 to-blue-500/20"></div>
-                                    <div className="p-6 md:p-10">
-                                        <div className="flex items-center gap-3 mb-8">
-                                            <CreditCardIcon className="w-6 h-6 text-green-500" />
-                                            <h3 className="text-xl font-black text-brand-text-light tracking-tight">Data Keungan pembayran Pengantin</h3>
-                                        </div>
-
-                                        <div className="space-y-8">
-                                            {clientProjects.map(p => (
-                                                <ProjectPaymentCard
-                                                    key={p.id}
-                                                    project={p}
-                                                    transactions={clientTransactions.filter(t => t.projectId === p.id)}
-                                                    packages={packages}
-                                                    cards={cards}
-                                                    newPayment={newPayments[p.id] || { amount: '', destinationCardId: '' }}
-                                                    newCharge={newCharge[p.id] || { name: '', amount: '' }}
-                                                    editingChargeId={editingChargeId}
-                                                    editChargeData={editChargeData}
-                                                    onPaymentChange={(field, val) => handleNewPaymentChange(p.id, field, val)}
-                                                    onPaymentSubmit={() => handleNewPaymentSubmit(p.id)}
-                                                    onChargeChange={(field, val) => handleNewChargeChange(p.id, field, val)}
-                                                    onChargeSubmit={() => handleNewChargeSubmit(p.id)}
-                                                    onDeleteCharge={(chargeId) => handleDeleteCharge(p.id, chargeId)}
-                                                    onStartEditCharge={(charge) => {
-                                                        setEditingChargeId(String(charge.id));
-                                                        setEditChargeData({ name: charge.description, amount: String(charge.amount) });
-                                                    }}
-                                                    onSaveEditCharge={() => handleSaveEditCharge(p.id)}
-                                                    onCancelEditCharge={() => setEditingChargeId(null)}
-                                                    setEditChargeData={setEditChargeData}
-                                                    onViewReceipt={(t) => setSelectedReceiptTransaction(t)}
-                                                    onViewInvoice={(proj) => setSelectedInvoiceProject(proj)}
-                                                    onDeleteProject={() => showNotification("Penghapusan proyek dinonaktifkan di sini.")}
-                                                />
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {activeTab === 'documents' && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="bg-brand-surface border border-brand-border rounded-[2.5rem] p-8 shadow-sm">
-                                        <div className="flex items-center gap-3 mb-6">
-                                            <FileTextIcon className="w-6 h-6 text-brand-accent" />
-                                            <h3 className="text-lg font-black text-brand-text-light tracking-tight">Kontrak Digital</h3>
-                                        </div>
-                                        <div className="space-y-4">
-                                            {clientProjects.map(p => (
-                                                <div key={p.id} className="p-4 rounded-2xl bg-brand-bg border border-brand-border flex items-center justify-between group">
-                                                    <div className="min-w-0">
-                                                        <p className="text-xs font-black text-brand-text-primary truncate">{p.projectName}</p>
-                                                        <p className="text-[10px] font-bold text-brand-text-secondary uppercase">Dokumen Legal</p>
-                                                    </div>
-                                                    <button
-                                                        onClick={() => navigate(`/contract/add?projectId=${p.id}`)}
-                                                        className="px-4 py-2 rounded-xl bg-brand-surface border border-brand-border text-[10px] font-black text-brand-text-secondary group-hover:text-brand-accent group-hover:border-brand-accent/50 transition-all"
-                                                    >
-                                                        Lihat / Buat
-                                                    </button>
+                        <div className="bg-brand-surface border border-brand-border/60 rounded-[2.5rem] shadow-lg overflow-hidden p-6 md:p-10 min-h-[500px]">
+                            <div className="animate-in fade-in slide-in-from-top-2 duration-500">
+                                {activeTab === 'overview' && (
+                                    <div className="space-y-6">
+                                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-xl bg-brand-accent/10 flex items-center justify-center">
+                                                    <HistoryIcon className="w-5 h-5 text-brand-accent" />
                                                 </div>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-brand-surface border border-brand-border rounded-[2.5rem] p-8 shadow-sm">
-                                        <div className="flex items-center gap-3 mb-6">
-                                            <Share2Icon className="w-6 h-6 text-brand-accent" />
-                                            <h3 className="text-lg font-black text-brand-text-light tracking-tight">Portal Klien</h3>
-                                        </div>
-                                        <p className="text-xs text-brand-text-secondary font-medium leading-relaxed mb-6">
-                                            Akses cepat untuk membagikan portal interaktif kepada klien. Klien dapat memantau progres dan mengunduh file dari sini.
-                                        </p>
-                                        <div className="p-4 rounded-2xl bg-brand-accent/5 border border-brand-accent/20 flex items-center justify-between">
-                                            <div className="min-w-0">
-                                                <p className="text-[10px] font-black text-brand-accent uppercase mb-1">Status Portal</p>
-                                                <p className="text-xs font-bold text-brand-text-light truncate">Aktif & Siap Bagikan</p>
+                                                <h3 className="text-xl font-black text-brand-text-light tracking-tight">Kelola Acara Pengantin</h3>
                                             </div>
                                             <button
-                                                onClick={handleSharePortal}
-                                                className="px-4 py-2 rounded-xl bg-brand-accent text-white text-[10px] font-black shadow-lg shadow-brand-accent/20 hover:scale-105 transition-all"
+                                                onClick={() => navigate('/project/add')}
+                                                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-accent text-white text-xs font-black shadow-lg shadow-brand-accent/25 hover:scale-105 transition-all"
                                             >
-                                                Buka & Share
+                                                <PlusIcon className="w-4 h-4" />
+                                                Proyek Baru
                                             </button>
                                         </div>
+
+                                        <div className="w-full overflow-x-auto pb-4">
+                                            {clientProjects.length === 0 ? (
+                                                <div className="text-center py-20 bg-brand-surface border-2 border-dashed border-brand-border rounded-[2.5rem]">
+                                                    <p className="text-brand-text-secondary font-medium">Belum ada proyek terdaftar.</p>
+                                                </div>
+                                            ) : (
+                                                <div className="min-w-[800px] flex flex-col gap-6">
+                                                    {clientProjects.map(p => (
+                                                        <ProjectDashboardCard
+                                                            key={p.id}
+                                                            project={p}
+                                                            profile={profile}
+                                                            transactions={clientTransactions.filter(t => String(t.projectId) === String(p.id))}
+                                                            onStatusUpdate={(status) => handleStatusUpdate(p.id, status)}
+                                                            onSubStatusToggle={(name, checked) => handleSubStatusToggle(p.id, name, checked)}
+                                                            onSendWhatsApp={() => handleSendProjectUpdate(p)}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            )}
+                                )}
+
+                                {activeTab === 'finance' && (
+                                    <div className="flex flex-col">
+                                        <div className="flex items-center gap-3 mb-8">
+                                            <div className="w-10 h-10 rounded-xl bg-brand-accent/10 flex items-center justify-center">
+                                                <CreditCardIcon className="w-5 h-5 text-brand-accent" />
+                                            </div>
+                                            <h3 className="text-xl font-black text-brand-text-light tracking-tight">Data Keuangan Pembayaran Pengantin</h3>
+                                        </div>
+
+                                        <div className="w-full overflow-x-auto pb-4">
+                                            <div className="min-w-[800px] space-y-8">
+                                                {clientProjects.map(p => (
+                                                    <ProjectPaymentCard
+                                                        key={p.id}
+                                                        project={p}
+                                                        transactions={clientTransactions.filter(t => String(t.projectId) === String(p.id))}
+                                                        packages={packages}
+                                                        cards={cards}
+                                                        newPayment={newPayments[p.id] || { amount: '', destinationCardId: '' }}
+                                                        newCharge={newCharge[p.id] || { name: '', amount: '' }}
+                                                        editingChargeId={editingChargeId}
+                                                        editChargeData={editChargeData}
+                                                        onPaymentChange={(field, val) => handleNewPaymentChange(p.id, field, val)}
+                                                        onPaymentSubmit={() => handleNewPaymentSubmit(p.id)}
+                                                        onChargeChange={(field, val) => handleNewChargeChange(p.id, field, val)}
+                                                        onChargeSubmit={() => handleNewChargeSubmit(p.id)}
+                                                        onDeleteCharge={(chargeId) => handleDeleteCharge(p.id, chargeId)}
+                                                        onStartEditCharge={(charge) => {
+                                                            setEditingChargeId(String(charge.id));
+                                                            setEditChargeData({ name: charge.description, amount: String(charge.amount) });
+                                                        }}
+                                                        onSaveEditCharge={() => handleSaveEditCharge(p.id)}
+                                                        onCancelEditCharge={() => setEditingChargeId(null)}
+                                                        setEditChargeData={setEditChargeData}
+                                                        onViewReceipt={(t) => setSelectedReceiptTransaction(t)}
+                                                        onViewInvoice={(proj) => setSelectedInvoiceProject(proj)}
+                                                        onDeleteProject={() => showNotification("Penghapusan proyek dinonaktifkan di sini.")}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeTab === 'documents' && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="bg-brand-surface border border-brand-border rounded-[2.5rem] p-8 shadow-sm">
+                                            <div className="flex items-center gap-3 mb-6">
+                                                <FileTextIcon className="w-6 h-6 text-brand-accent" />
+                                                <h3 className="text-lg font-black text-brand-text-light tracking-tight">Kontrak Digital</h3>
+                                            </div>
+                                            <div className="space-y-4">
+                                                {clientProjects.map(p => (
+                                                    <div key={p.id} className="p-4 rounded-2xl bg-brand-bg border border-brand-border flex items-center justify-between group">
+                                                        <div className="min-w-0">
+                                                            <p className="text-xs font-black text-brand-text-primary truncate">{p.projectName}</p>
+                                                            <p className="text-[10px] font-bold text-brand-text-secondary uppercase">Dokumen Legal</p>
+                                                        </div>
+                                                        <button
+                                                            onClick={() => navigate(`/kontrak?newFor=${p.id}&clientId=${client.id}`)}
+                                                            className="px-4 py-2 rounded-xl bg-brand-surface border border-brand-border text-[10px] font-black text-brand-text-secondary group-hover:text-brand-accent group-hover:border-brand-accent/50 transition-all"
+                                                        >
+                                                            Lihat / Buat
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-brand-surface border border-brand-border rounded-[2.5rem] p-8 shadow-sm">
+                                            <div className="flex items-center gap-3 mb-6">
+                                                <Share2Icon className="w-6 h-6 text-brand-accent" />
+                                                <h3 className="text-lg font-black text-brand-text-light tracking-tight">Portal Klien</h3>
+                                            </div>
+                                            <p className="text-xs text-brand-text-secondary font-medium leading-relaxed mb-6">
+                                                Akses cepat untuk membagikan portal interaktif kepada klien. Klien dapat memantau progres dan mengunduh file dari sini.
+                                            </p>
+                                            <div className="p-4 rounded-2xl bg-brand-accent/5 border border-brand-accent/20 flex items-center justify-between">
+                                                <div className="min-w-0">
+                                                    <p className="text-[10px] font-black text-brand-accent uppercase mb-1">Status Portal</p>
+                                                    <p className="text-xs font-bold text-brand-text-light truncate">Aktif & Siap Bagikan</p>
+                                                </div>
+                                                <button
+                                                    onClick={handleSharePortal}
+                                                    className="px-4 py-2 rounded-xl bg-brand-accent text-white text-[10px] font-black shadow-lg shadow-brand-accent/20 hover:scale-105 transition-all"
+                                                >
+                                                    Buka & Share
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>

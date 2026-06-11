@@ -1,8 +1,9 @@
-import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
+﻿import { Router } from 'express';
+import prisma from '../prismaClient';
+import { sseManager } from '../sseManager';
+import { getVendorId } from '../middleware/auth';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // Prisma model accessor
 const prismaCards = (prisma as any).cards;
@@ -45,7 +46,11 @@ const mapToDb = (body: any) => {
 
 router.get('/', async (req, res) => {
   try {
-    const data = await prismaCards.findMany({ orderBy: { bank_name: 'asc' } });
+    const vendorId = getVendorId(req);
+    const data = await prismaCards.findMany({
+      where: { vendor_id: vendorId },
+      orderBy: { bank_name: 'asc' }
+    });
     res.json(data.map(mapToFrontend));
   } catch (error: any) {
     console.error('[GET /cards] Error:', error?.message || error);
@@ -55,9 +60,10 @@ router.get('/', async (req, res) => {
 
 router.post('/find', async (req, res) => {
   try {
+    const vendorId = getVendorId(req);
     const { bankName, lastFourDigits } = req.body;
     const card = await prismaCards.findFirst({
-      where: { bank_name: bankName, last_four_digits: lastFourDigits },
+      where: { vendor_id: vendorId, bank_name: bankName, last_four_digits: lastFourDigits },
     });
     res.json({ id: card?.id || null });
   } catch (error: any) {
@@ -68,24 +74,48 @@ router.post('/find', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
+    const vendorId = getVendorId(req);
     const data = mapToDb(req.body);
-    delete data.id; // Pastikan id tidak dikirim agar autoincrement bekerja
+    delete data.id;
+    data.vendor_id = vendorId;
     console.log('[POST /cards] Payload:', data);
+
     const card = await prismaCards.create({ data });
+
+    const initialBalance = Number(req.body.initialBalance || req.body.balance || 0);
+    if (initialBalance > 0) {
+      await prismaTransactions.create({
+        data: {
+          date: new Date(),
+          description: `Saldo Awal â€” ${card.card_holder_name || card.bank_name || 'Akun Baru'}`,
+          amount: initialBalance,
+          type: 'Pemasukan',
+          category: 'Saldo Awal',
+          method: 'Sistem',
+          card_id: card.id,
+          vendor_id: vendorId,
+        }
+      });
+      sseManager.broadcast('transactions', 'created', { cardId: card.id }, getVendorId(req));
+    }
+
+    sseManager.broadcast('cards', 'created', { id: card.id }, getVendorId(req));
     res.status(201).json(mapToFrontend(card));
   } catch (error: any) {
     console.error('[POST /cards] CRITICAL ERROR:', error);
-    if (error.code) console.error('[POST /cards] Prisma Error Code:', error.code);
-    if (error.meta) console.error('[POST /cards] Prisma Error Meta:', error.meta);
     res.status(500).json({ error: 'Gagal membuat kartu', details: error?.message || String(error), code: error?.code || 'UNKNOWN' });
   }
 });
 
 router.patch('/:id', async (req, res) => {
   try {
+    const vendorId = getVendorId(req);
+    const existing = await prismaCards.findFirst({ where: { id: Number(req.params.id), vendor_id: vendorId } });
+    if (!existing) return res.status(404).json({ error: 'Card not found' });
     const data = mapToDb(req.body);
-    delete data.id; // id tidak boleh diupdate
+    delete data.id;
     const card = await prismaCards.update({ where: { id: Number(req.params.id) }, data });
+    sseManager.broadcast('cards', 'updated', { id: Number(req.params.id) }, getVendorId(req));
     res.json(mapToFrontend(card));
   } catch (error: any) {
     console.error('[PATCH /cards/:id] Error:', error?.message || error);
@@ -95,8 +125,12 @@ router.patch('/:id', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
   try {
+    const vendorId = getVendorId(req);
     const { id } = req.params;
     const isSafe = req.query.safe === 'true';
+
+    const existing = await prismaCards.findFirst({ where: { id: Number(id), vendor_id: vendorId } });
+    if (!existing) return res.status(404).json({ error: 'Card not found' });
 
     if (isSafe) {
       await prisma.$transaction([
@@ -107,6 +141,7 @@ router.delete('/:id', async (req, res) => {
     } else {
       await prismaCards.delete({ where: { id: Number(id) } });
     }
+    sseManager.broadcast('cards', 'deleted', { id: Number(id) }, getVendorId(req));
     res.status(204).send();
   } catch (error: any) {
     console.error('[DELETE /cards/:id] Error:', error?.message || error);
@@ -115,3 +150,5 @@ router.delete('/:id', async (req, res) => {
 });
 
 export default router;
+
+

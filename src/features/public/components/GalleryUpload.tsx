@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Profile, Gallery, GalleryImage } from '@/types';
 import Modal from '@/shared/ui/Modal';
-import { UploadIcon, TrashIcon, LinkIcon, MapPinIcon, PlusIcon, FileTextIcon, CameraIcon, XIcon } from '@/constants';
+import { UploadIcon, TrashIcon, LinkIcon, MapPinIcon, PlusIcon, CameraIcon, XIcon } from '@/constants';
 import { createGallery, listGalleries, uploadGalleryImages, deleteGallery, updateGallery, deleteGalleryImage, reorderGalleryImages } from '@/services/galleries';
 
 interface GalleryUploadProps {
@@ -304,107 +304,216 @@ const GalleryUpload: React.FC<GalleryUploadProps> = ({ userProfile, showNotifica
                 </button>
             </div>
 
-            {/* Gallery Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {galleries.map(gallery => (
-                    <div key={gallery.id} className="glass-card card-hover-lift rounded-2xl flex flex-col overflow-hidden border border-brand-border/50 shadow-sm group">
-                        {/* Gallery Cover */}
-                        <div className="h-44 bg-brand-bg relative overflow-hidden group-hover:shadow-inner transition-shadow">
-                            {gallery.images.length > 0 ? (
-                                <img
-                                    src={gallery.images[0].url}
-                                    alt={gallery.title}
-                                    loading="lazy"
-                                    width="400"
-                                    height="300"
-                                    className="w-full h-full object-cover transition-transform duration-700 ease-in-out group-hover:scale-105"
-                                />
-                            ) : (
-                                <div className="w-full h-full flex flex-col items-center justify-center text-brand-text-secondary/40 bg-brand-input/50">
-                                    <CameraIcon className="w-12 h-12 mb-2 opacity-50" />
-                                    <span className="text-xs font-medium uppercase tracking-wider">Tanpa Cover</span>
-                                </div>
-                            )}
-                            <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md text-white px-2.5 py-1 rounded-full text-xs font-medium border border-white/10 shadow-sm">
-                                {gallery.images.length} foto
-                            </div>
-                        </div>
-
-                        {/* Gallery Info */}
-                        <div className="p-5 flex-grow flex flex-col bg-brand-surface/40">
-                            <div className="flex items-start justify-between mb-3 gap-2">
-                                <h3 className="font-bold text-base md:text-lg text-brand-text-light line-clamp-2 leading-tight flex-grow">{gallery.title}</h3>
-                                {gallery.is_public && (
-                                    <span className="flex-shrink-0 text-[10px] font-bold uppercase tracking-wider bg-green-500/10 text-green-600 border border-green-500/20 px-2 py-0.5 rounded-full mt-0.5">
-                                        Publik
-                                    </span>
-                                )}
-                            </div>
-
-                            <p className="text-xs font-medium text-brand-accent mb-3 flex items-center gap-1.5 bg-brand-accent/5 self-start px-2.5 py-1 rounded-full border border-brand-accent/10">
-                                <MapPinIcon className="w-3.5 h-3.5" />
-                                {gallery.region}
-                            </p>
-
-                            {gallery.description && (
-                                <p className="text-xs text-brand-text-secondary mb-4 line-clamp-2 flex items-start gap-1.5">
-                                    <FileTextIcon className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 opacity-60" />
-                                    <span className="leading-relaxed">{gallery.description}</span>
-                                </p>
-                            )}
-
-                            {/* Action Buttons */}
-                            <div className="flex flex-col gap-2 mt-auto pt-4 border-t border-brand-border/50">
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={() => openUploadModal(gallery)}
-                                        className="flex-1 button-primary !py-2 !px-2 text-xs"
-                                    >
-                                        <UploadIcon className="w-4 h-4 flex-shrink-0" />
-                                        <span className="truncate">Upload</span>
-                                    </button>
-                                    {gallery.images.length > 0 && (
-                                        <button
-                                            onClick={() => openManageImagesModal(gallery)}
-                                            className="flex-1 button-secondary !py-2 !px-2 text-xs hover:bg-brand-accent hover:text-white hover:border-brand-accent"
-                                        >
-                                            <CameraIcon className="w-4 h-4 flex-shrink-0" />
-                                            <span className="truncate">Kelola</span>
-                                        </button>
-                                    )}
-                                </div>
-                                <div className="flex gap-1.5">
-                                    <button
-                                        onClick={() => openEditModal(gallery)}
-                                        className="flex-1 button-secondary !p-2 text-xs text-brand-text-secondary hover:text-amber-600 hover:border-amber-300 hover:bg-amber-50"
-                                        title="Edit Pricelist"
-                                    >
-                                        <svg className="w-4 h-4 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                        </svg>
-                                    </button>
-                                    {gallery.is_public && (
-                                        <button
-                                            onClick={() => copyPublicLink(gallery)}
-                                            className="flex-1 button-secondary !p-2 text-xs text-brand-text-secondary hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50"
-                                            title="Salin Link Publik"
-                                        >
-                                            <LinkIcon className="w-4 h-4 mx-auto" />
-                                        </button>
-                                    )}
-                                    <button
-                                        onClick={() => handleDeleteGallery(gallery.id)}
-                                        className="flex-1 button-secondary !p-2 text-xs text-brand-text-secondary hover:text-red-600 hover:border-red-300 hover:bg-red-50"
-                                        title="Hapus Pricelist"
-                                    >
-                                        <TrashIcon className="w-4 h-4 mx-auto" />
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+            {/* Gallery Table */}
+            {galleries.length > 0 && (
+                <div className="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
+                    <div className="hidden md:block overflow-x-auto">
+                        <table className="w-full">
+                            <thead className="bg-slate-100 border-b-2 border-slate-300">
+                                <tr>
+                                    <th className="text-left px-6 py-4 text-xs font-black uppercase tracking-wider text-slate-700 border-r border-slate-300">Pricelist</th>
+                                    <th className="text-left px-6 py-4 text-xs font-black uppercase tracking-wider text-slate-700 border-r border-slate-300">Wilayah</th>
+                                    <th className="text-left px-6 py-4 text-xs font-black uppercase tracking-wider text-slate-700 border-r border-slate-300">Deskripsi</th>
+                                    <th className="text-center px-6 py-4 text-xs font-black uppercase tracking-wider text-slate-700 border-r border-slate-300">Foto</th>
+                                    <th className="text-center px-6 py-4 text-xs font-black uppercase tracking-wider text-slate-700 border-r border-slate-300">Status</th>
+                                    <th className="text-center px-6 py-4 text-xs font-black uppercase tracking-wider text-slate-700">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white/40 divide-y divide-slate-300">
+                                {galleries.map(gallery => (
+                                    <tr key={gallery.id} className="hover:bg-brand-bg transition-colors group">
+                                        {/* Pricelist */}
+                                        <td className="px-6 py-4 border-r border-slate-300">
+                                            <div className="flex items-center gap-3">
+                                                {gallery.images.length > 0 ? (
+                                                    <img
+                                                        src={gallery.images[0].url}
+                                                        alt={gallery.title}
+                                                        loading="lazy"
+                                                        className="w-12 h-12 rounded-xl object-cover border border-slate-300 flex-shrink-0"
+                                                    />
+                                                ) : (
+                                                    <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
+                                                        <CameraIcon className="w-5 h-5 text-slate-400" />
+                                                    </div>
+                                                )}
+                                                <div>
+                                                    <h4 className="font-semibold text-brand-text-light text-sm leading-tight">{gallery.title}</h4>
+                                                    <p className="text-xs text-brand-text-secondary mt-0.5">ID: {gallery.id}</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        {/* Wilayah */}
+                                        <td className="px-6 py-4 border-r border-slate-300">
+                                            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-white bg-blue-600 px-2.5 py-1 rounded-full border border-blue-600">
+                                                <MapPinIcon className="w-3.5 h-3.5" />
+                                                {gallery.region}
+                                            </span>
+                                        </td>
+                                        {/* Deskripsi */}
+                                        <td className="px-6 py-4 max-w-xs border-r border-slate-300">
+                                            <p className="text-sm text-brand-text-secondary line-clamp-2">
+                                                {gallery.description || <span className="text-brand-text-secondary/40">—</span>}
+                                            </p>
+                                        </td>
+                                        {/* Foto count */}
+                                        <td className="px-6 py-4 text-center border-r border-slate-300">
+                                            <span className="text-sm font-semibold text-brand-text-primary">{gallery.images.length}</span>
+                                        </td>
+                                        {/* Status */}
+                                        <td className="px-6 py-4 text-center border-r border-slate-300">
+                                            {gallery.is_public ? (
+                                                <span className="inline-flex items-center text-[10px] font-bold uppercase tracking-wider bg-green-600 text-white border border-green-600 px-2.5 py-1 rounded-full">
+                                                    Publik
+                                                </span>
+                                            ) : (
+                                                <span className="inline-flex items-center text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-500 border border-slate-200 px-2.5 py-1 rounded-full">
+                                                    Privat
+                                                </span>
+                                            )}
+                                        </td>
+                                        {/* Aksi */}
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center justify-center gap-1.5">
+                                                <button
+                                                    onClick={() => openUploadModal(gallery)}
+                                                    className="p-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-sm"
+                                                    title="Upload Foto"
+                                                >
+                                                    <UploadIcon className="w-4 h-4" />
+                                                </button>
+                                                {gallery.images.length > 0 && (
+                                                    <button
+                                                        onClick={() => openManageImagesModal(gallery)}
+                                                        className="p-2 rounded-lg bg-cyan-600 text-white hover:bg-cyan-700 transition-colors shadow-sm"
+                                                        title="Kelola Foto"
+                                                    >
+                                                        <CameraIcon className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                                <button
+                                                    onClick={() => openEditModal(gallery)}
+                                                    className="p-2 rounded-lg bg-amber-500 text-white hover:bg-amber-600 transition-colors shadow-sm"
+                                                    title="Edit Pricelist"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                    </svg>
+                                                </button>
+                                                {gallery.is_public && (
+                                                    <button
+                                                        onClick={() => copyPublicLink(gallery)}
+                                                        className="p-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-sm"
+                                                        title="Salin Link Publik"
+                                                    >
+                                                        <LinkIcon className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                                <button
+                                                    onClick={() => handleDeleteGallery(gallery.id)}
+                                                    className="p-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors shadow-sm"
+                                                    title="Hapus Pricelist"
+                                                >
+                                                    <TrashIcon className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
-                ))}
-            </div>
+
+                    {/* Mobile Cards */}
+                    <div className="md:hidden p-4 space-y-3">
+                        {galleries.map(gallery => (
+                            <div key={gallery.id} className="p-4 border border-slate-200 rounded-xl bg-white hover:bg-slate-50 transition-colors">
+                                <div className="flex items-start gap-3">
+                                    {gallery.images.length > 0 ? (
+                                        <img
+                                            src={gallery.images[0].url}
+                                            alt={gallery.title}
+                                            loading="lazy"
+                                            className="w-16 h-16 rounded-xl object-cover border border-slate-200 shrink-0"
+                                        />
+                                    ) : (
+                                        <div className="w-16 h-16 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
+                                            <CameraIcon className="w-6 h-6 text-slate-400" />
+                                        </div>
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-start justify-between mb-1.5 gap-2">
+                                            <h4 className="font-semibold text-slate-900 text-sm leading-tight truncate pr-2">{gallery.title}</h4>
+                                            {gallery.is_public ? (
+                                                <span className="flex-shrink-0 text-[10px] font-bold uppercase tracking-wider bg-green-500/10 text-green-600 border border-green-500/20 px-2 py-0.5 rounded-full">
+                                                    Publik
+                                                </span>
+                                            ) : (
+                                                <span className="flex-shrink-0 text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-500 border border-slate-200 px-2 py-0.5 rounded-full">
+                                                    Privat
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span className="inline-flex items-center gap-1 text-xs font-medium text-brand-accent bg-brand-accent/5 px-2 py-0.5 rounded-full border border-brand-accent/10">
+                                                <MapPinIcon className="w-3 h-3" />
+                                                {gallery.region}
+                                            </span>
+                                            <span className="text-xs text-slate-500">{gallery.images.length} foto</span>
+                                        </div>
+                                        {gallery.description && (
+                                            <p className="text-xs text-slate-500 line-clamp-1 mb-2">{gallery.description}</p>
+                                        )}
+                                        <div className="flex items-center gap-1.5">
+                                            <button
+                                                onClick={() => openUploadModal(gallery)}
+                                                className="p-1.5 rounded-lg text-slate-500 hover:text-brand-accent hover:bg-brand-accent/10 transition-colors"
+                                                title="Upload"
+                                            >
+                                                <UploadIcon className="w-4 h-4" />
+                                            </button>
+                                            {gallery.images.length > 0 && (
+                                                <button
+                                                    onClick={() => openManageImagesModal(gallery)}
+                                                    className="p-1.5 rounded-lg text-slate-500 hover:text-brand-accent hover:bg-brand-accent/10 transition-colors"
+                                                    title="Kelola"
+                                                >
+                                                    <CameraIcon className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={() => openEditModal(gallery)}
+                                                className="p-1.5 rounded-lg text-slate-500 hover:text-amber-500 hover:bg-amber-50 transition-colors"
+                                                title="Edit"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                </svg>
+                                            </button>
+                                            {gallery.is_public && (
+                                                <button
+                                                    onClick={() => copyPublicLink(gallery)}
+                                                    className="p-1.5 rounded-lg text-slate-500 hover:text-blue-500 hover:bg-blue-50 transition-colors"
+                                                    title="Salin Link"
+                                                >
+                                                    <LinkIcon className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={() => handleDeleteGallery(gallery.id)}
+                                                className="p-1.5 rounded-lg text-slate-500 hover:text-red-500 hover:bg-red-50 transition-colors"
+                                                title="Hapus"
+                                            >
+                                                <TrashIcon className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {galleries.length === 0 && (
                 <div className="text-center py-16 bg-brand-surface/40 backdrop-blur-md rounded-3xl border border-brand-border/50 border-dashed">

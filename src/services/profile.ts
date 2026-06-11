@@ -68,6 +68,7 @@ export function fromRow(row: any): Profile {
     expenseShareTemplate: asJsonObject(row.booking_form_template)?.expenseShareTemplate ?? undefined,
     portalShareTemplate: asJsonObject(row.booking_form_template)?.portalShareTemplate ?? undefined,
     checklistTemplates: asJsonObject(row.booking_form_template)?.checklistTemplates ?? undefined,
+    customRegions: asJsonObject(row.booking_form_template)?.customRegions ?? undefined,
   } as Profile;
 }
 
@@ -115,7 +116,7 @@ export async function getProfile(id?: number): Promise<Profile | null> {
     const data = await apiFetch<any>(endpoint);
     return fromRow(data);
   } catch (error: any) {
-    if (error.message.includes('404')) return null;
+    if (error.message.includes('404') || error.message.includes('Not found') || error.message.includes('not found')) return null;
     throw error;
   }
 }
@@ -132,7 +133,8 @@ export async function upsertProfile(input: Partial<Profile> & { id?: number }): 
     input.receiptShareTemplate !== undefined ||
     input.expenseShareTemplate !== undefined ||
     input.portalShareTemplate !== undefined ||
-    input.checklistTemplates !== undefined
+    input.checklistTemplates !== undefined ||
+    input.customRegions !== undefined
   ) {
     let existingEnvelope: any = {};
     if (input.id) {
@@ -149,6 +151,7 @@ export async function upsertProfile(input: Partial<Profile> & { id?: number }): 
     if (input.expenseShareTemplate !== undefined) merged.expenseShareTemplate = input.expenseShareTemplate;
     if (input.portalShareTemplate !== undefined) merged.portalShareTemplate = input.portalShareTemplate;
     if (input.checklistTemplates !== undefined) merged.checklistTemplates = input.checklistTemplates;
+    if (input.customRegions !== undefined) merged.customRegions = input.customRegions;
     
     bookingFormTemplatePayload = JSON.stringify(merged);
   }

@@ -102,7 +102,6 @@ const ProjectsPage: React.FC<ProjectsProps> = ({
             {/* Header */}
             <ProjectHeader 
                 onAddProject={() => navigate('/project/add')}
-                onOpenInfoModal={() => {}} // TODO: Implement if needed
             />
 
             {/* Filters Section */}

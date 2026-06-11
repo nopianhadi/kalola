@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { UsersIcon, HistoryIcon } from '@/constants';
+import { UsersIcon, HistoryIcon, Share2Icon } from '@/constants';
 import Modal from '@/shared/ui/Modal';
 import { PaymentStatus } from '@/types';
 import { updateProject as updateProjectRow } from '@/services/projects';
@@ -7,6 +7,13 @@ import ClientInfoTab from '@/features/clients/components/ClientInfoTab';
 import ProjectPaymentCard from '@/features/clients/components/ProjectPaymentCard';
 
 import { ClientDetailModalProps } from '@/features/clients/types';
+import { AvatarDisplay } from '@/shared/ui/AvatarUpload';
+
+const formatCurrency = (amount: number) => new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+}).format(amount);
 
 const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
     client,
@@ -47,7 +54,7 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                 alert('Jumlah pembayaran melebihi sisa tagihan.');
                 return;
             }
-            onRecordPayment(projectId, amount, paymentData.destinationCardId);
+            onRecordPayment(Number(projectId), amount, Number(paymentData.destinationCardId));
             setNewPayments(prev => ({ ...prev, [projectId]: { amount: '', destinationCardId: '' } }));
         } else {
             showNotification('Harap isi jumlah dan tujuan pembayaran dengan benar.');
@@ -135,18 +142,57 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
 
     const clientProjects = projects.filter(p => String(p.clientId) === String(client.id)).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     const clientTransactions = transactions.filter(t => clientProjects.some(p => String(p.id) === String(t.projectId))).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const totalBilled = clientProjects.reduce((sum, project) => sum + project.totalCost, 0);
+    const totalPaid = clientProjects.reduce((sum, project) => sum + project.amountPaid, 0);
+    const remainingBalance = totalBilled - totalPaid;
 
     return (
         <Modal isOpen={!!client} onClose={onClose} title={`Detail Pengantin: ${client.name}`} size="5xl">
             <div className="flex flex-col h-full">
                 <div className="max-h-[75vh] overflow-y-auto pr-2 pb-4 space-y-8 custom-scrollbar">
+                    <section className="rounded-2xl border border-brand-border bg-brand-bg/60 p-4 md:p-5">
+                        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                            <div className="flex items-center gap-3">
+                                <AvatarDisplay avatarBase64={client.avatar} name={client.name} size="lg" variant="client" className="shrink-0" />
+                                <div>
+                                    <p className="text-xs font-bold uppercase tracking-widest text-brand-text-secondary">Ringkasan Pengantin</p>
+                                    <h3 className="mt-1 text-lg font-black text-brand-text-light">{client.name}</h3>
+                                    <p className="text-xs text-brand-text-secondary">{clientProjects.length} acara tercatat</p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => onSharePortal(client)}
+                                className="button-primary inline-flex items-center justify-center gap-2 text-sm"
+                            >
+                                <Share2Icon className="w-4 h-4" />
+                                Bagikan Portal
+                            </button>
+                        </div>
+
+                        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                            <div className="rounded-xl border border-brand-border bg-brand-surface p-3">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-brand-text-secondary">Total Tagihan</p>
+                                <p className="mt-1 text-base font-black text-brand-text-light">{formatCurrency(totalBilled)}</p>
+                            </div>
+                            <div className="rounded-xl border border-green-500/20 bg-green-500/10 p-3">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-green-400">Terbayar</p>
+                                <p className="mt-1 text-base font-black text-green-400">{formatCurrency(totalPaid)}</p>
+                            </div>
+                            <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-red-400">Sisa Tagihan</p>
+                                <p className="mt-1 text-base font-black text-red-400">{formatCurrency(remainingBalance)}</p>
+                            </div>
+                        </div>
+                    </section>
+
                     {/* Info Section */}
                     <section>
                         <div className="flex items-center gap-2 mb-4 pb-2 border-b border-slate-100">
                             <UsersIcon className="w-5 h-5 text-brand-accent" />
                             <h3 className="font-bold text-brand-text-primary">Informasi Pengantin</h3>
                         </div>
-                        <ClientInfoTab client={client} onSharePortal={onSharePortal} />
+                        <ClientInfoTab client={client} />
                     </section>
 
                     {/* Payments Section */}

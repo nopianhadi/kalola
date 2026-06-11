@@ -1,6 +1,11 @@
 import { apiFetch } from '@/lib/apiClient';
 import { Contract } from '@/types';
 
+function toNumber(value: unknown): number | undefined {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : undefined;
+}
+
 function normalizeContract(row: any): Contract {
   return {
     id: Number(row.id),
@@ -42,29 +47,36 @@ export async function listContracts(): Promise<Contract[]> {
 export async function createContract(contract: Omit<Contract, 'id' | 'createdAt'>): Promise<Contract> {
   const insertRow = {
     contract_number: contract.contractNumber,
-    client_id: contract.clientId,
-    project_id: contract.projectId,
-    signing_date: contract.signingDate,
-    signing_location: contract.signingLocation,
-    client_name1: contract.clientName1,
-    client_address1: contract.clientAddress1,
-    client_phone1: contract.clientPhone1,
-    client_name2: contract.clientName2,
-    client_address2: contract.clientAddress2,
-    client_phone2: contract.clientPhone2,
-    shooting_duration: contract.shootingDuration,
-    guaranteed_photos: contract.guaranteedPhotos,
-    album_details: contract.albumDetails,
-    digital_files_format: contract.digitalFilesFormat,
-    other_items: contract.otherItems,
-    personnel_count: contract.personnelCount,
-    delivery_timeframe: contract.deliveryTimeframe,
-    dp_date: contract.dpDate,
-    final_payment_date: contract.finalPaymentDate,
-    cancellation_policy: contract.cancellationPolicy,
-    jurisdiction: contract.jurisdiction,
-    vendor_signature: contract.vendorSignature,
-    client_signature: contract.clientSignature,
+    client_id: toNumber(contract.clientId),
+    project_id: toNumber(contract.projectId),
+    signing_date: contract.signingDate || null,
+    signing_location: contract.signingLocation || null,
+    service_title: contract.serviceTitle || null,
+    client_name_1: contract.clientName1 || '',
+    client_address_1: contract.clientAddress1 || null,
+    client_phone_1: contract.clientPhone1 || null,
+    client_name_2: contract.clientName2 || null,
+    client_address_2: contract.clientAddress2 || null,
+    client_phone_2: contract.clientPhone2 || null,
+    shooting_duration: contract.shootingDuration || null,
+    guaranteed_photos: contract.guaranteedPhotos || null,
+    album_details: contract.albumDetails || null,
+    digital_files_format: contract.digitalFilesFormat || 'JPG High-Resolution',
+    other_items: contract.otherItems || null,
+    personnel_count: contract.personnelCount || null,
+    delivery_timeframe: contract.deliveryTimeframe || null,
+    dp_date: contract.dpDate || null,
+    final_payment_date: contract.finalPaymentDate || null,
+    cancellation_policy: contract.cancellationPolicy || null,
+    jurisdiction: contract.jurisdiction || null,
+    pasal_1_content: contract.pasal1Content || null,
+    pasal_2_content: contract.pasal2Content || null,
+    pasal_3_content: contract.pasal3Content || null,
+    pasal_4_content: contract.pasal4Content || null,
+    pasal_5_content: contract.pasal5Content || null,
+    closing_text: contract.closingText || null,
+    vendor_signature: contract.vendorSignature || null,
+    client_signature: contract.clientSignature || null,
     include_meterai: contract.includeMeterai ?? false,
     meterai_placement: contract.meteraiPlacement || 'client',
   };
@@ -79,29 +91,36 @@ export async function createContract(contract: Omit<Contract, 'id' | 'createdAt'
 export async function updateContract(id: number, patch: Partial<Contract>): Promise<Contract> {
   const updateRow: any = {};
   if (patch.contractNumber !== undefined) updateRow.contract_number = patch.contractNumber;
-  if (patch.clientId !== undefined) updateRow.client_id = patch.clientId;
-  if (patch.projectId !== undefined) updateRow.project_id = patch.projectId;
+  if (patch.clientId !== undefined) updateRow.client_id = toNumber(patch.clientId);
+  if (patch.projectId !== undefined) updateRow.project_id = toNumber(patch.projectId);
   if (patch.signingDate !== undefined) updateRow.signing_date = patch.signingDate;
-  if (patch.signingLocation !== undefined) updateRow.signing_location = patch.signingLocation;
-  if (patch.clientName1 !== undefined) updateRow.client_name1 = patch.clientName1;
-  if (patch.clientAddress1 !== undefined) updateRow.client_address1 = patch.clientAddress1;
-  if (patch.clientPhone1 !== undefined) updateRow.client_phone1 = patch.clientPhone1;
-  if (patch.clientName2 !== undefined) updateRow.client_name2 = patch.clientName2;
-  if (patch.clientAddress2 !== undefined) updateRow.client_address2 = patch.clientAddress2;
-  if (patch.clientPhone2 !== undefined) updateRow.client_phone2 = patch.clientPhone2;
-  if (patch.shootingDuration !== undefined) updateRow.shooting_duration = patch.shootingDuration;
-  if (patch.guaranteedPhotos !== undefined) updateRow.guaranteed_photos = patch.guaranteedPhotos;
-  if (patch.albumDetails !== undefined) updateRow.album_details = patch.albumDetails;
-  if (patch.digitalFilesFormat !== undefined) updateRow.digital_files_format = patch.digitalFilesFormat;
-  if (patch.otherItems !== undefined) updateRow.other_items = patch.otherItems;
-  if (patch.personnelCount !== undefined) updateRow.personnel_count = patch.personnelCount;
-  if (patch.deliveryTimeframe !== undefined) updateRow.delivery_timeframe = patch.deliveryTimeframe;
-  if (patch.dpDate !== undefined) updateRow.dp_date = patch.dpDate;
-  if (patch.finalPaymentDate !== undefined) updateRow.final_payment_date = patch.finalPaymentDate;
-  if (patch.cancellationPolicy !== undefined) updateRow.cancellation_policy = patch.cancellationPolicy;
-  if (patch.jurisdiction !== undefined) updateRow.jurisdiction = patch.jurisdiction;
-  if (patch.vendorSignature !== undefined) updateRow.vendor_signature = patch.vendorSignature;
-  if (patch.clientSignature !== undefined) updateRow.client_signature = patch.clientSignature;
+  if (patch.signingLocation !== undefined) updateRow.signing_location = patch.signingLocation || null;
+  if (patch.serviceTitle !== undefined) updateRow.service_title = patch.serviceTitle || null;
+  if (patch.clientName1 !== undefined) updateRow.client_name_1 = patch.clientName1 || '';
+  if (patch.clientAddress1 !== undefined) updateRow.client_address_1 = patch.clientAddress1 || null;
+  if (patch.clientPhone1 !== undefined) updateRow.client_phone_1 = patch.clientPhone1 || null;
+  if (patch.clientName2 !== undefined) updateRow.client_name_2 = patch.clientName2 || null;
+  if (patch.clientAddress2 !== undefined) updateRow.client_address_2 = patch.clientAddress2 || null;
+  if (patch.clientPhone2 !== undefined) updateRow.client_phone_2 = patch.clientPhone2 || null;
+  if (patch.shootingDuration !== undefined) updateRow.shooting_duration = patch.shootingDuration || null;
+  if (patch.guaranteedPhotos !== undefined) updateRow.guaranteed_photos = patch.guaranteedPhotos || null;
+  if (patch.albumDetails !== undefined) updateRow.album_details = patch.albumDetails || null;
+  if (patch.digitalFilesFormat !== undefined) updateRow.digital_files_format = patch.digitalFilesFormat || 'JPG High-Resolution';
+  if (patch.otherItems !== undefined) updateRow.other_items = patch.otherItems || null;
+  if (patch.personnelCount !== undefined) updateRow.personnel_count = patch.personnelCount || null;
+  if (patch.deliveryTimeframe !== undefined) updateRow.delivery_timeframe = patch.deliveryTimeframe || null;
+  if (patch.dpDate !== undefined) updateRow.dp_date = patch.dpDate || null;
+  if (patch.finalPaymentDate !== undefined) updateRow.final_payment_date = patch.finalPaymentDate || null;
+  if (patch.cancellationPolicy !== undefined) updateRow.cancellation_policy = patch.cancellationPolicy || null;
+  if (patch.jurisdiction !== undefined) updateRow.jurisdiction = patch.jurisdiction || null;
+  if (patch.pasal1Content !== undefined) updateRow.pasal_1_content = patch.pasal1Content || null;
+  if (patch.pasal2Content !== undefined) updateRow.pasal_2_content = patch.pasal2Content || null;
+  if (patch.pasal3Content !== undefined) updateRow.pasal_3_content = patch.pasal3Content || null;
+  if (patch.pasal4Content !== undefined) updateRow.pasal_4_content = patch.pasal4Content || null;
+  if (patch.pasal5Content !== undefined) updateRow.pasal_5_content = patch.pasal5Content || null;
+  if (patch.closingText !== undefined) updateRow.closing_text = patch.closingText || null;
+  if (patch.vendorSignature !== undefined) updateRow.vendor_signature = patch.vendorSignature || null;
+  if (patch.clientSignature !== undefined) updateRow.client_signature = patch.clientSignature || null;
   if (patch.includeMeterai !== undefined) updateRow.include_meterai = patch.includeMeterai;
   if (patch.meteraiPlacement !== undefined) updateRow.meterai_placement = patch.meteraiPlacement;
 

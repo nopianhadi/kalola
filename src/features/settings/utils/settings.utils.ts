@@ -163,6 +163,68 @@ export const escapeRegExp = (string: string) => {
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 };
 
+// ─── Saran Default untuk CategoryManager ─────────────────────────────────────
+
+export const DEFAULT_PACKAGE_CATEGORIES = [
+    'Wedding Photography',
+    'Wedding Videography',
+    'Photo & Video',
+    'Pre-Wedding',
+    'Engagement',
+    'Maternity',
+    'Family Portrait',
+    'Product Photography',
+    'Corporate Event',
+];
+
+export const DEFAULT_PROJECT_TYPES = [
+    'Wedding Photography',
+    'Wedding Videography',
+    'Photo & Video Package',
+    'Pre-Wedding',
+    'Engagement Session',
+    'Maternity Shoot',
+    'Family Portrait',
+    'Corporate Event',
+    'Sweet 17 / Wisuda',
+];
+
+export const DEFAULT_EVENT_TYPES = [
+    'Akad Nikah',
+    'Resepsi',
+    'Pengajian',
+    'Siraman',
+    'Lamaran',
+    'Pre-Wedding',
+    'Engagement',
+    'Bridal Shower',
+    'After Party',
+];
+
+export const DEFAULT_INCOME_CATEGORIES = [
+    'Booking Fee / DP',
+    'Pelunasan',
+    'Cicilan',
+    'Add-On',
+    'Print & Album',
+    'Rush Fee',
+    'Referral Fee',
+    'Pendapatan Lain',
+];
+
+export const DEFAULT_EXPENSE_CATEGORIES = [
+    'Gaji Tim',
+    'Transport & Akomodasi',
+    'Sewa Peralatan',
+    'Edit & Post-Prod',
+    'Print & Cetak',
+    'Marketing & Iklan',
+    'Komisi Referral',
+    'Utilitas & Operasional',
+    'Pembelian Peralatan',
+    'Pengeluaran Lain',
+];
+
 export const DEFAULT_STATUS_CONFIG = [
     {
         id: '1',

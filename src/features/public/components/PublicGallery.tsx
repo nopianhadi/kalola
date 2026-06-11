@@ -47,6 +47,9 @@ const PublicGallery: React.FC = () => {
         console.log("Page Loaded: Public Gallery", galleryId);
         if (galleryId) {
             loadGalleryData();
+        } else {
+            setIsLoading(false);
+            setError('Gallery tidak ditemukan');
         }
     }, [galleryId]);
 
@@ -204,7 +207,7 @@ const PublicGallery: React.FC = () => {
                                             <LazyImage
                                                 src={sanitizeImageUrl(imageUrl)}
                                                 alt={image.caption || `Foto ${index + 1}`}
-                                                className="w-full h-auto aspect-square sm:aspect-auto"
+                                                className="w-full h-auto"
                                                 onError={() => console.error(`Failed to load image ${index + 1}:`, imageUrl?.substring(0, 100))}
                                             />
                                         ) : (

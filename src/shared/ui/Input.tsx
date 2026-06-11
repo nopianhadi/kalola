@@ -26,24 +26,25 @@ const sizeStyles: Record<InputSize, string> = {
 
 const variantStyles: Record<InputVariant, string> = {
   default: `
-    bg-white border border-brand-border
-    focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20
-    hover:border-brand-accent/50
+    bg-white/60 backdrop-blur-sm border border-brand-border/80
+    focus:bg-white focus:border-brand-accent focus:ring-4 focus:ring-brand-accent/15
+    hover:border-brand-accent/40 hover:bg-white/80
+    shadow-[inset_0_1px_2px_rgba(0,0,0,0.01),0_1px_3px_rgba(0,0,0,0.02)]
   `,
   filled: `
-    bg-brand-bg border border-transparent
-    focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20
-    hover:bg-white
+    bg-brand-bg/50 border border-brand-border/20
+    focus:bg-white focus:border-brand-accent focus:ring-4 focus:ring-brand-accent/15
+    hover:bg-white/60 hover:border-brand-accent/30
   `,
   outlined: `
-    bg-transparent border-2 border-brand-border
-    focus:border-brand-accent focus:ring-0
-    hover:border-brand-accent/70
+    bg-transparent border-2 border-brand-border/80
+    focus:border-brand-accent focus:ring-4 focus:ring-brand-accent/15
+    hover:border-brand-accent/60
   `,
   ghost: `
-    bg-transparent border-0 border-b-2 border-brand-border rounded-none px-0
+    bg-transparent border-0 border-b-2 border-brand-border/80 rounded-none px-0
     focus:border-brand-accent focus:ring-0
-    hover:border-brand-accent/70
+    hover:border-brand-accent/60
   `,
 };
 
@@ -89,7 +90,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         )}
         <div className="relative">
           {leftIcon && (
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-text-secondary pointer-events-none">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-text-secondary pointer-events-none flex items-center justify-center w-5 h-5 [&>svg]:w-full [&>svg]:h-full">
               {leftIcon}
             </div>
           )}
@@ -100,7 +101,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             {...props}
           />
           {rightIcon && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-brand-text-secondary pointer-events-none">
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-brand-text-secondary pointer-events-none flex items-center justify-center w-5 h-5 [&>svg]:w-full [&>svg]:h-full">
               {rightIcon}
             </div>
           )}

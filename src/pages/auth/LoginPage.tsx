@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { User } from '@/types';
 import { GoogleIcon } from '@/constants';
-import { getUserByEmail } from '@/services/users';
+import { loginUser } from '@/services/users';
 import { Button, Input } from '@/shared/ui';
 // import { supabase } from '@/lib/supabaseClient'; // Dinonaktifkan karena migrasi ke local backend
 
@@ -37,6 +37,7 @@ interface LoginProps {
 
 
 const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
+    const AUTH_TOKEN_STORAGE_KEY = 'vena-authToken';
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -50,20 +51,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         setIsLoading(true);
 
         try {
-            // LOGIN LOKAL: Mengambil user dari backend Node.js/MySQL
-            const userData = await getUserByEmail(email);
-
-            if (!userData || userData.password !== password) {
-                setError('Email atau kata sandi salah.');
-                setIsLoading(false);
-                return;
-            }
-
-            if (!userData) {
-                setError('Email atau kata sandi salah.');
-                setIsLoading(false);
-                return;
-            }
+            const { user: userData, token } = await loginUser(email, password);
 
             // Map snake_case from DB to camelCase for the app
             const loggedInUser: User = {
@@ -77,6 +65,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                 restrictedCards: (userData as any).restrictedCards || []
             };
 
+            window.localStorage.setItem(AUTH_TOKEN_STORAGE_KEY, token);
             console.info('[Login] Berhasil masuk menggunakan tabel custom users:', loggedInUser.email);
             onLoginSuccess(loggedInUser);
 
@@ -179,6 +168,14 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                     </Button>
 
                     <div className="text-center mt-4">
+                        <p className="text-sm text-slate-500">
+                            Belum punya akun?{' '}
+                            <Link to="/signup" className="font-semibold text-brand-accent hover:underline transition-colors">
+                                Daftar sekarang
+                            </Link>
+                        </p>
+                    </div>
+                    <div className="text-center mt-3">
                         <Link to="/test-signature" className="text-sm text-slate-500 hover:text-blue-600 transition-colors">
                             Verifikasi Dokumen Digital
                         </Link>

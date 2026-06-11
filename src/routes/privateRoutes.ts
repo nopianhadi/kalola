@@ -7,8 +7,7 @@ export interface PrivateRoute {
 }
 
 export const privateRoutes: PrivateRoute[] = [
-  { path: "dashboard", view: ViewType.DASHBOARD, label: "Dashboard" },
-  { path: "prospek", view: ViewType["Calon Pengantin"], label: "Calon Pengantin" },
+  { path: "prospek", view: ViewType["Calon Pengantin"], label: "Leads" },
   { path: "booking", view: ViewType.BOOKING, label: "Booking" },
   { path: "clients", view: ViewType.CLIENTS, label: "Clients" },
   { path: "projects", view: ViewType.PROJECTS, label: "Projects" },

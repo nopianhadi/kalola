@@ -30,11 +30,11 @@ const ProjectFilesTab: React.FC<ProjectFilesTabProps> = ({
                     <div className="divide-y divide-brand-border/60 text-sm">
                         <div className="py-3 flex items-center justify-between">
                             <span className="text-brand-text-secondary">Brief/Moodboard</span>
-                            {selectedProject.driveLink ? <a href={selectedProject.driveLink} target="_blank" rel="noopener noreferrer" className="text-blue-400 font-semibold">Buka</a> : <span className="text-brand-text-secondary">N/A</span>}
+                            {selectedProject.driveLink ? <a href={selectedProject.driveLink} target="_blank" rel="noopener noreferrer" className="text-blue-400 font-semibold">Buka</a> : <span className="text-brand-text-secondary">Belum tersedia</span>}
                         </div>
                         <div className="py-3 flex items-center justify-between">
                             <span className="text-brand-text-secondary">File dari Pengantin</span>
-                            {selectedProject.clientDriveLink ? <a href={selectedProject.clientDriveLink} target="_blank" rel="noopener noreferrer" className="text-blue-400 font-semibold">Buka</a> : <span className="text-brand-text-secondary">N/A</span>}
+                            {selectedProject.clientDriveLink ? <a href={selectedProject.clientDriveLink} target="_blank" rel="noopener noreferrer" className="text-blue-400 font-semibold">Buka</a> : <span className="text-brand-text-secondary">Belum tersedia</span>}
                         </div>
                         <div className="py-3 flex flex-col gap-2">
                             <div className="flex justify-between items-center">
@@ -74,10 +74,10 @@ const ProjectFilesTab: React.FC<ProjectFilesTabProps> = ({
             </div>
             {/* Desktop existing */}
             <div className="hidden md:block">
-                <h4 className="font-semibold text-gradient mb-2">File & Tautan Penting</h4>
+                <h4 className="font-semibold text-gradient mb-2">File & Tautan</h4>
                 <div className="p-4 bg-brand-bg rounded-lg space-y-3 text-sm">
-                    <div className="flex justify-between items-center py-2 border-b border-brand-border"><span className="text-brand-text-secondary">Link Moodboard/Brief (Internal)</span>{selectedProject.driveLink ? <a href={selectedProject.driveLink} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline font-semibold">Buka Tautan</a> : <span className="text-brand-text-secondary">N/A</span>}</div>
-                    <div className="flex justify-between items-center py-2 border-b border-brand-border"><span className="text-brand-text-secondary">Link File dari Pengantin</span>{selectedProject.clientDriveLink ? <a href={selectedProject.clientDriveLink} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline font-semibold">Buka Tautan</a> : <span className="text-brand-text-secondary">N/A</span>}</div>
+                    <div className="flex justify-between items-center py-2 border-b border-brand-border"><span className="text-brand-text-secondary">Brief/Moodboard</span>{selectedProject.driveLink ? <a href={selectedProject.driveLink} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline font-semibold">Buka Tautan</a> : <span className="text-brand-text-secondary">Belum tersedia</span>}</div>
+                    <div className="flex justify-between items-center py-2 border-b border-brand-border"><span className="text-brand-text-secondary">File dari Pengantin</span>{selectedProject.clientDriveLink ? <a href={selectedProject.clientDriveLink} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline font-semibold">Buka Tautan</a> : <span className="text-brand-text-secondary">Belum tersedia</span>}</div>
                     <div className="py-2 border-t border-brand-border">
                         <div className="flex justify-between items-center mb-2">
                             <span className="text-brand-text-secondary">Link File Jadi (untuk Pengantin)</span>

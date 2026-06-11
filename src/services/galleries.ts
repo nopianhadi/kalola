@@ -1,5 +1,6 @@
 import { apiFetch } from '@/lib/apiClient';
 import { Gallery, GalleryImage } from '@/types';
+import { uploadGalleryImages as cloudinaryUploadGalleryImages } from '@/services/upload';
 
 function safeParse<T>(val: any, fallback: T): T {
   if (!val) return fallback;
@@ -96,50 +97,7 @@ export const deleteGallery = async (id: number): Promise<void> => {
     await apiFetch(`/galleries/${id}`, { method: 'DELETE' });
 };
 
-// Helper for image compression and base64 conversion
-const compressImage = (file: File, maxWidth: number = 1920, quality: number = 0.8): Promise<string> => {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = (e) => {
-            const img = new Image();
-            img.src = e.target?.result as string;
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                let width = img.width;
-                let height = img.height;
-
-                // Calculate new dimensions
-                if (width > maxWidth) {
-                    height = (height * maxWidth) / width;
-                    width = maxWidth;
-                }
-
-                canvas.width = width;
-                canvas.height = height;
-
-                const ctx = canvas.getContext('2d');
-                if (!ctx) {
-                    reject(new Error('Failed to get canvas context'));
-                    return;
-                }
-
-                ctx.drawImage(img, 0, 0, width, height);
-                
-                // Convert to base64 with compression
-                const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
-                resolve(compressedBase64);
-            };
-            img.onerror = () => reject(new Error('Failed to load image'));
-        };
-        reader.onerror = () => reject(new Error('Failed to read file'));
-    });
-};
-
-// Generate thumbnail
-const generateThumbnail = (file: File, maxWidth: number = 400, quality: number = 0.7): Promise<string> => {
-    return compressImage(file, maxWidth, quality);
-};
+// Helper functions removed — image processing sekarang dilakukan oleh Cloudinary di backend
 
 
 
@@ -148,44 +106,36 @@ export const uploadGalleryImages = async (
     files: File[],
     onProgress?: (progress: number) => void
 ): Promise<GalleryImage[]> => {
+    // Upload semua file ke Cloudinary sekaligus
+    const cloudinaryResults = await cloudinaryUploadGalleryImages(files);
+
     const uploadedImages: GalleryImage[] = [];
 
-    for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        
-        try {
-            // Compress main image (max 1920px width, 80% quality)
-            const compressedBase64 = await compressImage(file, 1920, 0.8);
-            
-            // Generate thumbnail (max 400px width, 70% quality)
-            const thumbnailBase64 = await generateThumbnail(file, 400, 0.7);
-            
-            const imagePayload = {
-                url: compressedBase64,
-                thumbnail_url: thumbnailBase64,
-                uploaded_at: new Date().toISOString()
-            };
+    for (let i = 0; i < cloudinaryResults.length; i++) {
+        const { url, thumbnailUrl } = cloudinaryResults[i];
 
-            // POST one image at a time to avoid MySQL max_allowed_packet limits
-            const saved = await apiFetch<any>(`/galleries/${galleryId}/images`, {
-                method: 'POST',
-                body: JSON.stringify(imagePayload)
-            });
+        const imagePayload = {
+            url,
+            thumbnail_url: thumbnailUrl || null,
+            uploaded_at: new Date().toISOString(),
+        };
 
-            uploadedImages.push({
-                id: Number(saved.id),
-                url: saved.url,
-                thumbnailUrl: saved.thumbnail_url || undefined,
-                caption: saved.caption || undefined,
-                uploadedAt: saved.uploaded_at || new Date().toISOString()
-            });
-        } catch (err) {
-            console.error(`Error uploading file ${file.name}:`, err);
-            throw err;
-        }
+        // Simpan URL ke DB via backend
+        const saved = await apiFetch<any>(`/galleries/${galleryId}/images`, {
+            method: 'POST',
+            body: JSON.stringify(imagePayload),
+        });
+
+        uploadedImages.push({
+            id: Number(saved.id),
+            url: saved.url,
+            thumbnailUrl: saved.thumbnail_url || thumbnailUrl || undefined,
+            caption: saved.caption || undefined,
+            uploadedAt: saved.uploaded_at || new Date().toISOString(),
+        });
 
         if (onProgress) {
-            onProgress(Math.round(((i + 1) / files.length) * 100));
+            onProgress(Math.round(((i + 1) / cloudinaryResults.length) * 100));
         }
     }
 

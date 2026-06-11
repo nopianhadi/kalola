@@ -99,14 +99,14 @@ const Header: React.FC<HeaderProps> = ({ pageTitle, toggleSidebar, setIsSearchOp
             <header 
                 id="app-header" 
                 className="
-                    bg-brand-surface/95
-                    backdrop-blur-md
+                    bg-brand-surface/70
+                    backdrop-blur-xl
                     flex items-center justify-between 
                     h-16 sm:h-20 
                     px-3 sm:px-4 md:px-6 lg:px-8 
-                    border-b border-brand-border/50
+                    border-b border-white/20
                     sticky top-0 z-50
-                    shadow-lg
+                    shadow-[0_1px_2px_rgba(0,0,0,0.01),0_4px_24px_rgba(0,0,0,0.01)]
                 "
                 style={{
                     paddingTop: 'calc(0.75rem + var(--safe-area-inset-top, 0px))',

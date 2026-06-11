@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
-import crypto from 'crypto';
-
+import prisma from '../prismaClient';
+import { sseManager } from '../sseManager';
+import { getVendorId } from '../middleware/auth';
+import { sendVendorBookingNotification } from '../utils/email.utils';
 const router = Router();
-const prisma = new PrismaClient();
 
 const prismaProjects = (prisma as any).projects;
 const prismaPackages = (prisma as any).packages;
@@ -19,6 +19,7 @@ const mapToFrontend = (p: any) => {
     projectName: p.project_name,
     clientName: p.client_name,
     clientId: p.client_id,
+    clientAvatar: p.clients?.avatar || null, // Include avatar from clients relation
     projectType: p.project_type,
     packageName: p.package_name,
     packageId: p.package_id,
@@ -81,10 +82,13 @@ const mapToFrontend = (p: any) => {
       category: t.member_category || 'Tim',
       fee: Number(t.fee || 0),
       subJob: t.sub_job,
+      avatar: t.team_members?.avatar || null, // Include avatar from team_members relation
     }));
   }
   if (p.project_add_ons) {
-    formatted.addOns = p.project_add_ons.map((pa: any) => pa.add_ons);
+    formatted.addOns = p.project_add_ons.map((pa: any) => pa.add_ons).filter(Boolean);
+  } else {
+    formatted.addOns = [];
   }
 
   return formatted;
@@ -115,9 +119,9 @@ const mapToDb = (body: any) => {
   
   if (body.notes !== undefined) result.notes = body.notes;
   if (body.accommodation) result.accommodation = body.accommodation;
-  if (body.driveLink) result.drive_link = body.driveLink;
-  if (body.clientDriveLink) result.client_drive_link = body.clientDriveLink;
-  if (body.finalDriveLink) result.final_drive_link = body.finalDriveLink;
+  if (body.driveLink !== undefined) result.drive_link = body.driveLink || null;
+  if (body.clientDriveLink !== undefined) result.client_drive_link = body.clientDriveLink || null;
+  if (body.finalDriveLink !== undefined) result.final_drive_link = body.finalDriveLink || null;
   
   if (body.startTime) {
     const d = new Date(body.startTime);
@@ -171,12 +175,45 @@ const mapToDb = (body: any) => {
   return result;
 };
 
+// 0. PUBLIC â€” moodboard preview (no auth, only exposes non-sensitive fields)
+router.get('/public-moodboard/:projectId', async (req, res) => {
+  try {
+    const projectId = parseInt(req.params.projectId, 10);
+    if (isNaN(projectId)) return res.status(400).json({ error: 'ID tidak valid' });
+
+    const p = await prismaProjects.findUnique({
+      where: { id: projectId },
+      select: {
+        id: true,
+        project_name: true,
+        client_name: true,
+        drive_link: true,
+      },
+    });
+
+    if (!p) return res.status(404).json({ error: 'Project tidak ditemukan' });
+    if (!p.drive_link) return res.status(404).json({ error: 'Moodboard belum diisi' });
+
+    res.json({
+      id: p.id,
+      projectName: p.project_name,
+      clientName: p.client_name,
+      driveLink: p.drive_link,
+    });
+  } catch (error) {
+    console.error('[GET /projects/public-moodboard/:id]', error);
+    res.status(500).json({ error: 'Gagal memuat moodboard' });
+  }
+});
+
 // 1. Summary
 router.get('/summary', async (req, res) => {
   try {
+    const vendorId = getVendorId(req);
     const result = await prismaProjects.aggregate({
       _count: true,
-      _sum: { total_cost: true, amount_paid: true }
+      _sum: { total_cost: true, amount_paid: true },
+      where: { vendor_id: vendorId }
     });
     res.json({
       totalCount: result._count || 0,
@@ -192,11 +229,12 @@ router.get('/summary', async (req, res) => {
 // 2. Paginated
 router.get('/paginated', async (req, res) => {
   try {
+    const vendorId = getVendorId(req);
     const { page = '1', limit = '20', search, status, paymentStatus } = req.query;
     const skip = (Number(page) - 1) * Number(limit);
     const take = Number(limit);
 
-    const where: any = {};
+    const where: any = { vendor_id: vendorId };
     if (search) {
       where.OR = [
         { project_name: { contains: String(search) } },
@@ -214,16 +252,14 @@ router.get('/paginated', async (req, res) => {
         take, 
         orderBy: { date: 'desc' },
         include: {
-          project_team_assignments: true,
+          clients: true,
+          project_team_assignments: { include: { team_members: true } },
           project_add_ons: { include: { add_ons: true } }
         }
       })
     ]);
 
-    res.json({
-      projects: rawRows.map(mapToFrontend),
-      total
-    });
+    res.json({ projects: rawRows.map(mapToFrontend), total });
   } catch (error: any) {
     console.error('[GET /projects/paginated] Error:', error?.message);
     res.status(500).json({ error: 'Gagal mengambil data paginated' });
@@ -233,13 +269,16 @@ router.get('/paginated', async (req, res) => {
 // 3. List All
 router.get('/', async (req, res) => {
   try {
+    const vendorId = getVendorId(req);
     const { withRelations = 'true' } = req.query;
     const include = withRelations === 'true' ? {
-      project_team_assignments: true,
+      clients: true,
+      project_team_assignments: { include: { team_members: true } },
       project_add_ons: { include: { add_ons: true } }
     } : undefined;
 
     const rawProjects = await prismaProjects.findMany({
+      where: { vendor_id: vendorId },
       orderBy: { date: 'desc' },
       include
     });
@@ -254,10 +293,12 @@ router.get('/', async (req, res) => {
 // 4. Get By ID
 router.get('/:id', async (req, res) => {
   try {
-    const raw = await prismaProjects.findUnique({
-      where: { id: Number(req.params.id) },
+    const vendorId = getVendorId(req);
+    const raw = await prismaProjects.findFirst({
+      where: { id: Number(req.params.id), vendor_id: vendorId },
       include: {
-        project_team_assignments: true,
+        clients: true,
+        project_team_assignments: { include: { team_members: true } },
         project_add_ons: { include: { add_ons: true } }
       }
     });
@@ -271,10 +312,12 @@ router.get('/:id', async (req, res) => {
 
 router.get('/:id/with-relations', async (req, res) => {
   try {
-    const raw = await prismaProjects.findUnique({
-      where: { id: Number(req.params.id) },
+    const vendorId = getVendorId(req);
+    const raw = await prismaProjects.findFirst({
+      where: { id: Number(req.params.id), vendor_id: vendorId },
       include: {
-        project_team_assignments: true,
+        clients: true,
+        project_team_assignments: { include: { team_members: true } },
         project_add_ons: { include: { add_ons: true } }
       }
     });
@@ -289,18 +332,61 @@ router.get('/:id/with-relations', async (req, res) => {
 // 5. Create
 router.post('/', async (req, res) => {
   try {
+    const vendorId = getVendorId(req);
     const body = req.body;
     console.log('[POST /projects] Received body:', JSON.stringify(body, null, 2));
     const data = mapToDb(body);
-    delete data.id; // Let DB handle auto-increment
-    delete data.portal_access_id; // portal_access_id doesn't exist in projects table
+    delete data.id;
+    delete data.portal_access_id;
+    data.vendor_id = vendorId;
 
     console.log('[POST /projects] Mapped data:', JSON.stringify(data, null, 2));
     const project = await prismaProjects.create({ data });
-    res.status(201).json(mapToFrontend(project));
+
+    const addOns = body.addOns || [];
+    if (Array.isArray(addOns) && addOns.length > 0) {
+      for (const addon of addOns) {
+        if (addon && addon.id) {
+          try {
+            await prismaProjectAddOns.create({
+              data: { project_id: project.id, add_on_id: Number(addon.id) }
+            });
+          } catch (addonErr: any) {
+            console.warn(`[POST /projects] Failed to link addon ${addon.id}:`, addonErr?.message);
+          }
+        }
+      }
+    }
+
+    const projectWithRelations = await prismaProjects.findUnique({
+      where: { id: project.id },
+      include: {
+        clients: true,
+        project_team_assignments: { include: { team_members: true } },
+        project_add_ons: { include: { add_ons: true } }
+      }
+    });
+
+    sseManager.broadcast('projects', 'created', { id: project.id }, getVendorId(req));
+
+    // Send email notification to Vendor
+    if (vendorId) {
+      const vendorUser = await (prisma as any).users.findUnique({
+        where: { id: vendorId },
+        select: { email: true }
+      });
+      if (vendorUser?.email) {
+        await sendVendorBookingNotification(vendorUser.email, {
+          clientName: project.client_name || 'Klien Baru',
+          date: project.date ? new Date(project.date).toLocaleDateString('id-ID') : 'Belum ditentukan',
+          serviceName: project.package_name || project.project_type || 'Layanan Kustom'
+        });
+      }
+    }
+
+    res.status(201).json(mapToFrontend(projectWithRelations || project));
   } catch (error: any) {
     console.error('[POST /projects] Error:', error?.message || error);
-    console.error('[POST /projects] Full error:', error);
     res.status(500).json({ error: 'Gagal membuat project', details: error?.message });
   }
 });
@@ -308,15 +394,45 @@ router.post('/', async (req, res) => {
 // 6. Update
 router.patch('/:id', async (req, res) => {
   try {
+    const vendorId = getVendorId(req);
     const { id } = req.params;
+    const projectId = Number(id);
+
+    const existing = await prismaProjects.findFirst({ where: { id: projectId, vendor_id: vendorId } });
+    if (!existing) return res.status(404).json({ error: 'Project tidak ditemukan' });
+
     const data = mapToDb(req.body);
     delete data.id;
 
-    const project = await prismaProjects.update({
-      where: { id: Number(id) },
-      data
+    const project = await prismaProjects.update({ where: { id: projectId }, data });
+
+    const addOns = req.body.addOns;
+    if (Array.isArray(addOns)) {
+      await prismaProjectAddOns.deleteMany({ where: { project_id: projectId } });
+      for (const addon of addOns) {
+        if (addon && addon.id) {
+          try {
+            await prismaProjectAddOns.create({
+              data: { project_id: projectId, add_on_id: Number(addon.id) }
+            });
+          } catch (addonErr: any) {
+            console.warn(`[PATCH /projects/:id] Failed to link addon ${addon.id}:`, addonErr?.message);
+          }
+        }
+      }
+    }
+
+    const projectWithRelations = await prismaProjects.findUnique({
+      where: { id: projectId },
+      include: {
+        clients: true,
+        project_team_assignments: { include: { team_members: true } },
+        project_add_ons: { include: { add_ons: true } }
+      }
     });
-    res.json(mapToFrontend(project));
+
+    sseManager.broadcast('projects', 'updated', { id: projectId }, getVendorId(req));
+    res.json(mapToFrontend(projectWithRelations || project));
   } catch (error: any) {
     console.error('[PATCH /projects/:id] Error:', error?.message || error);
     res.status(500).json({ error: 'Gagal update project' });
@@ -326,34 +442,21 @@ router.patch('/:id', async (req, res) => {
 // 7. Delete
 router.delete('/:id', async (req, res) => {
   try {
+    const vendorId = getVendorId(req);
     const { id } = req.params;
     const projectId = Number(id);
 
-    // Check if project exists
-    const project = await prismaProjects.findUnique({
-      where: { id: projectId }
-    });
+    const project = await prismaProjects.findFirst({ where: { id: projectId, vendor_id: vendorId } });
+    if (!project) return res.status(404).json({ error: 'Project tidak ditemukan' });
 
-    if (!project) {
-      return res.status(404).json({ error: 'Project tidak ditemukan' });
-    }
-
-    // Delete related records first (transactions don't have CASCADE delete)
-    // Note: Other relations like contracts, project_add_ons, etc. have CASCADE delete in schema
     const prismaTransactions = (prisma as any).transactions;
-    await prismaTransactions.deleteMany({
-      where: { project_id: projectId }
-    });
+    await prismaTransactions.deleteMany({ where: { project_id: projectId } });
+    await prismaProjects.delete({ where: { id: projectId } });
 
-    // Now delete the project (CASCADE will handle other relations)
-    await prismaProjects.delete({
-      where: { id: projectId }
-    });
-
+    sseManager.broadcast('projects', 'deleted', { id: projectId }, getVendorId(req));
     res.status(204).send();
   } catch (error: any) {
     console.error('[DELETE /projects/:id] Error:', error?.message || error);
-    console.error('[DELETE /projects/:id] Full error:', error);
     if (error?.code === 'P2025') {
       res.status(404).json({ error: 'Project tidak ditemukan' });
     } else {
@@ -365,26 +468,21 @@ router.delete('/:id', async (req, res) => {
 // 8. Sync Finance
 router.post('/:id/sync-finance', async (req, res) => {
   try {
+    const vendorId = getVendorId(req);
     const { id } = req.params;
-    const project = await prismaProjects.findUnique({
-      where: { id: Number(id) },
+    const project = await prismaProjects.findFirst({
+      where: { id: Number(id), vendor_id: vendorId },
       include: { transactions: true }
     });
     
     if (!project) return res.status(404).json({ error: 'Project not found' });
     
-    const totalPaid = project.transactions.reduce((sum: number, t: any) => {
-        return sum + Number(t.amount || 0);
-    }, 0);
-    
+    const totalPaid = project.transactions.reduce((sum: number, t: any) => sum + Number(t.amount || 0), 0);
     const newStatus = totalPaid >= Number(project.total_cost) ? 'Lunas' : (totalPaid > 0 ? 'DP Terbayar' : 'Belum Bayar');
     
     const updated = await prismaProjects.update({
       where: { id: Number(id) },
-      data: { 
-        amount_paid: totalPaid,
-        payment_status: newStatus
-      }
+      data: { amount_paid: totalPaid, payment_status: newStatus }
     });
     
     res.json(mapToFrontend(updated));
@@ -395,3 +493,4 @@ router.post('/:id/sync-finance', async (req, res) => {
 });
 
 export default router;
+

@@ -38,7 +38,7 @@ export const ContractMobileList: React.FC<ContractMobileListProps> = ({
                 return (
                     <div key={contract.id} className="bg-brand-surface rounded-xl shadow-lg border border-brand-border overflow-hidden">
                         {/* Header */}
-                        <div className="bg-gradient-to-r from-blue-600/10 to-indigo-600/10 p-4 border-b border-brand-border">
+                        <div className="bg-blue-50 p-4 border-b border-brand-border">
                             <div className="flex items-start justify-between mb-2">
                                 <div className="flex-1">
                                     <p className="text-[10px] text-brand-text-secondary uppercase tracking-widest mb-1">No. Kontrak</p>
@@ -76,25 +76,25 @@ export const ContractMobileList: React.FC<ContractMobileListProps> = ({
                         </div>
 
                         {/* Actions */}
-                        <div className="p-3 bg-brand-bg/50 border-t border-brand-border">
+                        <div className="p-3 bg-brand-bg border-t border-brand-border">
                             <div className="grid grid-cols-3 gap-2">
                                 <button 
                                     onClick={() => onView(contract)} 
-                                    className="flex flex-col items-center justify-center p-2 text-brand-text-secondary hover:text-brand-accent hover:bg-brand-accent/10 rounded-lg transition-colors"
+                                    className="flex flex-col items-center justify-center p-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors shadow-sm"
                                 >
                                     <EyeIcon className="w-5 h-5 mb-1"/>
                                     <span className="text-[10px] font-bold uppercase">Lihat</span>
                                 </button>
                                 <button 
                                     onClick={() => onEdit(contract)} 
-                                    className="flex flex-col items-center justify-center p-2 text-brand-text-secondary hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors"
+                                    className="flex flex-col items-center justify-center p-2 bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg transition-colors shadow-sm"
                                 >
                                     <PencilIcon className="w-5 h-5 mb-1"/>
                                     <span className="text-[10px] font-bold uppercase">Edit</span>
                                 </button>
                                 <button 
                                     onClick={() => onDelete(contract.id)} 
-                                    className="flex flex-col items-center justify-center p-2 text-brand-text-secondary hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+                                    className="flex flex-col items-center justify-center p-2 bg-red-600 text-white hover:bg-red-700 rounded-lg transition-colors shadow-sm"
                                 >
                                     <Trash2Icon className="w-5 h-5 mb-1"/>
                                     <span className="text-[10px] font-bold uppercase">Hapus</span>

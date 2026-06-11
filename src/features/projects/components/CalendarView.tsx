@@ -3,6 +3,7 @@ import { Project, TeamMember, Profile, AssignedTeamMember, ViewType, NavigationA
 import { ChevronLeftIcon, ChevronRightIcon, ClockIcon, UsersIcon, PlusIcon, MapPinIcon, CalendarIcon, LinkIcon, FolderKanbanIcon } from '@/constants';
 import Modal from '@/shared/ui/Modal';
 import { listCalendarEventsInRange, createCalendarEvent, updateCalendarEvent, deleteCalendarEvent } from '@/services/calendarEvents';
+import { AvatarDisplay } from '@/shared/ui/AvatarUpload';
 
 
 
@@ -92,9 +93,13 @@ const CalendarSidebar: React.FC<CalendarSidebarProps> = ({ profile, isClientProj
     return (
         <div className="w-72 xl:w-80 border-r border-brand-border/40 p-5 flex flex-col hidden lg:flex overflow-y-auto bg-brand-surface/20 backdrop-blur-sm custom-scrollbar">
             <div className="flex items-center gap-3 mb-6 p-3 bg-white/40 rounded-2xl border border-brand-border/30 shadow-sm animate-fade-in">
-                <div className="w-10 h-10 rounded-full bg-brand-accent/10 flex items-center justify-center font-bold text-brand-accent shadow-inner">
-                    {getInitials(profile.fullName)}
-                </div>
+                <AvatarDisplay
+                    avatarBase64={profile.avatar ?? null}
+                    name={profile.fullName || 'User'}
+                    size="md"
+                    variant="team"
+                    className="shrink-0"
+                />
                 <div className="min-w-0">
                     <p className="font-semibold text-sm text-brand-text-light truncate">{profile.fullName?.split(' ')[0] || 'User'}</p>
                     <p className="text-xs text-brand-text-secondary truncate">{profile.email}</p>
@@ -102,7 +107,7 @@ const CalendarSidebar: React.FC<CalendarSidebarProps> = ({ profile, isClientProj
             </div>
             <button onClick={onAddEvent} className="button-primary w-full mb-6 inline-flex items-center justify-center gap-2 shadow-sm">
                 <PlusIcon className="w-5 h-5" />
-                Buat Acara Pernikahan
+                Tambah Agenda
             </button>
 
             {/* Mini Calendar Start */}
@@ -146,7 +151,7 @@ const CalendarSidebar: React.FC<CalendarSidebarProps> = ({ profile, isClientProj
                 <div className="grid grid-cols-3 gap-2 text-center">
                     <div className="p-2 rounded-xl bg-white/50 border border-brand-border/20">
                         <p className="text-xl font-bold text-brand-accent leading-tight">{stats.totalProjects}</p>
-                        <p className="text-[9px] font-medium text-brand-text-secondary uppercase tracking-wider mt-0.5">Acara Pernikahan</p>
+                        <p className="text-[9px] font-medium text-brand-text-secondary uppercase tracking-wider mt-0.5">Acara</p>
                     </div>
                     <div className="p-2 rounded-xl bg-white/50 border border-brand-border/20">
                         <p className="text-xl font-bold text-brand-accent leading-tight">{stats.totalInternal}</p>
@@ -166,7 +171,7 @@ const CalendarSidebar: React.FC<CalendarSidebarProps> = ({ profile, isClientProj
                         <option value="">Semua Pengantin</option>
                         {clientsThisMonth.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
-                    <p className="text-[10px] text-brand-text-secondary mt-1">Filter Acara Pernikahan berdasarkan pengantin</p>
+                    <p className="text-[10px] text-brand-text-secondary mt-1">Filter acara berdasarkan pengantin</p>
                 </div>
             )}
 
@@ -201,7 +206,7 @@ const CalendarSidebar: React.FC<CalendarSidebarProps> = ({ profile, isClientProj
             <div className="space-y-1">
                 <label className="flex items-center p-2 rounded-lg hover:bg-brand-bg cursor-pointer">
                     <input type="checkbox" className="h-4 w-4 rounded flex-shrink-0 transition-colors" checked={isClientProjectVisible} onChange={(e) => onClientFilterChange(e.target.checked)} style={{ accentColor: '#ef4444' }} />
-                    <span className="ml-2 text-sm font-medium text-brand-text-light">Acara Pernikahan Pengantin</span>
+                    <span className="ml-2 text-sm font-medium text-brand-text-light">Acara Pengantin</span>
                 </label>
                 {(profile.eventTypes || []).map(type => (
                     <label key={type} className="flex items-center p-2 rounded-lg hover:bg-brand-bg cursor-pointer">
@@ -264,8 +269,8 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({ currentDate, viewMode, 
                 </div>
                 {stats && (
                     <div className="px-3 pb-2 flex gap-3 text-xs">
-                        <span className="font-semibold text-brand-accent">{stats.totalProjects} Acara Pernikahan</span>
-                        <span className="text-brand-text-secondary">{stats.totalInternal} Acara Pernikahan</span>
+                        <span className="font-semibold text-brand-accent">{stats.totalProjects} Acara</span>
+                        <span className="text-brand-text-secondary">{stats.totalInternal} Internal</span>
                         <span className="text-brand-text-secondary">{stats.totalClients} Pengantin</span>
                     </div>
                 )}
@@ -327,6 +332,7 @@ const SmartHoverTooltip: React.FC<HoverTooltipProps> = ({ event, profile, positi
 
     const bgColor = getEventColor(event, profile);
     const subtitle = String(event.clientId) === 'INTERNAL' ? event.projectType : (event.clientName || '');
+    const isClient = String(event.clientId) !== 'INTERNAL';
 
     // Ensure tooltip stays within viewport (basic collision detection)
     const leftOffset = position.x > window.innerWidth - 300 ? position.x - 280 : position.x + 10;
@@ -342,7 +348,19 @@ const SmartHoverTooltip: React.FC<HoverTooltipProps> = ({ event, profile, positi
                 <span className="text-[10px] font-bold text-brand-text-secondary uppercase tracking-wider">{event.projectType}</span>
             </div>
             <h4 className="font-bold text-sm text-brand-text-light mb-0.5 leading-tight">{event.projectName}</h4>
-            {subtitle && <p className="text-xs font-medium text-brand-text-secondary mb-2">{subtitle}</p>}
+            {subtitle && (
+                <div className="flex items-center gap-2 mb-2">
+                    {isClient && event.clientAvatar && (
+                        <AvatarDisplay
+                            avatarBase64={event.clientAvatar}
+                            name={event.clientName}
+                            size="xs"
+                            variant="client"
+                        />
+                    )}
+                    <p className="text-xs font-medium text-brand-text-secondary">{subtitle}</p>
+                </div>
+            )}
 
             <div className="space-y-1.5 mt-3 pt-2 border-t border-brand-border/40">
                 <div className="flex items-start gap-2 text-xs">
@@ -458,7 +476,7 @@ const AgendaView: React.FC<AgendaViewProps> = ({ agendaByDate, profile, onEventC
                 </div>
             </div>
         ))}
-        {agendaByDate.length === 0 && <p className="text-center text-brand-text-secondary py-16">Tidak ada Acara Pernikahan mendatang.</p>}
+        {agendaByDate.length === 0 && <p className="text-center text-brand-text-secondary py-16">Tidak ada acara mendatang.</p>}
     </div>
 );
 
@@ -482,9 +500,9 @@ const TableView: React.FC<TableViewProps> = ({ events, profile, onEventClick }) 
                         <thead className="bg-blue-100">
                             <tr>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-blue-800 uppercase tracking-wider border-r border-blue-200">Tanggal</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-blue-800 uppercase tracking-wider border-r border-blue-200">Acara Pernikahan</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-blue-800 uppercase tracking-wider border-r border-blue-200">Acara</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-blue-800 uppercase tracking-wider border-r border-blue-200">Jenis</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-blue-800 uppercase tracking-wider border-r border-blue-200">Subjek / Pengantin</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-blue-800 uppercase tracking-wider border-r border-blue-200">Pengantin</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-blue-800 uppercase tracking-wider border-r border-blue-200">Lokasi</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-blue-800 uppercase tracking-wider border-r border-blue-200">Tim</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-blue-800 uppercase tracking-wider">Waktu</th>
@@ -520,16 +538,17 @@ const TableView: React.FC<TableViewProps> = ({ events, profile, onEventClick }) 
                                         <td className="px-6 py-4 whitespace-nowrap text-xs text-brand-text-secondary truncate max-w-[150px] border-r border-blue-200">
                                             {event.location || '-'}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap border-r border-blue-200">
+                        <td className="px-6 py-4 whitespace-nowrap border-r border-blue-200">
                                             <div className="flex -space-x-1.5">
                                                 {event.team?.slice(0, 3).map((t, idx) => (
-                                                    <div 
-                                                        key={idx} 
-                                                        className="w-6 h-6 rounded-full bg-brand-accent/10 border-2 border-white flex items-center justify-center text-[8px] font-extrabold text-brand-accent shadow-sm"
-                                                        title={t.name}
-                                                    >
-                                                        {getInitials(t.name)}
-                                                    </div>
+                                                    <AvatarDisplay
+                                                        key={idx}
+                                                        avatarBase64={(t as any).avatar ?? null}
+                                                        name={t.name}
+                                                        size="xs"
+                                                        variant="team"
+                                                        className="border-2 border-white shadow-sm"
+                                                    />
                                                 ))}
                                                 {(event.team?.length || 0) > 3 && (
                                                     <div className="w-6 h-6 rounded-full bg-brand-bg border-2 border-white flex items-center justify-center text-[8px] font-bold text-brand-text-secondary shadow-sm">
@@ -586,9 +605,9 @@ const CompactAgendaTable: React.FC<CompactAgendaTableProps> = ({ events, profile
             <div className="flex items-center justify-between mb-3 px-1">
                 <div className="flex items-center gap-2">
                     <CalendarIcon className="w-4 h-4 text-brand-accent" />
-                    <h4 className="text-xs font-bold text-brand-text-light uppercase tracking-widest">Ringkasan Agenda Mendatang</h4>
+                    <h4 className="text-xs font-bold text-brand-text-light uppercase tracking-widest">Agenda Mendatang</h4>
                 </div>
-                <span className="text-[10px] font-medium text-brand-text-secondary bg-white/50 px-2 py-0.5 rounded-full border border-brand-border/20">5 Acara Terdekat</span>
+                <span className="text-[10px] font-medium text-brand-text-secondary bg-white/50 px-2 py-0.5 rounded-full border border-brand-border/20">5 Terdekat</span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
                 {nextEvents.map(event => {
@@ -877,6 +896,30 @@ const customColors = [
     '#64748b'  // slate
 ];
 
+// --- COLOR LEGEND COMPONENT ---
+interface ColorLegendProps {
+    profile: Profile;
+}
+
+const ColorLegend: React.FC<ColorLegendProps> = ({ profile }) => {
+    const legendItems = [
+        { color: '#3b82f6', label: 'Hari Ini' },
+        ...(profile.projectStatusConfig?.slice(0, 2).map(s => ({ color: s.color, label: s.name })) || []),
+        ...Object.entries(eventTypeColors).slice(0, 3).map(([label, color]) => ({ color, label })),
+    ];
+
+    return (
+        <div className="flex items-center gap-3 flex-wrap">
+            {legendItems.slice(0, 5).map((item, i) => (
+                <div key={i} className="flex items-center gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }}></div>
+                    <span className="text-[10px] font-medium text-brand-text-secondary">{item.label}</span>
+                </div>
+            ))}
+        </div>
+    );
+};
+
 // --- TEAM VIEW COMPONENT ---
 interface TeamViewProps {
     currentDate: Date;
@@ -919,11 +962,17 @@ const TeamView: React.FC<TeamViewProps> = ({ currentDate, eventsByDate, teamMemb
             </div>
 
             <div className="flex-1 overflow-y-auto custom-scrollbar">
-                <div className="min-w-[600px] pb-10 flex flex-col">
+                <div className="min-w-[600px] pb-4 flex flex-col">
                     {teamMembers.map(member => (
                         <div key={member.id} className="flex border-b border-blue-200 hover:bg-blue-50/40 transition-colors group">
                             <div className="w-32 sm:w-48 p-3 border-r-2 border-blue-200 flex items-center gap-3 shrink-0 bg-blue-50/50 z-10 sticky left-0 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
-                                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold text-blue-700 border border-blue-200">{getInitials(member.name)}</div>
+                                <AvatarDisplay
+                                    avatarBase64={member.avatar ?? null}
+                                    name={member.name}
+                                    size="sm"
+                                    variant={member.category === 'Vendor' ? 'vendor' : 'team'}
+                                    className="shrink-0"
+                                />
                                 <div className="min-w-0 hidden sm:block">
                                     <p className="font-semibold text-sm text-blue-800 truncate">{member.name}</p>
                                     <p className="text-[10px] text-blue-600 truncate">{member.role}</p>
@@ -973,9 +1022,9 @@ const TeamView: React.FC<TeamViewProps> = ({ currentDate, eventsByDate, teamMemb
 };
 
 const EventPanel: React.FC<EventPanelProps> = ({ isOpen, mode, selectedEvent, eventForm, teamMembers, profile, onClose, onSetMode, onFormChange, onFormCustomColorChange, onTeamChange, onSubmit, onDelete, onNavigateToProject, onNavigateToClient }) => (
-    <div className={`flex-shrink-0 w-full md:w-[400px] border-l border-brand-border/30 flex flex-col bg-brand-surface/80 backdrop-blur-xl transform transition-transform duration-300 ease-in-out z-20 ${isOpen ? 'translate-x-0 shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.1)]' : 'translate-x-full absolute right-0 bottom-0 top-0'}`}>
+    <div className={`fixed inset-y-0 right-0 w-full md:w-[400px] border-l border-brand-border/30 flex flex-col bg-brand-surface/95 backdrop-blur-3xl transform transition-transform duration-300 ease-in-out z-[100] ${isOpen ? 'translate-x-0 shadow-[-20px_0_40px_-15px_rgba(0,0,0,0.2)]' : 'translate-x-full'}`}>
         <div className="p-4 border-b border-brand-border/40 bg-white/40 flex items-center justify-between">
-            <h3 className="font-semibold text-brand-text-light text-sm">{mode === 'detail' ? 'Detail Acara Pernikahan' : (selectedEvent ? 'Edit Acara Pernikahan' : 'Buat Acara Pernikahan Baru')}</h3>
+            <h3 className="font-semibold text-brand-text-light text-sm">{mode === 'detail' ? 'Detail Acara' : (selectedEvent ? 'Edit Acara' : 'Agenda Baru')}</h3>
             <button onClick={onClose} className="p-2 rounded-full hover:bg-white text-brand-text-secondary transition-colors">
                 <ChevronRightIcon className="w-5 h-5" />
             </button>
@@ -989,11 +1038,21 @@ const EventPanel: React.FC<EventPanelProps> = ({ isOpen, mode, selectedEvent, ev
                         <span className="text-xs font-medium px-2 py-0.5 rounded-full mt-2 inline-block" style={{ backgroundColor: `${getEventColor(selectedEvent, profile)}30`, color: getEventColor(selectedEvent, profile) }}>{selectedEvent.projectType}</span>
                         {String(selectedEvent.clientId) !== 'INTERNAL' && selectedEvent.clientName && (
                             <div className="mt-3 p-3 bg-brand-bg rounded-lg flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <UsersIcon className="w-5 h-5 text-brand-accent" />
-                                    <div>
-                                        <p className="text-xs text-brand-text-secondary">Pengantin</p>
-                                        <p className="font-semibold text-brand-text-light">{selectedEvent.clientName}</p>
+                                <div className="flex items-center gap-3">
+                                    {selectedEvent.clientAvatar && (
+                                        <AvatarDisplay
+                                            avatarBase64={selectedEvent.clientAvatar}
+                                            name={selectedEvent.clientName}
+                                            size="sm"
+                                            variant="client"
+                                        />
+                                    )}
+                                    <div className="flex items-center gap-2">
+                                        <UsersIcon className="w-5 h-5 text-brand-accent" />
+                                        <div>
+                                            <p className="text-xs text-brand-text-secondary">Pengantin</p>
+                                            <p className="font-semibold text-brand-text-light">{selectedEvent?.clientName}</p>
+                                        </div>
                                     </div>
                                 </div>
                                 {onNavigateToClient && (
@@ -1003,36 +1062,45 @@ const EventPanel: React.FC<EventPanelProps> = ({ isOpen, mode, selectedEvent, ev
                                 )}
                             </div>
                         )}
+                        {String(selectedEvent.clientId) === 'INTERNAL' && (
+                            <div className="mt-3 p-3 bg-brand-bg/60 rounded-lg flex items-center gap-3">
+                                <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: getEventColor(selectedEvent, profile) }}></div>
+                                <div>
+                                    <p className="text-xs text-brand-text-secondary">Jenis Agenda</p>
+                                    <p className="font-semibold text-brand-text-light">{selectedEvent.projectType}</p>
+                                </div>
+                            </div>
+                        )}
 
                         <div className="mt-6 space-y-5 text-sm">
                             <div className="flex items-start gap-4"><ClockIcon className="w-5 h-5 text-brand-text-secondary flex-shrink-0 mt-0.5" /><p className="text-brand-text-primary font-medium">{new Date(selectedEvent.date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })} <br /><span className="text-brand-text-secondary">{selectedEvent.startTime && selectedEvent.endTime ? `${selectedEvent.startTime} - ${selectedEvent.endTime}` : 'Sepanjang hari'}</span></p></div>
                             {selectedEvent.location && (<div className="flex items-start gap-4"><MapPinIcon className="w-5 h-5 text-brand-text-secondary flex-shrink-0 mt-0.5" /><p className="text-brand-text-primary font-medium">{selectedEvent.location}</p></div>)}
-                            {selectedEvent.team && selectedEvent.team.length > 0 && (<div className="flex items-start gap-4"><UsersIcon className="w-5 h-5 text-brand-text-secondary flex-shrink-0 mt-0.5" /><div><p className="font-medium text-brand-text-light mb-2">Tim yang Bertugas</p><div className="flex items-center -space-x-2">{selectedEvent.team.map(t => (<div key={t.memberId} className="w-8 h-8 rounded-full bg-brand-input flex items-center justify-center text-xs font-bold text-brand-text-secondary border-2 border-brand-surface" title={t.name}>{getInitials(t.name)}</div>))}</div></div></div>)}
+                            {selectedEvent.team && selectedEvent.team.length > 0 && (<div className="flex items-start gap-4"><UsersIcon className="w-5 h-5 text-brand-text-secondary flex-shrink-0 mt-0.5" /><div><p className="font-medium text-brand-text-light mb-2">Tim yang Bertugas</p><div className="flex items-center flex-wrap gap-2">{selectedEvent.team.map(t => (<div key={t.memberId} className="flex items-center gap-1.5" title={t.name}><AvatarDisplay avatarBase64={(t as any).avatar ?? null} name={t.name} size="sm" variant="team" className="border-2 border-brand-surface" /><span className="text-xs font-bold text-brand-text-secondary hidden sm:block">{t.name}</span></div>))}</div></div></div>)}
                         </div>
                     </div>
                     <div className="p-6 border-t border-brand-border space-y-2">
                         {String(selectedEvent.clientId) !== 'INTERNAL' && onNavigateToProject && !String(selectedEvent.id).endsWith('-deadline') && (
                             <button onClick={() => onNavigateToProject(selectedEvent.id)} className="button-secondary w-full inline-flex items-center justify-center gap-2">
-                                <FolderKanbanIcon className="w-5 h-5" /> Buka Halaman Acara Pernikahan
+                                <FolderKanbanIcon className="w-5 h-5" /> Buka Proyek
                             </button>
                         )}
-                        <button onClick={() => onSetMode('edit')} className="button-primary w-full">{profile.eventTypes?.includes(selectedEvent.projectType) ? 'Edit Detail Acara Pernikahan' : 'Lihat Detail (Baca Saja)'}</button>
+                        <button onClick={() => onSetMode('edit')} className="button-primary w-full">{profile.eventTypes?.includes(selectedEvent.projectType) ? 'Edit Acara' : 'Lihat Detail (Baca Saja)'}</button>
                         {!profile.eventTypes?.includes(selectedEvent.projectType) && (
-                            <p className="text-xs text-brand-text-secondary mt-2">Acara Pernikahan pengantin hanya dapat diedit di halaman Acara Pernikahan.</p>
+                            <p className="text-xs text-brand-text-secondary mt-2">Acara pengantin hanya dapat diedit di halaman Proyek.</p>
                         )}
                     </div>
                 </div>
             ) : (
                 <div className="p-6 relative bg-white/30 min-h-full">
                     <form onSubmit={onSubmit} className="space-y-5 animate-fade-in form-compact">
-                        <div className="input-group"><input type="text" id="eventName" name="projectName" value={eventForm.projectName} onChange={onFormChange} className="input-field bg-white/80" placeholder=" " required /><label htmlFor="eventName" className="input-label">Nama Acara Pernikahan</label></div>
-                        <div className="input-group"><select name="projectType" id="projectType" value={eventForm.projectType} onChange={onFormChange} className="input-field bg-white/80">{(profile.eventTypes || []).map(type => <option key={type} value={type}>{type}</option>)}</select><label htmlFor="projectType" className="input-label">Jenis Acara Pernikahan</label></div>
+                        <div className="input-group"><input type="text" id="eventName" name="projectName" value={eventForm.projectName} onChange={onFormChange} className="input-field bg-white/80" placeholder=" " required /><label htmlFor="eventName" className="input-label">Nama Agenda</label></div>
+                        <div className="input-group"><select name="projectType" id="projectType" value={eventForm.projectType} onChange={onFormChange} className="input-field bg-white/80">{(profile.eventTypes || []).map(type => <option key={type} value={type}>{type}</option>)}</select><label htmlFor="projectType" className="input-label">Jenis Agenda</label></div>
                         <div className="input-group"><input type="date" id="eventDate" name="date" value={eventForm.date} onChange={onFormChange} className="input-field bg-white/80" placeholder=" " required /><label htmlFor="eventDate" className="input-label">Tanggal</label></div>
                         <div className="grid grid-cols-2 gap-4"><div className="input-group"><input type="time" id="startTime" name="startTime" value={eventForm.startTime} onChange={onFormChange} className="input-field bg-white/80" placeholder=" " /><label htmlFor="startTime" className="input-label">Mulai</label></div><div className="input-group"><input type="time" id="endTime" name="endTime" value={eventForm.endTime} onChange={onFormChange} className="input-field bg-white/80" placeholder=" " /><label htmlFor="endTime" className="input-label">Selesai</label></div></div>
                         <div className="input-group"><input type="text" id="eventLocation" name="location" value={eventForm.location || ''} onChange={onFormChange} className="input-field bg-white/80" placeholder=" " /><label htmlFor="eventLocation" className="input-label">Lokasi (Opsional)</label></div>
                         <div className="input-group"><input type="url" id="imageUrl" name="image" value={eventForm.image} onChange={onFormChange} className="input-field bg-white/80" placeholder=" " /><label htmlFor="imageUrl" className="input-label">URL Gambar Sampul (Opsional)</label></div>
                         <div className="input-group">
-                            <label className="input-label !static !-top-4 !text-brand-accent">Warna Acara Pernikahan</label>
+                            <label className="input-label !static !-top-4 !text-brand-accent">Warna Acara</label>
                             <div className="flex flex-wrap gap-2 mt-2 p-3 border border-brand-border/40 bg-white/60 rounded-xl shadow-inner">
                                 {customColors.map(color => (
                                     <button
@@ -1045,7 +1113,7 @@ const EventPanel: React.FC<EventPanelProps> = ({ isOpen, mode, selectedEvent, ev
                                     />
                                 ))}
                             </div>
-                            <p className="text-[10px] text-brand-text-secondary mt-1">Acara Pernikahan internal akan menggunakan warna ini. Acara Pernikahan pengantin akan menggunakan warna Progres Acara Pernikahan Pengantin (jika ada).</p>
+                            <p className="text-[10px] text-brand-text-secondary mt-1">Acara internal menggunakan warna ini. Acara pengantin menggunakan warna status proyek.</p>
                         </div>
                         <div className="input-group"><label className="input-label !static !-top-4 !text-brand-accent">Tim</label><div className="p-3 border border-brand-border/40 bg-white/60 rounded-xl max-h-32 overflow-y-auto space-y-2 mt-2 custom-scrollbar shadow-inner">{teamMembers.map(member => (<label key={member.id} className="flex items-center group cursor-pointer"><input type="checkbox" checked={eventForm.team.some((t: any) => String(t.memberId) === String(member.id))} onChange={() => onTeamChange(member.id)} className="h-4 w-4 rounded border-gray-300 text-brand-accent focus:ring-brand-accent transition flex-shrink-0" /><span className="ml-3 text-sm font-medium text-brand-text-secondary group-hover:text-brand-text-light">{member.name}</span></label>))}</div></div>
                         <div className="input-group"><textarea name="notes" id="eventNotes" value={eventForm.notes} onChange={onFormChange} className="input-field bg-white/80 custom-scrollbar" rows={3} placeholder=" "></textarea><label htmlFor="eventNotes" className="input-label">Catatan</label></div>
@@ -1054,7 +1122,7 @@ const EventPanel: React.FC<EventPanelProps> = ({ isOpen, mode, selectedEvent, ev
                                 <button type="button" onClick={onDelete} className="text-red-500 hover:text-red-600 hover:bg-red-50 px-3 py-2 rounded-lg text-sm font-semibold transition-colors mr-auto">Hapus</button>
                             )}
                             <button type="button" onClick={mode === 'edit' && selectedEvent ? () => onSetMode('detail') : onClose} className="button-secondary shadow-sm">Batal</button>
-                            <button type="submit" className="button-primary shadow-md">{selectedEvent ? 'Update Acara Pernikahan' : 'Simpan Acara Pernikahan'}</button>
+                            <button type="submit" className="button-primary shadow-md">Simpan</button>
                         </div>
                     </form>
                 </div>
@@ -1108,6 +1176,8 @@ export const CalendarView: React.FC<CalendarViewProps> = (props) => {
     const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
     const [internalEvents, setInternalEvents] = useState<Project[]>([]);
     const [isLoadingEvents, setIsLoadingEvents] = useState<boolean>(true);
+    const [isTeamSectionOpen, setIsTeamSectionOpen] = useState(false);
+    const [isAgendaSectionOpen, setIsAgendaSectionOpen] = useState(false);
 
     const [filters, setFilters] = useState<{
         isClientProjectVisible: boolean;
@@ -1447,58 +1517,9 @@ export const CalendarView: React.FC<CalendarViewProps> = (props) => {
                 onDateSelect={setCurrentDate}
             />
 
-            <div className="flex-1 flex flex-row overflow-hidden">
+            <div className="flex-1 flex flex-row overflow-hidden relative">
                 <div className="flex-1 flex flex-col overflow-y-auto">
-                    {/* Ringkasan Agenda Mendatang (Very top summary) */}
-                    {(viewMode === 'Day' || viewMode === 'Week' || viewMode === 'Month') && (
-                        <CompactAgendaTable 
-                            events={filteredEvents}
-                            profile={profile}
-                            onEventClick={handleOpenPanelForEdit}
-                        />
-                    )}
-
-                    {/* DEDICATED TABLE SECTION (Now syncs with month) */}
-                    <div className="mt-8 p-1 px-4 md:px-6">
-                        <div className="flex items-center justify-between mb-6 p-4 bg-brand-bg/40 rounded-2xl border border-brand-border/30 shadow-sm">
-                            <div className="flex items-center gap-3">
-                                <CalendarIcon className="w-5 h-5 text-brand-accent" />
-                                <h3 className="text-lg font-bold text-brand-text-light uppercase tracking-widest">
-                                    Agenda {currentDate.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
-                                </h3>
-                            </div>
-                            <span className="text-xs font-bold text-brand-text-secondary">
-                                {filteredEventsThisMonth.length} Acara
-                            </span>
-                        </div>
-                        <div className="glass-card rounded-2xl overflow-hidden border border-brand-border/40 shadow-xl mb-12">
-                            <TableView
-                                events={filteredEventsThisMonth}
-                                profile={profile}
-                                onEventClick={handleOpenPanelForEdit}
-                            />
-                        </div>
-                    </div>
-
-                    {/* DEDICATED TEAM SECTION (Now moved up) */}
-                    <div className="mt-4 p-1 px-4 md:px-6 mb-12">
-                        <div className="flex items-center gap-3 mb-6 p-4 bg-brand-bg/40 rounded-2xl border border-brand-border/30 shadow-sm">
-                            <UsersIcon className="w-5 h-5 text-brand-accent" />
-                            <h3 className="text-lg font-bold text-brand-text-light uppercase tracking-widest">Jadwal Anggota Tim</h3>
-                        </div>
-                        <div className="glass-card rounded-2xl overflow-hidden border border-brand-border/40 shadow-xl min-h-[500px]">
-                            <TeamView
-                                currentDate={currentDate}
-                                eventsByDate={eventsByDate}
-                                teamMembers={teamMembers}
-                                profile={profile}
-                                isLoading={isLoadingEvents}
-                                onEventClick={handleOpenPanelForEdit}
-                            />
-                        </div>
-                    </div>
-
-                    {/* CALENDAR CONTROLS AND GRID (Now moved to bottom) */}
+                    {/* CALENDAR CONTROLS AND GRID (Moved to Top) */}
                     <CalendarHeader
                         currentDate={currentDate}
                         viewMode={viewMode}
@@ -1534,9 +1555,13 @@ export const CalendarView: React.FC<CalendarViewProps> = (props) => {
                         onInfoClick={() => setIsInfoModalOpen(true)}
                     />
 
+                    <div className="px-4 py-2 bg-brand-surface border-b border-brand-border/40">
+                        <ColorLegend profile={profile} />
+                    </div>
+
                     <div
-                        className="calendar-grid-container flex-shrink-0 pb-20"
-                        style={{ height: viewMode === 'Month' ? 'calc(100vh - 12rem)' : '700px' }}
+                        className="calendar-grid-container flex-shrink-0"
+                        style={{ height: viewMode === 'Month' ? 'calc(100vh - 15rem)' : '700px' }}
                         onTouchStart={(e) => {
                             const touch = e.touches[0];
                             (e.currentTarget as any).touchStartX = touch.clientX;
@@ -1604,7 +1629,94 @@ export const CalendarView: React.FC<CalendarViewProps> = (props) => {
                             />
                         )}
                     </div>
+
+                    {/* Ringkasan Agenda Mendatang (Moved below Calendar) */}
+                    {(viewMode === 'Day' || viewMode === 'Week' || viewMode === 'Month') && (
+                        <div className="mt-8 border-t border-brand-border/40 pt-4">
+                            <CompactAgendaTable 
+                                events={filteredEvents}
+                                profile={profile}
+                                onEventClick={handleOpenPanelForEdit}
+                            />
+                        </div>
+                    )}
+
+                    {/* DEDICATED TABLE SECTION (Collapsible) */}
+                    <div className="mt-4 p-1 px-4 md:px-6">
+                        <div 
+                            onClick={() => setIsAgendaSectionOpen(!isAgendaSectionOpen)}
+                            className="flex items-center justify-between p-4 bg-brand-bg/40 rounded-2xl border border-brand-border/30 shadow-sm cursor-pointer hover:bg-brand-bg/60 transition-colors"
+                        >
+                            <div className="flex items-center gap-3">
+                                <CalendarIcon className="w-5 h-5 text-brand-accent" />
+                                <h3 className="text-sm font-bold text-brand-text-light uppercase tracking-widest">
+                                    Tabel Agenda {currentDate.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
+                                </h3>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <span className="text-xs font-bold text-brand-text-secondary">
+                                    {filteredEventsThisMonth.length} Acara
+                                </span>
+                                <div className={`transform transition-transform ${isAgendaSectionOpen ? 'rotate-90' : ''}`}>
+                                    <ChevronRightIcon className="w-5 h-5 text-brand-text-secondary" />
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {isAgendaSectionOpen && (
+                            <div className="mt-4 glass-card rounded-2xl overflow-hidden border border-brand-border/40 shadow-xl mb-6 animate-fade-in">
+                                <TableView
+                                    events={filteredEventsThisMonth}
+                                    profile={profile}
+                                    onEventClick={handleOpenPanelForEdit}
+                                />
+                            </div>
+                        )}
+                    </div>
+
+                    {/* DEDICATED TEAM SECTION (Collapsible) */}
+                    <div className="mt-2 p-1 px-4 md:px-6 mb-12">
+                        <div 
+                            onClick={() => setIsTeamSectionOpen(!isTeamSectionOpen)}
+                            className="flex items-center justify-between p-4 bg-brand-bg/40 rounded-2xl border border-brand-border/30 shadow-sm cursor-pointer hover:bg-brand-bg/60 transition-colors"
+                        >
+                            <div className="flex items-center gap-3">
+                                <UsersIcon className="w-5 h-5 text-brand-accent" />
+                                <h3 className="text-sm font-bold text-brand-text-light uppercase tracking-widest">Jadwal Anggota Tim</h3>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <span className="text-xs font-bold text-brand-text-secondary">
+                                    {teamMembers.length} Anggota
+                                </span>
+                                <div className={`transform transition-transform ${isTeamSectionOpen ? 'rotate-90' : ''}`}>
+                                    <ChevronRightIcon className="w-5 h-5 text-brand-text-secondary" />
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {isTeamSectionOpen && (
+                            <div className="mt-4 glass-card rounded-2xl overflow-hidden border border-brand-border/40 shadow-xl animate-fade-in">
+                                <TeamView
+                                    currentDate={currentDate}
+                                    eventsByDate={eventsByDate}
+                                    teamMembers={teamMembers}
+                                    profile={profile}
+                                    isLoading={isLoadingEvents}
+                                    onEventClick={handleOpenPanelForEdit}
+                                />
+                            </div>
+                        )}
+                    </div>
                 </div>
+
+                {/* Overlay Backdrop */}
+                {isPanelOpen && (
+                    <div 
+                        className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 transition-opacity lg:hidden"
+                        onClick={() => setIsPanelOpen(false)} 
+                    />
+                )}
+
 
                 <EventPanel
                     isOpen={isPanelOpen}

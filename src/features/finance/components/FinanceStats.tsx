@@ -25,7 +25,8 @@ export const FinanceStats: React.FC<FinanceStatsProps> = ({ summary, onStatClick
                     icon={<CreditCardIcon className="w-6 h-6" />} 
                     title="Total Aset" 
                     value={formatCurrency(summary.totalAssets)} 
-                    subtitle="Total gabungan saldo di semua kartu & tunai Anda." 
+                    subtitle="Total gabungan saldo di semua kartu & tunai Anda."
+                    colorVariant="blue"
                 />
             </div>
             <div 
@@ -37,7 +38,8 @@ export const FinanceStats: React.FC<FinanceStatsProps> = ({ summary, onStatClick
                     icon={<ClipboardListIcon className="w-6 h-6" />} 
                     title="Dana di Kantong" 
                     value={formatCurrency(summary.pocketsTotal)} 
-                    subtitle="Total dana yang dialokasikan di semua kantong." 
+                    subtitle="Total dana yang dialokasikan di semua kantong."
+                    colorVariant="purple"
                 />
             </div>
             <div 
@@ -49,7 +51,8 @@ export const FinanceStats: React.FC<FinanceStatsProps> = ({ summary, onStatClick
                     icon={<ArrowUpIcon className="w-6 h-6" />} 
                     title="Pemasukan Bulan Ini" 
                     value={formatCurrency(summary.totalIncomeThisMonth)} 
-                    subtitle="Total pemasukan yang tercatat bulan ini." 
+                    subtitle="Total pemasukan yang tercatat bulan ini."
+                    colorVariant="green"
                 />
             </div>
             <div 
@@ -61,7 +64,8 @@ export const FinanceStats: React.FC<FinanceStatsProps> = ({ summary, onStatClick
                     icon={<ArrowDownIcon className="w-6 h-6" />} 
                     title="Pengeluaran Bulan Ini" 
                     value={formatCurrency(summary.totalExpenseThisMonth)} 
-                    subtitle="Total pengeluaran yang tercatat bulan ini." 
+                    subtitle="Total pengeluaran yang tercatat bulan ini."
+                    colorVariant="orange"
                 />
             </div>
         </div>

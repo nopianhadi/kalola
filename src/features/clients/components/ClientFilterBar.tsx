@@ -10,6 +10,9 @@ interface ClientFilterBarProps {
     onStatusFilterChange: (val: string) => void;
     typeFilter: string;
     onTypeFilterChange: (val: string) => void;
+    locationFilter: string;
+    onLocationFilterChange: (val: string) => void;
+    locationOptions: string[];
     startDate: string;
     onStartDateChange: (val: string) => void;
     endDate: string;
@@ -23,6 +26,8 @@ export const ClientFilterBar: React.FC<ClientFilterBarProps> = ({
     searchQuery, onSearchChange,
     statusFilter, onStatusFilterChange,
     typeFilter, onTypeFilterChange,
+    locationFilter, onLocationFilterChange,
+    locationOptions,
     startDate, onStartDateChange,
     endDate, onEndDateChange,
 }) => {
@@ -111,6 +116,15 @@ export const ClientFilterBar: React.FC<ClientFilterBarProps> = ({
                     >
                         <option value="Semua Tipe">Semua Tipe</option>
                         {Object.values(ClientType).map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+
+                    <select
+                        value={locationFilter}
+                        onChange={e => onLocationFilterChange(e.target.value)}
+                        className="bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer w-full sm:w-40"
+                    >
+                        <option value="Semua Lokasi">Semua Lokasi</option>
+                        {locationOptions.map(loc => <option key={loc} value={loc}>{loc}</option>)}
                     </select>
                 </div>
             </div>

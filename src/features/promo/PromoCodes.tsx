@@ -1,4 +1,4 @@
-import React, { useState, forwardRef, useImperativeHandle } from 'react';
+﻿import React, { useState, forwardRef, useImperativeHandle } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { PromoCode } from '@/types';
 import PageHeader from '@/layouts/PageHeader';
@@ -67,7 +67,6 @@ const PromoCodes = forwardRef<PromoCodesHandle, PromoCodesProps>(({ hideHeader }
             setSelectedCode(null);
             setFormData(emptyFormState);
         }
-        setFormData(prev => ({ ...prev, ...emptyFormState }));
         setIsModalOpen(true);
     };
 
@@ -119,8 +118,8 @@ const PromoCodes = forwardRef<PromoCodesHandle, PromoCodesProps>(({ hideHeader }
                 showNotification(`Kode promo "${updated.code}" berhasil diperbarui.`);
 
             }
-        } catch (err) {
-            alert('Gagal menyimpan kode promo ke database. Coba lagi.');
+        } catch (err: any) {
+            alert(err?.message || 'Gagal menyimpan kode promo ke database. Coba lagi.');
             return;
         }
         handleCloseModal();
@@ -167,19 +166,19 @@ const PromoCodes = forwardRef<PromoCodesHandle, PromoCodesProps>(({ hideHeader }
                 <div className="relative bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/60 overflow-hidden">
                     <table className="w-full">
                         <thead>
-                            <tr className="bg-brand-accent/5 border-b border-brand-border/40">
-                                <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-brand-text-secondary">Kode Promo</th>
-                                <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-brand-text-secondary">Nilai Diskon</th>
-                                <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-brand-text-secondary">Status</th>
-                                <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-brand-text-secondary">Kupon Digunakan</th>
-                                <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-brand-text-secondary">Kadaluwarsa</th>
-                                <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-widest text-brand-text-secondary">Kelola</th>
+                            <tr className="bg-slate-100 border-b-2 border-slate-300">
+                                <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-slate-700 border-r border-slate-300">Kode Promo</th>
+                                <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-slate-700 border-r border-slate-300">Nilai Diskon</th>
+                                <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-slate-700 border-r border-slate-300">Status</th>
+                                <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-slate-700 border-r border-slate-300">Kupon Digunakan</th>
+                                <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-slate-700 border-r border-slate-300">Kadaluwarsa</th>
+                                <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-widest text-slate-700">Kelola</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-brand-border/20">
+                        <tbody className="bg-white/40 divide-y divide-slate-300">
                             {promoCodes.map(code => (
-                                <tr key={code.id} className="group/row hover:bg-brand-accent/5 transition-all duration-300">
-                                    <td className="px-6 py-5">
+                                <tr key={code.id} className="group/row hover:bg-brand-bg/50 transition-all duration-300">
+                                    <td className="px-6 py-5 border-r border-slate-300">
                                         <div className="flex items-center gap-3">
                                             <div className="w-8 h-8 rounded-lg bg-brand-accent/10 flex items-center justify-center font-black text-brand-accent group-hover/row:scale-110 transition-transform">
                                                 %
@@ -198,7 +197,7 @@ const PromoCodes = forwardRef<PromoCodesHandle, PromoCodesProps>(({ hideHeader }
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-5">
+                                    <td className="px-6 py-5 border-r border-slate-300">
                                         <p className="text-lg font-black text-brand-text-light">
                                             {code.discountType === 'percentage'
                                                 ? `${code.discountValue}%`
@@ -206,7 +205,7 @@ const PromoCodes = forwardRef<PromoCodesHandle, PromoCodesProps>(({ hideHeader }
                                         </p>
                                         <p className="text-[10px] font-bold text-brand-text-secondary uppercase">{code.discountType === 'percentage' ? 'Persentase' : 'Potongan Harga'}</p>
                                     </td>
-                                    <td className="px-6 py-5">
+                                    <td className="px-6 py-5 border-r border-slate-300">
                                         <div className="flex items-center gap-2">
                                             <div className={`w-2 h-2 rounded-full ${code.isActive ? 'bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-red-400'}`}></div>
                                             <span className={`text-[10px] font-black uppercase tracking-widest ${code.isActive ? 'text-green-600' : 'text-red-500'}`}>
@@ -214,7 +213,7 @@ const PromoCodes = forwardRef<PromoCodesHandle, PromoCodesProps>(({ hideHeader }
                                             </span>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-5">
+                                    <td className="px-6 py-5 border-r border-slate-300">
                                         <div className="flex flex-col gap-1 w-24">
                                             <div className="flex justify-between text-[10px] font-black text-brand-text-secondary uppercase">
                                                 <span>{code.usageCount} Terpakai</span>
@@ -228,7 +227,7 @@ const PromoCodes = forwardRef<PromoCodesHandle, PromoCodesProps>(({ hideHeader }
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-5">
+                                    <td className="px-6 py-5 border-r border-slate-300">
                                         <p className="text-xs font-black text-brand-text-secondary uppercase tracking-tighter">
                                             {code.expiryDate ? new Date(code.expiryDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Selamanya'}
                                         </p>

@@ -19,10 +19,10 @@ export const PlaceholderPage: React.FC<PlaceholderPageProps> = ({ title, descrip
             <p className="text-brand-text-secondary mb-6 max-w-md">{description}</p>
         )}
         <Link
-            to="/dashboard"
+            to="/prospek"
             className="px-5 py-2.5 bg-brand-accent text-white rounded-xl font-semibold text-sm hover:bg-brand-accent/90 transition-colors shadow-lg shadow-brand-accent/20"
         >
-            Kembali ke Dashboard
+            Kembali ke Beranda
         </Link>
     </div>
 );

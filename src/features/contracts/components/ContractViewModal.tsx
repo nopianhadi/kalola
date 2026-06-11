@@ -44,7 +44,7 @@ export const ContractViewModal: React.FC<ContractViewModalProps> = ({
 
     if (!project) return null;
 
-    const contractUrl = `https://vandel-pro.web.app/#/public/contract/${selectedContract.id}`;
+    const contractUrl = `${window.location.origin}/#/public/contract/${selectedContract.id}`;
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Detail Kontrak" size="4xl">

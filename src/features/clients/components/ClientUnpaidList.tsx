@@ -2,22 +2,25 @@ import React from 'react';
 import { WhatsappIcon, EyeIcon } from '@/constants';
 import { ExtendedClient } from '@/features/clients/types';
 import { formatCurrency } from '@/features/clients/utils/clients.utils';
+import { AvatarDisplay } from '@/shared/ui/AvatarUpload';
 
 interface ClientUnpaidListProps {
     clients: ExtendedClient[];
     onViewDetail: (client: ExtendedClient) => void;
+    onSendBilling: (client: ExtendedClient) => void;
 }
 
 export const ClientUnpaidList: React.FC<ClientUnpaidListProps> = ({
     clients,
-    onViewDetail
+    onViewDetail,
+    onSendBilling
 }) => {
     return (
         <div className="bg-white rounded-3xl shadow-xl border border-brand-border overflow-hidden">
             <div className="p-6 border-b border-brand-border bg-gradient-to-r from-red-50/50 to-transparent">
                 <h3 className="font-bold text-brand-text-primary flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                    Tagihan Pengantin Yang Belum Lunas ({clients.length})
+                    Tagihan Pengantin yang Belum Lunas ({clients.length})
                 </h3>
             </div>
 
@@ -34,7 +37,7 @@ export const ClientUnpaidList: React.FC<ClientUnpaidListProps> = ({
                                     {client.name}
                                 </h4>
                                 <p className="text-xs text-brand-text-secondary">
-                                    {client.mostRecentProject?.projectName || 'No Project'}
+                                    {client.mostRecentProject?.projectName || 'Belum ada acara'}
                                 </p>
                             </div>
                             <div className="text-right">
@@ -48,24 +51,29 @@ export const ClientUnpaidList: React.FC<ClientUnpaidListProps> = ({
                         </div>
 
                         <div className="flex items-center justify-between mt-3">
-                            <div className="flex -space-x-2">
-                                <div className="w-6 h-6 rounded-full bg-blue-100 border-2 border-white flex items-center justify-center text-[10px] font-bold text-blue-600">
-                                    {client.name.charAt(0)}
-                                </div>
+                            <div className="flex -space-x-1">
+                                <AvatarDisplay
+                                    avatarBase64={client.avatar}
+                                    name={client.name}
+                                    size="sm"
+                                    variant="client"
+                                    className="border-2 border-white"
+                                />
                             </div>
                             <div className="flex items-center gap-2">
                                 <button
                                     className="p-2 rounded-lg bg-green-50 text-green-600 hover:bg-green-600 hover:text-white transition-all shadow-sm"
+                                    title="Kirim tagihan via WhatsApp"
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        // Logic for quick WhatsApp would go here
+                                        onSendBilling(client);
                                     }}
                                 >
                                     <WhatsappIcon className="w-4 h-4" />
                                 </button>
                                 <div className="inline-flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-blue-600/10 text-blue-500 group-hover:bg-blue-600 group-hover:text-white transition-all text-[10px] font-bold shadow-sm">
                                     <EyeIcon className="w-3.5 h-3.5" />
-                                    <span>DETAIL</span>
+                                    <span>Detail</span>
                                 </div>
                             </div>
                         </div>

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { getVendorId } from '../middleware/auth';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -7,7 +8,11 @@ const prismaClientFeedback = (prisma as any).client_feedback || (prisma as any).
 
 router.get('/', async (req, res) => {
   try {
-    const data = await prismaClientFeedback.findMany({ orderBy: { date: 'desc' } });
+    const vendorId = getVendorId(req);
+    const data = await prismaClientFeedback.findMany({
+      where: { vendor_id: vendorId },
+      orderBy: { date: 'desc' }
+    });
     res.json(data);
   } catch (error) {
     res.status(500).json({ error: 'Gagal' });
@@ -16,7 +21,8 @@ router.get('/', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const data = await prismaClientFeedback.create({ data: req.body });
+    const vendorId = getVendorId(req);
+    const data = await prismaClientFeedback.create({ data: { ...req.body, vendor_id: vendorId } });
     res.status(201).json(data);
   } catch (error) {
     res.status(500).json({ error: 'Gagal' });
@@ -24,4 +30,3 @@ router.post('/', async (req, res) => {
 });
 
 export default router;
-

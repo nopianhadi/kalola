@@ -9,15 +9,20 @@ datasource db {
 
 model add_ons {
   id              Int               @id @default(autoincrement())
+  vendor_id       Int?
   name            String            @db.VarChar(255)
   price           Decimal?          @default(0.00) @db.Decimal(15, 2)
   region          String?           @db.VarChar(100)
   created_at      DateTime          @default(now()) @db.Timestamp(0)
+  users           users?            @relation("vendor_add_ons", fields: [vendor_id], references: [id], onDelete: Cascade, map: "add_ons_vendor_fk")
   project_add_ons project_add_ons[]
+
+  @@index([vendor_id], map: "add_ons_vendor_id")
 }
 
 model calendar_events {
   id         Int      @id @default(autoincrement())
+  vendor_id  Int?
   title      String   @db.VarChar(255)
   event_type String?  @db.VarChar(100)
   date       DateTime @db.Date
@@ -29,10 +34,14 @@ model calendar_events {
   location   String?  @db.VarChar(255)
   created_at DateTime @default(now()) @db.Timestamp(0)
   updated_at DateTime @default(now()) @db.Timestamp(0)
+  users      users?   @relation("vendor_calendar_events", fields: [vendor_id], references: [id], onDelete: Cascade, map: "calendar_events_vendor_fk")
+
+  @@index([vendor_id], map: "calendar_events_vendor_id")
 }
 
 model cards {
   id                Int                 @id @default(autoincrement())
+  vendor_id         Int?
   card_holder_name  String              @db.VarChar(255)
   bank_name         String?             @db.VarChar(100)
   card_type         String?             @db.VarChar(50)
@@ -42,22 +51,30 @@ model cards {
   color_gradient    String?             @db.VarChar(100)
   created_at        DateTime            @default(now()) @db.Timestamp(0)
   updated_at        DateTime            @default(now()) @db.Timestamp(0)
+  users             users?              @relation("vendor_cards", fields: [vendor_id], references: [id], onDelete: Cascade, map: "cards_vendor_fk")
   financial_pockets financial_pockets[]
   transactions      transactions[]
+
+  @@index([vendor_id], map: "cards_vendor_id")
 }
 
 model client_feedback {
   id           Int       @id @default(autoincrement())
+  vendor_id    Int?
   client_name  String    @db.VarChar(255)
   satisfaction String?   @db.VarChar(50)
   rating       Int?
   feedback     String?   @db.Text
   date         DateTime? @db.Date
   created_at   DateTime  @default(now()) @db.Timestamp(0)
+  users        users?    @relation("vendor_client_feedback", fields: [vendor_id], references: [id], onDelete: Cascade, map: "client_feedback_vendor_fk")
+
+  @@index([vendor_id], map: "client_feedback_vendor_id")
 }
 
 model clients {
   id               Int            @id @default(autoincrement())
+  vendor_id        Int?
   name             String         @db.VarChar(255)
   email            String?        @db.VarChar(255)
   phone            String?        @db.VarChar(50)
@@ -69,11 +86,35 @@ model clients {
   last_contact     DateTime       @default(now()) @db.Timestamp(0)
   portal_access_id String?        @unique(map: "portal_access_id") @db.VarChar(20)
   address          String?        @db.Text
+  avatar           String?        @db.LongText
   created_at       DateTime       @default(now()) @db.Timestamp(0)
   updated_at       DateTime       @default(now()) @db.Timestamp(0)
+  users            users?         @relation("vendor_clients", fields: [vendor_id], references: [id], onDelete: Cascade, map: "clients_vendor_fk")
   contracts        contracts[]
   projects         projects[]
   transactions     transactions[]
+  leads            leads[]
+
+  @@index([vendor_id], map: "clients_vendor_id")
+}
+
+model leads {
+  id         Int      @id @default(autoincrement())
+  vendor_id  Int?
+  name       String   @db.VarChar(255)
+  city       String?  @db.VarChar(100)
+  whatsapp   String   @db.VarChar(50)
+  source     String   @db.VarChar(50)
+  status     String   @default("Baru") @db.VarChar(50)
+  notes      String?  @db.Text
+  client_id  Int?
+  created_at DateTime @default(now()) @db.Timestamp(0)
+  updated_at DateTime @default(now()) @db.Timestamp(0)
+  vendor     users?   @relation("vendor_leads", fields: [vendor_id], references: [id], onDelete: Cascade, map: "leads_vendor_fk")
+  clients    clients? @relation(fields: [client_id], references: [id], onUpdate: Restrict, map: "leads_ibfk_1")
+
+  @@index([vendor_id], map: "leads_vendor_id")
+  @@index([client_id], map: "client_id")
 }
 
 model contracts {
@@ -121,6 +162,7 @@ model contracts {
 
 model financial_pockets {
   id             Int            @id @default(autoincrement())
+  vendor_id      Int?
   name           String         @db.VarChar(255)
   description    String?        @db.Text
   icon           String?        @default("piggy-bank") @db.VarChar(50)
@@ -132,22 +174,50 @@ model financial_pockets {
   source_card_id Int?
   created_at     DateTime       @default(now()) @db.Timestamp(0)
   updated_at     DateTime       @default(now()) @db.Timestamp(0)
+  vendor         users?         @relation("vendor_pockets", fields: [vendor_id], references: [id], onDelete: Cascade, map: "pockets_vendor_fk")
   cards          cards?         @relation(fields: [source_card_id], references: [id], onUpdate: Restrict, map: "financial_pockets_ibfk_1")
   transactions   transactions[]
 
+  @@index([vendor_id], map: "pockets_vendor_id")
   @@index([source_card_id], map: "source_card_id")
 }
 
-model freelancer_feedback {
-  id               Int           @id @default(autoincrement())
-  freelancer_id    Int?
-  team_member_name String?       @db.VarChar(255)
-  message          String?       @db.Text
-  date             DateTime?     @db.Date
-  created_at       DateTime      @default(now()) @db.Timestamp(0)
-  team_members     team_members? @relation(fields: [freelancer_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "freelancer_feedback_ibfk_1")
 
-  @@index([freelancer_id], map: "freelancer_id")
+model portfolios {
+  id              Int               @id @default(autoincrement())
+  vendor_id       Int?
+  user_id         Int?              // DEPRECATED: kept for backward compatibility, use vendor_id instead
+  title           String            @db.VarChar(255)
+  category        String?           @db.VarChar(100)
+  description     String?           @db.Text
+  hero_image_url  String?           @db.LongText
+  is_public       Boolean?          @default(true)
+  public_id       String            @unique(map: "portfolios_public_id") @db.VarChar(100)
+  booking_link    String?           @db.Text
+  project_date    DateTime?         @db.Date
+  location        String?           @db.VarChar(255)
+  created_at      DateTime          @default(now()) @db.Timestamp(0)
+  updated_at      DateTime          @default(now()) @db.Timestamp(0)
+  vendor          users?            @relation("vendor_portfolios", fields: [vendor_id], references: [id], onDelete: Cascade, map: "portfolios_vendor_fk")
+  portfolio_items portfolio_items[]
+
+  @@index([vendor_id], map: "portfolios_vendor_id")
+  @@index([user_id], map: "portfolios_user_id")
+}
+
+model portfolio_items {
+  id            Int         @id @default(autoincrement())
+  portfolio_id  Int?
+  vendor_id     Int?
+  url           String      @db.LongText
+  thumbnail_url String?     @db.LongText
+  caption       String?     @db.Text
+  sort_order    Int?        @default(0)
+  uploaded_at   DateTime    @default(now()) @db.Timestamp(0)
+  portfolios    portfolios? @relation(fields: [portfolio_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "portfolio_items_ibfk_1")
+
+  @@index([portfolio_id], map: "portfolio_items_portfolio_id")
+  @@index([vendor_id], map: "portfolio_items_vendor_id")
 }
 
 model galleries {
@@ -181,6 +251,7 @@ model gallery_images {
 
 model notifications {
   id         Int      @id @default(autoincrement())
+  vendor_id  Int?
   title      String   @db.VarChar(255)
   message    String?  @db.Text
   timestamp  DateTime @default(now()) @db.Timestamp(0)
@@ -188,10 +259,14 @@ model notifications {
   icon       String?  @db.VarChar(50)
   link       String?  @db.LongText
   created_at DateTime @default(now()) @db.Timestamp(0)
+  users      users?   @relation("vendor_notifications", fields: [vendor_id], references: [id], onDelete: Cascade, map: "notifications_vendor_fk")
+
+  @@index([vendor_id], map: "notifications_vendor_id")
 }
 
 model packages {
   id                     Int        @id @default(autoincrement())
+  vendor_id              Int?
   name                   String     @db.VarChar(255)
   price                  Decimal?   @default(0.00) @db.Decimal(15, 2)
   category               String?    @db.VarChar(100)
@@ -207,7 +282,10 @@ model packages {
   duration_options       String?    @db.LongText
   created_at             DateTime   @default(now()) @db.Timestamp(0)
   updated_at             DateTime   @default(now()) @db.Timestamp(0)
+  vendor                 users?     @relation("vendor_packages", fields: [vendor_id], references: [id], onDelete: Cascade, map: "packages_vendor_fk")
   projects               projects[]
+
+  @@index([vendor_id], map: "packages_vendor_id")
 }
 
 model profiles {
@@ -309,6 +387,7 @@ model project_team_assignments {
 
 model projects {
   id                              Int                        @id @default(autoincrement())
+  vendor_id                       Int?
   project_name                    String                     @db.VarChar(255)
   client_name                     String?                    @db.VarChar(255)
   client_id                       Int?
@@ -368,14 +447,15 @@ model projects {
   project_add_ons                 project_add_ons[]
   project_print_items             project_print_items[]
   project_team_assignments        project_team_assignments[]
+  vendor                          users?                     @relation("vendor_projects", fields: [vendor_id], references: [id], onDelete: Cascade, map: "projects_vendor_fk")
   clients                         clients?                   @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "projects_ibfk_1")
   packages                        packages?                  @relation(fields: [package_id], references: [id], onUpdate: Restrict, map: "projects_ibfk_2")
   promo_codes                     promo_codes?               @relation(fields: [promo_code_id], references: [id], onUpdate: Restrict, map: "projects_ibfk_3")
-  social_media_posts              social_media_posts[]
-  team_project_payments           team_project_payments[]
   transactions                    transactions[]
+  team_project_payments           team_project_payments[]
   wedding_day_checklists          wedding_day_checklists[]
 
+  @@index([vendor_id], map: "projects_vendor_id")
   @@index([client_id], map: "client_id")
   @@index([package_id], map: "package_id")
   @@index([promo_code_id], map: "promo_code_id")
@@ -383,6 +463,7 @@ model projects {
 
 model promo_codes {
   id             Int        @id @default(autoincrement())
+  vendor_id      Int?
   code           String     @unique(map: "code") @db.VarChar(100)
   discount_type  String     @db.VarChar(50)
   discount_value Decimal    @db.Decimal(15, 2)
@@ -391,39 +472,30 @@ model promo_codes {
   max_usage      Int?
   expiry_date    DateTime?  @db.Date
   created_at     DateTime   @default(now()) @db.Timestamp(0)
+  vendor         users?     @relation("vendor_promo_codes", fields: [vendor_id], references: [id], onDelete: Cascade, map: "promo_codes_vendor_fk")
   projects       projects[]
+
+  @@index([vendor_id], map: "promo_codes_vendor_id")
 }
 
-model social_media_posts {
-  id             Int       @id @default(autoincrement())
-  project_id     Int?
-  client_name    String?   @db.VarChar(255)
-  post_type      String?   @db.VarChar(100)
-  platform       String?   @db.VarChar(100)
-  scheduled_date DateTime  @default(now()) @db.Timestamp(0)
-  caption        String?   @db.Text
-  media_url      String?   @db.Text
-  status         String?   @default("Draf") @db.VarChar(50)
-  notes          String?   @db.Text
-  created_at     DateTime  @default(now()) @db.Timestamp(0)
-  updated_at     DateTime  @default(now()) @db.Timestamp(0)
-  projects       projects? @relation(fields: [project_id], references: [id], onUpdate: Restrict, map: "social_media_posts_ibfk_1")
-
-  @@index([project_id], map: "project_id")
-}
 
 model suggestions {
   id         Int      @id @default(autoincrement())
+  vendor_id  Int?
   name       String   @db.VarChar(255)
   contact    String?  @db.VarChar(255)
   message    String?  @db.Text
   date       DateTime @default(now()) @db.Timestamp(0)
   channel    String?  @db.VarChar(100)
   created_at DateTime @default(now()) @db.Timestamp(0)
+  users      users?   @relation("vendor_suggestions", fields: [vendor_id], references: [id], onDelete: Cascade, map: "suggestions_vendor_fk")
+
+  @@index([vendor_id], map: "suggestions_vendor_id")
 }
 
 model team_members {
   id                       Int                        @id @default(autoincrement())
+  vendor_id                Int?
   name                     String                     @db.VarChar(255)
   role                     String?                    @db.VarChar(100)
   email                    String?                    @db.VarChar(255)
@@ -438,16 +510,20 @@ model team_members {
   portal_access_id         String?                    @unique(map: "portal_access_id") @db.VarChar(20)
   category                 String?                    @default("Tim") @db.VarChar(50)
   performance_notes        String?                    @db.LongText
+  avatar                   String?                    @db.LongText
   created_at               DateTime                   @default(now()) @db.Timestamp(0)
   updated_at               DateTime                   @default(now()) @db.Timestamp(0)
-  freelancer_feedback      freelancer_feedback[]
+  vendor                   users?                     @relation("vendor_team_members", fields: [vendor_id], references: [id], onDelete: Cascade, map: "team_members_vendor_fk")
   project_team_assignments project_team_assignments[]
   team_payment_records     team_payment_records[]
   team_project_payments    team_project_payments[]
+
+  @@index([vendor_id], map: "team_members_vendor_id")
 }
 
 model team_payment_records {
   id                  Int           @id @default(autoincrement())
+  vendor_id           Int?
   record_number       String        @unique(map: "record_number") @db.VarChar(100)
   team_member_id      Int?
   team_member_name    String?       @db.VarChar(255)
@@ -463,8 +539,10 @@ model team_payment_records {
   source_name         String?       @db.VarChar(255)
   notes               String?       @db.Text
   created_at          DateTime      @default(now()) @db.Timestamp(0)
+  vendor              users?        @relation("vendor_team_payment_records", fields: [vendor_id], references: [id], onDelete: Cascade, map: "team_payment_records_vendor_fk")
   team_members        team_members? @relation(fields: [team_member_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "team_payment_records_ibfk_1")
 
+  @@index([vendor_id], map: "team_payment_records_vendor_id")
   @@index([team_member_id], map: "team_member_id")
 }
 
@@ -488,6 +566,7 @@ model team_project_payments {
 
 model transactions {
   id                Int                @id @default(autoincrement())
+  vendor_id         Int?
   date              DateTime           @db.Date
   description       String?            @db.Text
   amount            Decimal            @db.Decimal(15, 2)
@@ -501,11 +580,13 @@ model transactions {
   vendor_signature  String?            @db.Text
   created_at        DateTime           @default(now()) @db.Timestamp(0)
   client_id         Int?
+  vendor            users?             @relation("vendor_transactions", fields: [vendor_id], references: [id], onDelete: Cascade, map: "transactions_vendor_fk")
   projects          projects?          @relation(fields: [project_id], references: [id], onUpdate: Restrict, map: "transactions_ibfk_1")
   financial_pockets financial_pockets? @relation(fields: [pocket_id], references: [id], onUpdate: Restrict, map: "transactions_ibfk_2")
   cards             cards?             @relation(fields: [card_id], references: [id], onUpdate: Restrict, map: "transactions_ibfk_3")
   clients           clients?           @relation(fields: [client_id], references: [id], onUpdate: Restrict, map: "transactions_ibfk_4")
 
+  @@index([vendor_id], map: "transactions_vendor_id")
   @@index([card_id], map: "card_id")
   @@index([pocket_id], map: "pocket_id")
   @@index([project_id], map: "project_id")
@@ -525,6 +606,23 @@ model users {
   updated_at       DateTime    @default(now()) @db.Timestamp(0)
   galleries        galleries[]
   profiles         profiles[]
+  // Vendor relations (data owned by this user/vendor)
+  vendor_add_ons              add_ons[]              @relation("vendor_add_ons")
+  vendor_calendar_events      calendar_events[]      @relation("vendor_calendar_events")
+  vendor_cards                cards[]                @relation("vendor_cards")
+  vendor_client_feedback      client_feedback[]      @relation("vendor_client_feedback")
+  vendor_clients              clients[]              @relation("vendor_clients")
+  vendor_leads                leads[]                @relation("vendor_leads")
+  vendor_notifications        notifications[]        @relation("vendor_notifications")
+  vendor_packages             packages[]             @relation("vendor_packages")
+  vendor_pockets              financial_pockets[]    @relation("vendor_pockets")
+  vendor_portfolios           portfolios[]           @relation("vendor_portfolios")
+  vendor_projects             projects[]             @relation("vendor_projects")
+  vendor_promo_codes          promo_codes[]          @relation("vendor_promo_codes")
+  vendor_suggestions          suggestions[]          @relation("vendor_suggestions")
+  vendor_team_members         team_members[]         @relation("vendor_team_members")
+  vendor_team_payment_records team_payment_records[] @relation("vendor_team_payment_records")
+  vendor_transactions         transactions[]         @relation("vendor_transactions")
 }
 
 model wedding_day_checklists {

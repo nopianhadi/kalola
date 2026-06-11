@@ -88,3 +88,10 @@ export async function updateTeamProjectPayments(items: TeamProjectPayment[]): Pr
 export async function deleteTeamPaymentsByProject(projectId: number): Promise<void> {
   await apiFetch(`/team-project-payments/project/${projectId}`, { method: 'DELETE' });
 }
+
+export async function syncTeamPaymentsFromAssignments(projectId: number): Promise<TeamProjectPayment[]> {
+  const data = await apiFetch<any[]>(`/team-project-payments/sync-project/${projectId}`, {
+    method: 'POST'
+  });
+  return data.map(fromRow);
+}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSettingsPage } from '@/features/settings/hooks/useSettingsPage';
 import { SettingsPageProps } from '@/features/settings/types';
 import { ProfileSettingsTab } from '@/features/settings/components/ProfileSettingsTab';
@@ -20,15 +20,15 @@ type TabId = 'profile' | 'public' | 'finance' | 'team' | 'packages' | 'projects'
 const TABS = [
     { id: 'profile', label: 'Profil Vendor', icon: UsersIcon },
     { id: 'public', label: 'Halaman Publik', icon: GlobeIcon },
-    { id: 'finance', label: 'Finance & Bank', icon: CashIcon },
+    { id: 'finance', label: 'Keuangan / BANK', icon: CashIcon },
     { id: 'team', label: 'Team & Akses', icon: UsersIcon },
     { id: 'packages', label: 'Kategori Paket', icon: PackageIcon },
-    { id: 'projects', label: 'Proyek & Status', icon: LayoutGridIcon },
+    { id: 'projects', label: 'Acara & Status Acara', icon: LayoutGridIcon },
     { id: 'messages', label: 'Template Pesan', icon: MessageSquareIcon },
 ];
 
 export const SettingsPage: React.FC<SettingsPageProps> = ({ currentUser }) => {
-    const { data: profile, isLoading: isProfileLoading } = useProfile();
+    const { data: profileFromServer, isLoading: isProfileLoading } = useProfile();
     const queryClient = useQueryClient();
 
     const { data: qProjects } = useProjects();
@@ -43,16 +43,40 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ currentUser }) => {
         queryClient.invalidateQueries({ queryKey: ['users'] });
     };
 
-    const setProfile = (updater: any) => {
-        const current = queryClient.getQueryData(['profile']);
-        const next = typeof updater === 'function' ? updater(current) : updater;
-        queryClient.setQueryData(['profile'], next);
-    };
+    // profile is kept in LOCAL React state so edits are isolated from
+    // React Query background refetches. It is seeded once from server data.
+    const [profile, setProfile] = useState<any>(null);
+    useEffect(() => {
+        if (profileFromServer && !profile) {
+            setProfile(profileFromServer);
+        }
+    }, [profileFromServer]);
 
     const {
         showSuccess, isSaving, saveError,
-        showNotification, handleProfileSubmit, handleCategoryUpdate
+        showNotification, handleProfileSubmit, handleCategoryUpdate,
+        chatTemplates, setChatTemplates, billingTemplates, setBillingTemplates, templatesSeededRef,
     } = useSettingsPage({ currentUser });
+
+    // Seed chat/billing templates from profile once
+    useEffect(() => {
+        if (profile && !templatesSeededRef.current) {
+            if (profile.chatTemplates?.length) setChatTemplates(profile.chatTemplates);
+            if (profile.billingTemplates?.length) setBillingTemplates(profile.billingTemplates);
+            templatesSeededRef.current = true;
+        }
+    }, [profile]);
+
+    // Wrap handlers to always pass the latest local profile state
+    const handleProfileSubmitWithData = useCallback((e: React.FormEvent) => {
+        handleProfileSubmit(e, profile);
+    }, [handleProfileSubmit, profile]);
+
+    const handleCategoryUpdateWithProfile = useCallback((field: any, categories: string[]) => {
+        handleCategoryUpdate(field, categories, profile);
+        // Also update local profile state so UI stays in sync without waiting for refetch
+        setProfile((prev: any) => prev ? { ...prev, [field]: categories } : prev);
+    }, [handleCategoryUpdate, profile]);
 
     // Component states
     const [activeTab, setActiveTab] = useState<TabId>('profile');
@@ -69,7 +93,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ currentUser }) => {
     const [pkgCatInput, setPkgCatInput] = useState('');
     const [editPkgCat, setEditPkgCat] = useState<string | null>(null);
 
-    if (isProfileLoading || !profile) {
+    if (isProfileLoading || !profileFromServer || !profile) {
         return <div className="p-8 text-center text-brand-text-secondary animate-pulse font-black uppercase tracking-widest">Memuat Pengaturan...</div>;
     }
 
@@ -121,22 +145,22 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ currentUser }) => {
                         {/* Components */}
                         <div className="w-full max-w-4xl">
                             {activeTab === 'profile' && (
-                                <ProfileSettingsTab profile={profile} setProfile={setProfile} handleProfileSubmit={handleProfileSubmit} isSaving={isSaving} showSuccess={showSuccess} saveError={saveError} />
+                                <ProfileSettingsTab profile={profile} setProfile={setProfile} handleProfileSubmit={handleProfileSubmitWithData} isSaving={isSaving} showSuccess={showSuccess} saveError={saveError} />
                             )}
                             {activeTab === 'public' && (
-                                <PublicPageSettingsTab profile={profile} setProfile={setProfile} handleProfileSubmit={handleProfileSubmit} isSaving={isSaving} showSuccess={showSuccess} saveError={saveError} />
+                                <PublicPageSettingsTab profile={profile} setProfile={setProfile} handleProfileSubmit={handleProfileSubmitWithData} isSaving={isSaving} showSuccess={showSuccess} saveError={saveError} />
                             )}
                             {activeTab === 'finance' && (
-                                <FinanceSettingsTab profile={profile} incomeCategoryInput={incomeInput} setIncomeCategoryInput={setIncomeInput} editingIncomeCategory={editIncome} setEditingIncomeCategory={setEditIncome} expenseCategoryInput={expenseInput} setExpenseCategoryInput={setExpenseInput} editingExpenseCategory={editExpense} setEditingExpenseCategory={setEditExpense} handleCategoryUpdate={handleCategoryUpdate} />
+                                <FinanceSettingsTab profile={profile} incomeCategoryInput={incomeInput} setIncomeCategoryInput={setIncomeInput} editingIncomeCategory={editIncome} setEditingIncomeCategory={setEditIncome} expenseCategoryInput={expenseInput} setExpenseCategoryInput={setExpenseInput} editingExpenseCategory={editExpense} setEditingExpenseCategory={setEditExpense} handleCategoryUpdate={handleCategoryUpdateWithProfile} />
                             )}
                             {activeTab === 'team' && (
                                 <TeamSettingsTab users={users} setUsers={setUsers} currentUser={currentUser} />
                             )}
                             {activeTab === 'packages' && (
-                                <PackageSettingsTab profile={profile} packageCategoryInput={pkgCatInput} setPackageCategoryInput={setPkgCatInput} editingPackageCategory={editPkgCat} setEditingPackageCategory={setEditPkgCat} handleCategoryUpdate={handleCategoryUpdate} />
+                                <PackageSettingsTab profile={profile} packageCategoryInput={pkgCatInput} setPackageCategoryInput={setPkgCatInput} editingPackageCategory={editPkgCat} setEditingPackageCategory={setEditPkgCat} handleCategoryUpdate={handleCategoryUpdateWithProfile} />
                             )}
                             {activeTab === 'projects' && (
-                                <ProjectSettingsTab profile={profile} setProfile={setProfile} projects={projects} projectTypeInput={prjTypeInput} setProjectTypeInput={setPrjTypeInput} editingProjectType={editPrjType} setEditingProjectType={setEditPrjType} eventTypeInput={evtTypeInput} setEventTypeInput={setEvtTypeInput} editingEventType={editEvtType} setEditingEventType={setEditEvtType} handleCategoryUpdate={handleCategoryUpdate} />
+                                <ProjectSettingsTab profile={profile} setProfile={setProfile} projects={projects} projectTypeInput={prjTypeInput} setProjectTypeInput={setPrjTypeInput} editingProjectType={editPrjType} setEditingProjectType={setEditPrjType} eventTypeInput={evtTypeInput} setEventTypeInput={setEvtTypeInput} editingEventType={editEvtType} setEditingEventType={setEditEvtType} handleCategoryUpdate={handleCategoryUpdateWithProfile} />
                             )}
                             {activeTab === 'messages' && (
                                 <MessageSettingsTab profile={profile} setProfile={setProfile} showSuccess={showNotification} />

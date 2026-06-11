@@ -3,7 +3,7 @@ import { User, ViewType } from '@/types';
 import Modal from '@/shared/ui/Modal';
 import { PlusIcon, PencilIcon, Trash2Icon, MailIcon, UsersIcon, KeyIcon } from '@/constants';
 import { createUser, updateUser, deleteUser } from '@/services/users';
-import CollapsibleSection from '@/shared/ui/CollapsibleSection';
+import { FormSection, FieldLabel, inputCls, selectCls } from '@/shared/ui/FormSection';
 
 interface TeamSettingsTabProps {
     users: User[];
@@ -93,69 +93,64 @@ export const TeamSettingsTab: React.FC<TeamSettingsTabProps> = ({ users, setUser
             </div>
 
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={modalMode === 'add' ? 'Tambah Anggota Tim' : 'Edit Anggota Tim'} size="2xl">
-                <form onSubmit={handleFormSubmit} className="space-y-6">
-                    <CollapsibleSection title="Profil Anggota Tim" defaultExpanded={true} variant="filled" icon={<UsersIcon className="w-4 h-4" />}>
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="input-group">
-                                    <label className="text-[10px] uppercase font-bold tracking-widest text-brand-text-secondary mb-1 block">Nama Lengkap Anggota</label>
-                                    <input value={form.fullName} onChange={e => setForm(p => ({ ...p, fullName: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-brand-border bg-white font-bold" placeholder="Cth: Ahmad Budi" required />
-                                </div>
-                                <div className="input-group">
-                                    <label className="text-[10px] uppercase font-bold tracking-widest text-brand-text-secondary mb-1 block">Alamat Email Login</label>
-                                    <input type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-brand-border bg-white" placeholder="email@vendor.com" required />
-                                </div>
-                            </div>
+                <form onSubmit={handleFormSubmit} className="space-y-6 -mt-6 md:-mt-8">
+                    <FormSection icon={<UsersIcon className="w-4 h-4" />} title="Profil Anggota Tim" />
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="input-group">
-                                    <label className="text-[10px] uppercase font-bold tracking-widest text-brand-text-secondary mb-1 block">{modalMode === 'add' ? 'Kata Sandi' : 'Ganti Kata Sandi (Opsional)'}</label>
-                                    <input type="password" value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-brand-border bg-white font-mono" placeholder="••••••••" required={modalMode === 'add'} />
-                                </div>
-                                <div className="input-group">
-                                    <label className="text-[10px] uppercase font-bold tracking-widest text-brand-text-secondary mb-1 block">Konfirmasi Sandi</label>
-                                    <input type="password" value={form.confirmPassword} onChange={e => setForm(p => ({ ...p, confirmPassword: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-brand-border bg-white font-mono" placeholder="••••••••" required={modalMode === 'add'} />
-                                </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <FieldLabel>Nama Lengkap</FieldLabel>
+                            <input value={form.fullName} onChange={e => setForm(p => ({ ...p, fullName: e.target.value }))} className={inputCls + ' font-bold'} placeholder="Cth: Ahmad Budi" required />
+                        </div>
+                        <div>
+                            <FieldLabel>Email Login</FieldLabel>
+                            <input type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} className={inputCls} placeholder="email@vendor.com" required />
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <FieldLabel>{modalMode === 'add' ? 'Kata Sandi' : 'Ganti Kata Sandi'}{modalMode === 'edit' && <span className="ml-1 font-normal text-brand-text-secondary/60">(opsional)</span>}</FieldLabel>
+                            <input type="password" value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} className={inputCls + ' font-mono'} placeholder="••••••••" required={modalMode === 'add'} />
+                        </div>
+                        <div>
+                            <FieldLabel>Konfirmasi Sandi</FieldLabel>
+                            <input type="password" value={form.confirmPassword} onChange={e => setForm(p => ({ ...p, confirmPassword: e.target.value }))} className={inputCls + ' font-mono'} placeholder="••••••••" required={modalMode === 'add'} />
+                        </div>
+                    </div>
+
+                    <FormSection icon={<KeyIcon className="w-4 h-4" />} title="Hak Akses Aplikasi" />
+
+                    <div>
+                        <FieldLabel>Role Akses</FieldLabel>
+                        <select value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value as User['role'] }))} className={selectCls + ' font-bold text-blue-600'}>
+                            <option value="Member">Member (Akses Menu Terpilih)</option>
+                            <option value="Admin">Admin (Akses Penuh)</option>
+                        </select>
+                    </div>
+
+                    {form.role === 'Member' && (
+                        <div>
+                            <FieldLabel>Izin Akses Menu</FieldLabel>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-1">
+                                {VIEW_TYPES.map(vt => (
+                                    <button
+                                        key={vt.value}
+                                        type="button"
+                                        onClick={() => setForm(p => ({ ...p, permissions: p.permissions.includes(vt.value) ? p.permissions.filter(x => x !== vt.value) : [...p.permissions, vt.value] }))}
+                                        className={`px-3 py-2.5 rounded-xl border text-xs font-bold transition-all ${form.permissions.includes(vt.value) ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-500/20' : 'bg-brand-surface border-brand-border text-brand-text-secondary hover:border-blue-400 hover:text-blue-500'}`}
+                                    >
+                                        {vt.label}
+                                    </button>
+                                ))}
                             </div>
                         </div>
-                    </CollapsibleSection>
+                    )}
 
-                    <CollapsibleSection title="Hak Akses Aplikasi" defaultExpanded={true} variant="filled" icon={<KeyIcon className="w-4 h-4" />}>
-                        <div className="space-y-6">
-                            <div className="input-group">
-                                <label className="text-[10px] uppercase font-bold tracking-widest text-brand-text-secondary mb-2 block">Pilih Role Akses</label>
-                                <select value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value as User['role'] }))} className="w-full px-4 py-3 rounded-xl border border-brand-border bg-white font-black text-blue-600 appearance-none">
-                                    <option value="Member">Member (Akses Menu Terpilih)</option>
-                                    <option value="Admin">Admin (Akses Penuh Ke Semua Fitur)</option>
-                                </select>
-                            </div>
+                    {error && <div className="p-3 bg-red-400/10 border border-red-400/20 text-red-500 text-xs font-bold rounded-xl text-center">⚠ {error}</div>}
 
-                            {form.role === 'Member' && (
-                                <div className="space-y-3">
-                                    <label className="text-[10px] uppercase font-bold tracking-widest text-brand-text-secondary block">Izin Akses Menu Khusus:</label>
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                        {VIEW_TYPES.map(vt => (
-                                            <button 
-                                                key={vt.value} 
-                                                type="button" 
-                                                onClick={() => setForm(p => ({ ...p, permissions: p.permissions.includes(vt.value) ? p.permissions.filter(x => x !== vt.value) : [...p.permissions, vt.value] }))} 
-                                                className={`px-3 py-3 rounded-xl border text-[10px] font-black uppercase tracking-tighter transition-all ${form.permissions.includes(vt.value) ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-500/20' : 'bg-brand-surface border-brand-border text-brand-text-secondary hover:border-blue-400 hover:text-blue-500'}`}
-                                            >
-                                                {vt.label}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </CollapsibleSection>
-
-                    {error && <div className="p-4 bg-red-400/10 border border-red-400/20 text-red-500 text-xs font-bold rounded-2xl animate-pulse text-center">⚠ {error}</div>}
-
-                    <div className="flex justify-end gap-3 pt-6 border-t border-brand-border">
-                        <button type="button" onClick={() => setIsModalOpen(false)} className="px-8 py-3 rounded-xl font-bold text-brand-text-secondary hover:bg-brand-bg transition-colors">Batal</button>
-                        <button type="submit" className="px-10 py-3 rounded-xl font-black text-white bg-blue-600 hover:bg-blue-700 shadow-xl shadow-blue-500/20 transition-all active:scale-95">
-                            {modalMode === 'add' ? 'Daftarkan Anggota' : 'Update Anggota'}
+                    <div className="flex justify-end gap-3 pt-5 border-t border-brand-border">
+                        <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-2.5 rounded-xl text-sm font-semibold text-brand-text-secondary hover:bg-brand-bg transition">Batal</button>
+                        <button type="submit" className="px-8 py-2.5 rounded-xl text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/20 transition active:scale-95">
+                            {modalMode === 'add' ? 'Daftarkan' : 'Update'}
                         </button>
                     </div>
                 </form>

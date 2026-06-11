@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { TeamMember, AssignedTeamMember, TeamProjectPayment, TeamPaymentRecord, Project, PaymentStatus } from '@/types';
@@ -8,9 +8,11 @@ import { useProjects } from '@/features/projects/api/useProjects';
 import PageHeader from '@/layouts/PageHeader';
 import Modal from '@/shared/ui/Modal';
 import StatCard from '@/shared/ui/StatCard';
+import { Button } from '@/shared/ui';
 import { PlusIcon, PencilIcon, Trash2Icon, EyeIcon, StarIcon, UsersIcon, AlertCircleIcon, UserCheckIcon, DownloadIcon, CalendarIcon, DollarSignIcon } from '@/constants';
 import { deleteTeamMember as deleteTeamMemberRow } from '@/services/teamMembers';
 import { useApp } from "@/app/AppContext";
+import { AvatarDisplay } from '@/shared/ui/AvatarUpload';
 
 const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
@@ -26,7 +28,7 @@ const formatDate = (dateString: string) => {
 };
 
 const getStatusClass = (status: PaymentStatus) => {
-    return status === PaymentStatus.LUNAS ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400';
+    return status === PaymentStatus.LUNAS ? 'bg-green-600 text-white border border-green-600' : 'bg-amber-500 text-white border border-amber-500';
 };
 
 const downloadCSV = (headers: string[], data: (string | number)[][], filename: string) => {
@@ -69,6 +71,17 @@ const downloadCSV = (headers: string[], data: (string | number)[][], filename: s
 interface FreelancersProps {
     showNotification?: (message: string) => void;
 }
+
+const memberBadgeClass = (category?: string) =>
+    category === 'Vendor'
+        ? 'bg-orange-50 text-orange-600 border border-orange-100'
+        : 'bg-blue-50 text-blue-600 border border-blue-100';
+
+const iconActionClass =
+    'inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-bold transition-all';
+
+const paginationButtonClass =
+    'px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-white border border-slate-200 text-[10px] sm:text-xs font-bold text-slate-600 hover:border-slate-300 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all';
 
 
 
@@ -351,72 +364,78 @@ export const Freelancers: React.FC<FreelancersProps> = (props) => {
                 subtitle="Kelola database tim internal, vendor pihak ketiga, koordinasi pengantin, dan riwayat pembayaran mereka." 
                 icon={<UsersIcon className="w-6 h-6" />}
             >
-            <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-6 sm:mt-0">
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 order-2 sm:order-none w-full sm:w-auto">
-                    <CalendarIcon className="w-4 h-4 text-white/50" />
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white border border-slate-200 order-2 sm:order-none w-full sm:w-auto shadow-sm">
+                    <CalendarIcon className="w-4 h-4 text-brand-accent" />
                     <input 
                         type="date" 
                         value={dateFrom} 
                         onChange={e => setDateFrom(e.target.value)} 
-                        className="bg-transparent border-none text-white text-xs outline-none focus:ring-0 p-0 w-28" 
+                        className="bg-transparent border-none text-slate-700 text-xs font-bold outline-none focus:ring-0 p-0 w-28" 
                         title="Dari Tanggal" 
                     />
-                    <span className="text-white/30">–</span>
+                    <span className="text-slate-300 font-bold">-</span>
                     <input 
                         type="date" 
                         value={dateTo} 
                         onChange={e => setDateTo(e.target.value)} 
-                        className="bg-transparent border-none text-white text-xs outline-none focus:ring-0 p-0 w-28" 
+                        className="bg-transparent border-none text-slate-700 text-xs font-bold outline-none focus:ring-0 p-0 w-28" 
                         title="Sampai Tanggal" 
                     />
                     {(dateFrom || dateTo) && (
-                        <button onClick={() => { setDateFrom(''); setDateTo(''); }} className="text-white/50 hover:text-white ml-1 text-xs px-2 py-0.5 rounded-lg bg-white/10">Reset</button>
+                        <button onClick={() => { setDateFrom(''); setDateTo(''); }} className="text-slate-500 hover:text-blue-600 ml-1 text-xs px-2 py-0.5 rounded-lg bg-slate-50">Reset</button>
                     )}
                 </div>
 
                 <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto order-1 sm:order-none">
-                    <button 
+                    <Button 
                         onClick={() => setIsInfoModalOpen(true)} 
-                        className="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-white/10 text-white border border-white/20 hover:bg-white/20 transition-all text-xs font-bold"
+                        variant="secondary"
+                        size="sm"
+                        className="flex-1 sm:flex-none"
                     >
                         Pelajari
-                    </button>
+                    </Button>
 
-                    <button 
+                    <Button 
                         onClick={handleDownloadTeam} 
-                        className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-blue-500/20 text-white border border-white/20 hover:bg-white/20 transition-all text-xs font-bold"
+                        variant="secondary"
+                        size="sm"
+                        leftIcon={<DownloadIcon className="w-4 h-4" />}
+                        className="flex-1 sm:flex-none"
                     >
-                        <DownloadIcon className="w-4 h-4" />
                         <span>Export CSV</span>
-                    </button>
+                    </Button>
                 </div>
 
-                <button 
+                <Button 
                     onClick={() => handleOpenForm('add')} 
-                    className="order-first sm:order-none w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-white text-blue-600 hover:bg-blue-50 transition-all text-xs sm:text-sm font-black shadow-lg shadow-blue-900/40"
+                    variant="primary"
+                    size="sm"
+                    leftIcon={<PlusIcon className="w-5 h-5" />}
+                    className="order-first sm:order-none w-full sm:w-auto"
                 >
-                    <PlusIcon className="w-5 h-5" />
                     <span>Tambah Tim / Vendor</span>
-                </button>
+                </Button>
             </div>
         </PageHeader>
 
             {/* Tab Navigation */}
-            <div className="bg-brand-surface/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/10 p-2">
+            <div className="bg-white p-1.5 rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 w-full sm:w-fit">
                 <div className="flex gap-2">
                     <button
                         onClick={() => setActiveTab('team')}
-                        className={`flex-1 px-6 py-3 rounded-xl font-black text-sm uppercase tracking-wider transition-all duration-300 ${
+                        className={`flex-1 sm:flex-none px-4 sm:px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider transition-all duration-300 ${
                             activeTab === 'team'
-                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
-                                : 'bg-white/5 text-brand-text-secondary hover:bg-white/10'
+                                ? 'bg-blue-600 text-white shadow-md shadow-blue-100'
+                                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
                         }`}
                     >
                         <div className="flex items-center justify-center gap-2">
                             <UsersIcon className="w-5 h-5" />
                             <span>Tim Internal</span>
                             <span className={`px-2 py-0.5 rounded-full text-[10px] ${
-                                activeTab === 'team' ? 'bg-white/20' : 'bg-blue-500/20 text-blue-400'
+                                activeTab === 'team' ? 'bg-white/20' : 'bg-blue-50 text-blue-600'
                             }`}>
                                 {teamSectionStats.totalMembers}
                             </span>
@@ -424,17 +443,17 @@ export const Freelancers: React.FC<FreelancersProps> = (props) => {
                     </button>
                     <button
                         onClick={() => setActiveTab('vendor')}
-                        className={`flex-1 px-6 py-3 rounded-xl font-black text-sm uppercase tracking-wider transition-all duration-300 ${
+                        className={`flex-1 sm:flex-none px-4 sm:px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider transition-all duration-300 ${
                             activeTab === 'vendor'
-                                ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/30'
-                                : 'bg-white/5 text-brand-text-secondary hover:bg-white/10'
+                                ? 'bg-orange-600 text-white shadow-md shadow-orange-100'
+                                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
                         }`}
                     >
                         <div className="flex items-center justify-center gap-2">
                             <UsersIcon className="w-5 h-5" />
                             <span>Vendor Eksternal</span>
                             <span className={`px-2 py-0.5 rounded-full text-[10px] ${
-                                activeTab === 'vendor' ? 'bg-white/20' : 'bg-orange-500/20 text-orange-400'
+                                activeTab === 'vendor' ? 'bg-white/20' : 'bg-orange-50 text-orange-600'
                             }`}>
                                 {vendorSectionStats.totalMembers}
                             </span>
@@ -478,7 +497,7 @@ export const Freelancers: React.FC<FreelancersProps> = (props) => {
                         </div>
                     </div>
 
-                    <div className="bg-brand-surface/80 backdrop-blur-xl p-5 rounded-2xl shadow-xl border border-white/10 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4">
+                    <div className="bg-white p-4 md:p-5 rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4">
                         <div className="relative flex-grow max-w-md">
                             <input
                                 type="text"
@@ -488,47 +507,50 @@ export const Freelancers: React.FC<FreelancersProps> = (props) => {
                                     setTeamSearchQuery(e.target.value);
                                     setPageTeam(1);
                                 }}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-brand-text-light focus:outline-none focus:border-brand-accent/50 transition-all pl-10"
+                                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all pl-10 placeholder:text-slate-400"
                             />
-                            <UsersIcon className="w-4 h-4 text-brand-text-secondary absolute left-3 top-1/2 -translate-y-1/2" />
+                            <UsersIcon className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                         </div>
                     </div>
 
-                    <div className="bg-brand-surface/80 backdrop-blur-xl p-6 rounded-2xl shadow-xl border border-white/10 transition-all duration-300">
+                    <div className="bg-white p-4 md:p-6 rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 transition-all duration-300">
                         <div className="md:hidden space-y-3">
                             {paginatedTeamMembers.map(member => {
                                 const unpaidFee = teamProjectPaymentsInDateRange.filter(p => String(p.teamMemberId) === String(member.id) && p.status === PaymentStatus.BELUM_BAYAR).reduce((sum, p) => sum + p.fee, 0);
 
                                 return (
-                                    <div key={member.id} className="rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 p-5 shadow-lg group hover:border-brand-accent/50 transition-all duration-300">
+                                    <div key={member.id} className="rounded-2xl bg-white border border-slate-100 p-5 shadow-sm group hover:border-slate-300 transition-all duration-300">
                                         <div className="flex items-start justify-between">
-                                            <div>
-                                                <p className="font-semibold text-brand-text-light leading-tight">{member.name}</p>
-                                                <div className="flex items-center gap-2 mt-0.5">
-                                                    <p className="text-[11px] text-brand-text-secondary">{member.role}</p>
-                                                    <span className={`text-[9px] px-1.5 py-0.5 rounded-full uppercase font-bold tracking-wider ${member.category === 'Vendor' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'}`}>
-                                                        {member.category || 'Tim'}
-                                                    </span>
+                                            <div className="flex items-center gap-3">
+                                                <AvatarDisplay avatarBase64={member.avatar} name={member.name} size="md" variant="team" className="shrink-0" />
+                                                <div>
+                                                    <p className="font-semibold text-slate-900 leading-tight">{member.name}</p>
+                                                    <div className="flex items-center gap-2 mt-0.5">
+                                                        <p className="text-[11px] text-slate-500">{member.role}</p>
+                                                        <span className={`text-[9px] px-1.5 py-0.5 rounded-full uppercase font-bold tracking-wider ${memberBadgeClass(member.category)}`}>
+                                                            {member.category || 'Tim'}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
                                             <div className="text-right text-xs">
-                                                <div className="inline-flex items-center gap-1 bg-brand-bg px-2 py-1 rounded-full"><StarIcon className="w-3.5 h-3.5 text-yellow-400 fill-current" />{member.rating.toFixed(1)}</div>
+                                                <div className="inline-flex items-center gap-1 bg-amber-50 text-amber-600 px-2 py-1 rounded-full font-bold"><StarIcon className="w-3.5 h-3.5 fill-current" />{member.rating.toFixed(1)}</div>
                                             </div>
                                         </div>
                                         <div className="mt-3 grid grid-cols-2 gap-y-2 text-sm">
-                                            <span className="text-brand-text-secondary">Fee Belum Dibayar</span>
-                                            <span className="text-right font-semibold text-red-400">{formatCurrency(unpaidFee)}</span>
+                                            <span className="text-slate-500">Fee Belum Dibayar</span>
+                                            <span className="text-right font-semibold text-red-600">{formatCurrency(unpaidFee)}</span>
                                         </div>
                                         <div className="mt-4 flex flex-wrap justify-end gap-2">
-                                            <button onClick={() => handleViewDetails(member)} className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white transition-all text-xs font-bold shadow-sm group">
+                                            <button onClick={() => handleViewDetails(member)} className={`${iconActionClass} bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-600 hover:text-white`}>
                                                 <EyeIcon className="w-4 h-4" />
                                                 <span>Detail</span>
                                             </button>
-                                            <button onClick={() => handleOpenForm('edit', member)} className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-emerald-600/10 text-emerald-400 hover:bg-emerald-600 hover:text-white transition-all text-xs font-bold shadow-sm group">
+                                            <button onClick={() => handleOpenForm('edit', member)} className={`${iconActionClass} bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-600 hover:text-white`}>
                                                 <PencilIcon className="w-4 h-4" />
                                                 <span>Edit</span>
                                             </button>
-                                            <button onClick={() => handleDelete(member.id)} className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white transition-all text-xs font-bold shadow-sm group">
+                                            <button onClick={() => handleDelete(member.id)} className={`${iconActionClass} bg-red-50 text-red-600 border-red-100 hover:bg-red-600 hover:text-white`}>
                                                 <Trash2Icon className="w-4 h-4" />
                                                 <span>Hapus</span>
                                             </button>
@@ -539,34 +561,39 @@ export const Freelancers: React.FC<FreelancersProps> = (props) => {
                         </div>
                         <div className="hidden md:block overflow-x-auto">
                             <table className="w-full text-sm">
-                                <thead className="text-xs text-brand-text-secondary uppercase"><tr><th className="px-4 py-3">Nama</th><th className="px-4 py-3">Vendor / Tim</th><th className="px-4 py-3">Fee Belum Dibayar</th><th className="px-4 py-3 text-center">Rating</th><th className="px-4 py-3 text-center">Aksi</th></tr></thead>
-                                <tbody className="divide-y divide-brand-border">
+                                <thead className="text-xs text-slate-700 uppercase bg-slate-100"><tr><th className="px-4 py-3 text-left border-r border-slate-300">Nama</th><th className="px-4 py-3 text-left border-r border-slate-300">Vendor / Tim</th><th className="px-4 py-3 text-left border-r border-slate-300">Fee Belum Dibayar</th><th className="px-4 py-3 text-center border-r border-slate-300">Rating</th><th className="px-4 py-3 text-center">Aksi</th></tr></thead>
+                                <tbody className="bg-white/40 divide-y divide-slate-300">
                                     {paginatedTeamMembers.map(member => {
                                         const unpaidFee = teamProjectPaymentsInDateRange.filter(p => String(p.teamMemberId) === String(member.id) && p.status === PaymentStatus.BELUM_BAYAR).reduce((sum, p) => sum + p.fee, 0);
                                         return (
-                                            <tr key={member.id} className="hover:bg-brand-surface/50 transition-colors">
-                                                <td className="px-4 py-3 font-semibold text-brand-text-light">{member.name}</td>
-                                                <td className="px-4 py-3">
+                                            <tr key={member.id} className="hover:bg-brand-bg transition-colors">
+                                                <td className="px-4 py-3 border-r border-slate-300">
+                                                    <div className="flex items-center gap-3">
+                                                        <AvatarDisplay avatarBase64={member.avatar} name={member.name} size="md" variant="team" className="shrink-0" />
+                                                        <span className="font-semibold text-brand-text-light">{member.name}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-3 border-r border-slate-300">
                                                     <div className="flex flex-col gap-1">
                                                         <span className="text-brand-text-primary font-medium">{member.role}</span>
-                                                        <span className={`text-[10px] w-fit px-2 py-0.5 rounded-full uppercase font-bold tracking-wider ${member.category === 'Vendor' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'}`}>
+                                                        <span className={`text-[10px] w-fit px-2 py-0.5 rounded-full uppercase font-bold tracking-wider ${memberBadgeClass(member.category)}`}>
                                                             {member.category || 'Tim'}
                                                         </span>
                                                     </div>
                                                 </td>
-                                                <td className="px-4 py-3 font-semibold text-red-400">{formatCurrency(unpaidFee)}</td>
-                                                <td className="px-4 py-3"><div className="flex justify-center items-center gap-1"><StarIcon className="w-4 h-4 text-yellow-400 fill-current" />{member.rating.toFixed(1)}</div></td>
+                                                <td className="px-4 py-3 font-semibold text-red-600 border-r border-slate-300">{formatCurrency(unpaidFee)}</td>
+                                                <td className="px-4 py-3 border-r border-slate-300"><div className="flex justify-center items-center gap-1 text-amber-600 font-bold"><StarIcon className="w-4 h-4 fill-current" />{member.rating.toFixed(1)}</div></td>
                                                 <td className="px-4 py-3">
                                                     <div className="flex items-center justify-center space-x-1.5">
-                                                        <button onClick={() => handleViewDetails(member)} className="inline-flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white transition-all shadow-sm group" title="Detail">
+                                                        <button onClick={() => handleViewDetails(member)} className={`${iconActionClass} bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-600 hover:text-white`} title="Detail">
                                                             <EyeIcon className="w-4 h-4" />
                                                             <span className="text-xs font-bold">Detail</span>
                                                         </button>
-                                                        <button onClick={() => handleOpenForm('edit', member)} className="inline-flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-600/10 text-emerald-400 hover:bg-emerald-600 hover:text-white transition-all shadow-sm group" title="Edit">
+                                                        <button onClick={() => handleOpenForm('edit', member)} className={`${iconActionClass} bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-600 hover:text-white`} title="Edit">
                                                             <PencilIcon className="w-4 h-4" />
                                                             <span className="text-xs font-bold">Edit</span>
                                                         </button>
-                                                        <button onClick={() => handleDelete(member.id)} className="inline-flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white transition-all shadow-sm group" title="Hapus">
+                                                        <button onClick={() => handleDelete(member.id)} className={`${iconActionClass} bg-red-50 text-red-600 border-red-100 hover:bg-red-600 hover:text-white`} title="Hapus">
                                                             <Trash2Icon className="w-4 h-4" />
                                                             <span className="text-xs font-bold">Hapus</span>
                                                         </button>
@@ -581,15 +608,15 @@ export const Freelancers: React.FC<FreelancersProps> = (props) => {
 
                         {/* Team Pagination */}
                         {teamPaginatedData && teamPaginatedData.total > PAGE_SIZE && (
-                            <div className="mt-6 flex items-center justify-between border-t border-white/5 pt-6 px-2">
-                                <p className="text-[10px] sm:text-xs text-brand-text-secondary">
-                                    Menampilkan <span className="font-bold text-brand-text-light">{((pageTeam - 1) * PAGE_SIZE) + 1}</span> - <span className="font-bold text-brand-text-light">{Math.min(pageTeam * PAGE_SIZE, teamPaginatedData.total)}</span> dari <span className="font-bold text-brand-text-light">{teamPaginatedData.total}</span> tim
+                            <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-6 px-2">
+                                <p className="text-[10px] sm:text-xs text-slate-500">
+                                    Menampilkan <span className="font-bold text-slate-900">{((pageTeam - 1) * PAGE_SIZE) + 1}</span> - <span className="font-bold text-slate-900">{Math.min(pageTeam * PAGE_SIZE, teamPaginatedData.total)}</span> dari <span className="font-bold text-slate-900">{teamPaginatedData.total}</span> tim
                                 </p>
                                 <div className="flex items-center gap-1.5 sm:gap-2">
                                     <button 
                                         onClick={() => setPageTeam(prev => Math.max(1, prev - 1))}
                                         disabled={pageTeam === 1}
-                                        className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-white/5 border border-white/10 text-[10px] sm:text-xs font-bold text-brand-text-light hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                        className={paginationButtonClass}
                                     >
                                         Prev
                                     </button>
@@ -603,13 +630,13 @@ export const Freelancers: React.FC<FreelancersProps> = (props) => {
                                                         <button
                                                             key={i}
                                                             onClick={() => setPageTeam(i)}
-                                                            className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-[10px] sm:text-xs font-bold transition-all ${pageTeam === i ? 'bg-brand-accent text-white shadow-lg shadow-brand-accent/20' : 'bg-white/5 text-brand-text-secondary hover:bg-white/10'}`}
+                                                            className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-[10px] sm:text-xs font-bold transition-all ${pageTeam === i ? 'bg-brand-accent text-white shadow-lg shadow-brand-accent/20' : 'bg-white text-slate-500 border border-slate-200 hover:border-slate-300 hover:text-blue-600'}`}
                                                         >
                                                             {i}
                                                         </button>
                                                     );
                                                 } else if (Math.abs(i - pageTeam) === 2) {
-                                                    pages.push(<span key={i} className="text-brand-text-secondary text-xs">...</span>);
+                                                    pages.push(<span key={i} className="text-slate-400 text-xs">...</span>);
                                                 }
                                             }
                                             return pages;
@@ -618,7 +645,7 @@ export const Freelancers: React.FC<FreelancersProps> = (props) => {
                                     <button 
                                         onClick={() => setPageTeam(prev => prev + 1)}
                                         disabled={!teamPaginatedData.hasMore}
-                                        className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-white/5 border border-white/10 text-[10px] sm:text-xs font-bold text-brand-text-light hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                        className={paginationButtonClass}
                                     >
                                         Next
                                     </button>
@@ -665,7 +692,7 @@ export const Freelancers: React.FC<FreelancersProps> = (props) => {
                         </div>
                     </div>
 
-                    <div className="bg-brand-surface/80 backdrop-blur-xl p-5 rounded-2xl shadow-xl border border-white/10 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4">
+                    <div className="bg-white p-4 md:p-5 rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4">
                         <div className="relative flex-grow max-w-md">
                             <input
                                 type="text"
@@ -675,47 +702,50 @@ export const Freelancers: React.FC<FreelancersProps> = (props) => {
                                     setVendorSearchQuery(e.target.value);
                                     setPageVendor(1);
                                 }}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-brand-text-light focus:outline-none focus:border-brand-accent/50 transition-all pl-10"
+                                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all pl-10 placeholder:text-slate-400"
                             />
-                            <UsersIcon className="w-4 h-4 text-brand-text-secondary absolute left-3 top-1/2 -translate-y-1/2" />
+                            <UsersIcon className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                         </div>
                     </div>
 
-                    <div className="bg-brand-surface/80 backdrop-blur-xl p-6 rounded-2xl shadow-xl border border-white/10 transition-all duration-300">
+                    <div className="bg-white p-4 md:p-6 rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 transition-all duration-300">
                         <div className="md:hidden space-y-3">
                             {paginatedVendorMembers.map(member => {
                                 const unpaidFee = teamProjectPaymentsInDateRange.filter(p => String(p.teamMemberId) === String(member.id) && p.status === PaymentStatus.BELUM_BAYAR).reduce((sum, p) => sum + p.fee, 0);
 
                                 return (
-                                    <div key={member.id} className="rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 p-5 shadow-lg group hover:border-brand-accent/50 transition-all duration-300">
+                                    <div key={member.id} className="rounded-2xl bg-white border border-slate-100 p-5 shadow-sm group hover:border-slate-300 transition-all duration-300">
                                         <div className="flex items-start justify-between">
-                                            <div>
-                                                <p className="font-semibold text-brand-text-light leading-tight">{member.name}</p>
-                                                <div className="flex items-center gap-2 mt-0.5">
-                                                    <p className="text-[11px] text-brand-text-secondary">{member.role}</p>
-                                                    <span className={`text-[9px] px-1.5 py-0.5 rounded-full uppercase font-bold tracking-wider ${member.category === 'Vendor' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'}`}>
-                                                        {member.category || 'Tim'}
-                                                    </span>
+                                            <div className="flex items-center gap-3">
+                                                <AvatarDisplay avatarBase64={member.avatar} name={member.name} size="md" variant="vendor" className="shrink-0" />
+                                                <div>
+                                                    <p className="font-semibold text-slate-900 leading-tight">{member.name}</p>
+                                                    <div className="flex items-center gap-2 mt-0.5">
+                                                        <p className="text-[11px] text-slate-500">{member.role}</p>
+                                                        <span className={`text-[9px] px-1.5 py-0.5 rounded-full uppercase font-bold tracking-wider ${memberBadgeClass(member.category)}`}>
+                                                            {member.category || 'Tim'}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
                                             <div className="text-right text-xs">
-                                                <div className="inline-flex items-center gap-1 bg-brand-bg px-2 py-1 rounded-full"><StarIcon className="w-3.5 h-3.5 text-yellow-400 fill-current" />{member.rating.toFixed(1)}</div>
+                                                <div className="inline-flex items-center gap-1 bg-amber-50 text-amber-600 px-2 py-1 rounded-full font-bold"><StarIcon className="w-3.5 h-3.5 fill-current" />{member.rating.toFixed(1)}</div>
                                             </div>
                                         </div>
                                         <div className="mt-3 grid grid-cols-2 gap-y-2 text-sm">
-                                            <span className="text-brand-text-secondary">Fee Belum Dibayar</span>
-                                            <span className="text-right font-semibold text-red-400">{formatCurrency(unpaidFee)}</span>
+                                            <span className="text-slate-500">Fee Belum Dibayar</span>
+                                            <span className="text-right font-semibold text-red-600">{formatCurrency(unpaidFee)}</span>
                                         </div>
                                         <div className="mt-4 flex flex-wrap justify-end gap-2">
-                                            <button onClick={() => handleViewDetails(member)} className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white transition-all text-xs font-bold shadow-sm group">
+                                            <button onClick={() => handleViewDetails(member)} className={`${iconActionClass} bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-600 hover:text-white`}>
                                                 <EyeIcon className="w-4 h-4" />
                                                 <span>Detail</span>
                                             </button>
-                                            <button onClick={() => handleOpenForm('edit', member)} className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-emerald-600/10 text-emerald-400 hover:bg-emerald-600 hover:text-white transition-all text-xs font-bold shadow-sm group">
+                                            <button onClick={() => handleOpenForm('edit', member)} className={`${iconActionClass} bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-600 hover:text-white`}>
                                                 <PencilIcon className="w-4 h-4" />
                                                 <span>Edit</span>
                                             </button>
-                                            <button onClick={() => handleDelete(member.id)} className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white transition-all text-xs font-bold shadow-sm group">
+                                            <button onClick={() => handleDelete(member.id)} className={`${iconActionClass} bg-red-50 text-red-600 border-red-100 hover:bg-red-600 hover:text-white`}>
                                                 <Trash2Icon className="w-4 h-4" />
                                                 <span>Hapus</span>
                                             </button>
@@ -726,34 +756,39 @@ export const Freelancers: React.FC<FreelancersProps> = (props) => {
                         </div>
                         <div className="hidden md:block overflow-x-auto">
                             <table className="w-full text-sm">
-                                <thead className="text-xs text-brand-text-secondary uppercase"><tr><th className="px-4 py-3">Nama</th><th className="px-4 py-3">Vendor / Tim</th><th className="px-4 py-3">Fee Belum Dibayar</th><th className="px-4 py-3 text-center">Rating</th><th className="px-4 py-3 text-center">Aksi</th></tr></thead>
-                                <tbody className="divide-y divide-brand-border">
+                                <thead className="text-xs text-slate-700 uppercase bg-slate-100"><tr><th className="px-4 py-3 text-left border-r border-slate-300">Nama</th><th className="px-4 py-3 text-left border-r border-slate-300">Vendor / Tim</th><th className="px-4 py-3 text-left border-r border-slate-300">Fee Belum Dibayar</th><th className="px-4 py-3 text-center border-r border-slate-300">Rating</th><th className="px-4 py-3 text-center">Aksi</th></tr></thead>
+                                <tbody className="bg-white/40 divide-y divide-slate-300">
                                     {paginatedVendorMembers.map(member => {
                                         const unpaidFee = teamProjectPaymentsInDateRange.filter(p => String(p.teamMemberId) === String(member.id) && p.status === PaymentStatus.BELUM_BAYAR).reduce((sum, p) => sum + p.fee, 0);
                                         return (
-                                            <tr key={member.id} className="hover:bg-brand-surface/50 transition-colors">
-                                                <td className="px-4 py-3 font-semibold text-brand-text-light">{member.name}</td>
-                                                <td className="px-4 py-3">
+                                            <tr key={member.id} className="hover:bg-brand-bg transition-colors">
+                                                <td className="px-4 py-3 border-r border-slate-300">
+                                                    <div className="flex items-center gap-3">
+                                                        <AvatarDisplay avatarBase64={member.avatar} name={member.name} size="md" variant="vendor" className="shrink-0" />
+                                                        <span className="font-semibold text-brand-text-light">{member.name}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-3 border-r border-slate-300">
                                                     <div className="flex flex-col gap-1">
                                                         <span className="text-brand-text-primary font-medium">{member.role}</span>
-                                                        <span className={`text-[10px] w-fit px-2 py-0.5 rounded-full uppercase font-bold tracking-wider ${member.category === 'Vendor' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'}`}>
+                                                        <span className={`text-[10px] w-fit px-2 py-0.5 rounded-full uppercase font-bold tracking-wider ${memberBadgeClass(member.category)}`}>
                                                             {member.category || 'Tim'}
                                                         </span>
                                                     </div>
                                                 </td>
-                                                <td className="px-4 py-3 font-semibold text-red-400">{formatCurrency(unpaidFee)}</td>
-                                                <td className="px-4 py-3"><div className="flex justify-center items-center gap-1"><StarIcon className="w-4 h-4 text-yellow-400 fill-current" />{member.rating.toFixed(1)}</div></td>
+                                                <td className="px-4 py-3 font-semibold text-red-600 border-r border-slate-300">{formatCurrency(unpaidFee)}</td>
+                                                <td className="px-4 py-3 border-r border-slate-300"><div className="flex justify-center items-center gap-1 text-amber-600 font-bold"><StarIcon className="w-4 h-4 fill-current" />{member.rating.toFixed(1)}</div></td>
                                                 <td className="px-4 py-3">
                                                     <div className="flex items-center justify-center space-x-1.5">
-                                                        <button onClick={() => handleViewDetails(member)} className="inline-flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white transition-all shadow-sm group" title="Detail">
+                                                        <button onClick={() => handleViewDetails(member)} className={`${iconActionClass} bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-600 hover:text-white`} title="Detail">
                                                             <EyeIcon className="w-4 h-4" />
                                                             <span className="text-xs font-bold">Detail</span>
                                                         </button>
-                                                        <button onClick={() => handleOpenForm('edit', member)} className="inline-flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-600/10 text-emerald-400 hover:bg-emerald-600 hover:text-white transition-all shadow-sm group" title="Edit">
+                                                        <button onClick={() => handleOpenForm('edit', member)} className={`${iconActionClass} bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-600 hover:text-white`} title="Edit">
                                                             <PencilIcon className="w-4 h-4" />
                                                             <span className="text-xs font-bold">Edit</span>
                                                         </button>
-                                                        <button onClick={() => handleDelete(member.id)} className="inline-flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white transition-all shadow-sm group" title="Hapus">
+                                                        <button onClick={() => handleDelete(member.id)} className={`${iconActionClass} bg-red-50 text-red-600 border-red-100 hover:bg-red-600 hover:text-white`} title="Hapus">
                                                             <Trash2Icon className="w-4 h-4" />
                                                             <span className="text-xs font-bold">Hapus</span>
                                                         </button>
@@ -768,15 +803,15 @@ export const Freelancers: React.FC<FreelancersProps> = (props) => {
 
                         {/* Vendor Pagination */}
                         {vendorPaginatedData && vendorPaginatedData.total > PAGE_SIZE && (
-                            <div className="mt-6 flex items-center justify-between border-t border-white/5 pt-6 px-2">
-                                <p className="text-[10px] sm:text-xs text-brand-text-secondary">
-                                    Menampilkan <span className="font-bold text-brand-text-light">{((pageVendor - 1) * PAGE_SIZE) + 1}</span> - <span className="font-bold text-brand-text-light">{Math.min(pageVendor * PAGE_SIZE, vendorPaginatedData.total)}</span> dari <span className="font-bold text-brand-text-light">{vendorPaginatedData.total}</span> vendor
+                            <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-6 px-2">
+                                <p className="text-[10px] sm:text-xs text-slate-500">
+                                    Menampilkan <span className="font-bold text-slate-900">{((pageVendor - 1) * PAGE_SIZE) + 1}</span> - <span className="font-bold text-slate-900">{Math.min(pageVendor * PAGE_SIZE, vendorPaginatedData.total)}</span> dari <span className="font-bold text-slate-900">{vendorPaginatedData.total}</span> vendor
                                 </p>
                                 <div className="flex items-center gap-1.5 sm:gap-2">
                                     <button 
                                         onClick={() => setPageVendor(prev => Math.max(1, prev - 1))}
                                         disabled={pageVendor === 1}
-                                        className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-white/5 border border-white/10 text-[10px] sm:text-xs font-bold text-brand-text-light hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                        className={paginationButtonClass}
                                     >
                                         Prev
                                     </button>
@@ -790,13 +825,13 @@ export const Freelancers: React.FC<FreelancersProps> = (props) => {
                                                         <button
                                                             key={i}
                                                             onClick={() => setPageVendor(i)}
-                                                            className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-[10px] sm:text-xs font-bold transition-all ${pageVendor === i ? 'bg-brand-accent text-white shadow-lg shadow-brand-accent/20' : 'bg-white/5 text-brand-text-secondary hover:bg-white/10'}`}
+                                                            className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-[10px] sm:text-xs font-bold transition-all ${pageVendor === i ? 'bg-brand-accent text-white shadow-lg shadow-brand-accent/20' : 'bg-white text-slate-500 border border-slate-200 hover:border-slate-300 hover:text-blue-600'}`}
                                                         >
                                                             {i}
                                                         </button>
                                                     );
                                                 } else if (Math.abs(i - pageVendor) === 2) {
-                                                    pages.push(<span key={i} className="text-brand-text-secondary text-xs">...</span>);
+                                                    pages.push(<span key={i} className="text-slate-400 text-xs">...</span>);
                                                 }
                                             }
                                             return pages;
@@ -805,7 +840,7 @@ export const Freelancers: React.FC<FreelancersProps> = (props) => {
                                     <button 
                                         onClick={() => setPageVendor(prev => prev + 1)}
                                         disabled={!vendorPaginatedData.hasMore}
-                                        className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-white/5 border border-white/10 text-[10px] sm:text-xs font-bold text-brand-text-light hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                        className={paginationButtonClass}
                                     >
                                         Next
                                     </button>
@@ -820,10 +855,10 @@ export const Freelancers: React.FC<FreelancersProps> = (props) => {
             {/* Widgets - Outside tabs, showing combined stats */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Widget 1: Komposisi */}
-                <div className="bg-brand-surface/80 backdrop-blur-xl p-5 rounded-2xl shadow-xl border border-white/10 flex flex-col justify-between">
+                <div className="bg-white p-5 rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 flex flex-col justify-between">
                     <div>
-                        <h3 className="text-sm font-bold text-gradient mb-5 flex items-center gap-2">
-                            <UsersIcon className="w-5 h-5 text-blue-400" /> Komposisi Tim
+                        <h3 className="text-sm font-bold text-slate-900 mb-5 flex items-center gap-2">
+                            <UsersIcon className="w-5 h-5 text-blue-600" /> Komposisi Tim
                         </h3>
                         <div className="space-y-4">
                             {(() => {
@@ -834,20 +869,20 @@ export const Freelancers: React.FC<FreelancersProps> = (props) => {
                                     <>
                                         <div className="space-y-1.5">
                                             <div className="flex justify-between items-end">
-                                                <span className="text-brand-text-secondary text-[10px] font-bold uppercase tracking-widest">Internal</span>
-                                                <span className="text-lg font-black text-blue-400">{timCount}</span>
+                                                <span className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Internal</span>
+                                                <span className="text-lg font-black text-blue-600">{timCount}</span>
                                             </div>
-                                            <div className="w-full bg-slate-900/50 h-2.5 rounded-full overflow-hidden border border-white/5">
-                                                <div className="h-full rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]" style={{ width: `${(timCount / total) * 100}%`, backgroundColor: '#3b82f6' }}></div>
+                                            <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                                                <div className="h-full rounded-full" style={{ width: `${(timCount / total) * 100}%`, backgroundColor: '#2563eb' }}></div>
                                             </div>
                                         </div>
                                         <div className="space-y-1.5">
                                             <div className="flex justify-between items-end">
-                                                <span className="text-brand-text-secondary text-[10px] font-bold uppercase tracking-widest">Vendor</span>
-                                                <span className="text-lg font-black text-orange-400">{vendorCount}</span>
+                                                <span className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Vendor</span>
+                                                <span className="text-lg font-black text-orange-600">{vendorCount}</span>
                                             </div>
-                                            <div className="w-full bg-slate-900/50 h-2.5 rounded-full overflow-hidden border border-white/5">
-                                                <div className="h-full rounded-full shadow-[0_0_10px_rgba(249,115,22,0.5)]" style={{ width: `${(vendorCount / total) * 100}%`, backgroundColor: '#f97316' }}></div>
+                                            <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                                                <div className="h-full rounded-full" style={{ width: `${(vendorCount / total) * 100}%`, backgroundColor: '#ea580c' }}></div>
                                             </div>
                                         </div>
                                     </>
@@ -858,28 +893,28 @@ export const Freelancers: React.FC<FreelancersProps> = (props) => {
                 </div>
 
                 {/* Widget 2: Performa */}
-                <div className="bg-brand-surface/80 backdrop-blur-xl p-5 rounded-2xl shadow-xl border border-white/10">
-                    <h3 className="text-sm font-bold text-gradient mb-5 flex items-center gap-2">
-                        <StarIcon className="w-5 h-5 text-yellow-400" /> Performa Rata-rata
+                <div className="bg-white p-5 rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100">
+                    <h3 className="text-sm font-bold text-slate-900 mb-5 flex items-center gap-2">
+                        <StarIcon className="w-5 h-5 text-amber-500" /> Performa Rata-rata
                     </h3>
                     <div className="space-y-4">
-                        <div className="flex items-center justify-between group cursor-pointer p-2 hover:bg-white/5 rounded-xl transition-all">
+                        <div className="flex items-center justify-between group cursor-pointer p-2 hover:bg-slate-50 rounded-xl transition-all">
                             <div>
-                                <p className="text-[9px] text-brand-text-secondary font-bold uppercase tracking-tighter">Total Payout</p>
-                                <p className="text-lg font-black text-brand-text-light">{teamStats.totalPayout}</p>
+                                <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Total Payout</p>
+                                <p className="text-lg font-black text-slate-900">{teamStats.totalPayout}</p>
                             </div>
-                            <DollarSignIcon className="w-6 h-6 text-brand-text-secondary/20 group-hover:text-brand-accent/20" />
+                            <DollarSignIcon className="w-6 h-6 text-slate-300 group-hover:text-brand-accent/40" />
                         </div>
                         <div className="grid grid-cols-2 gap-3">
-                            <div className="p-3 bg-white/5 rounded-xl border border-white/5">
-                                <p className="text-[9px] text-brand-text-secondary font-bold uppercase tracking-tighter">Selesai</p>
-                                <p className="text-lg font-black text-brand-text-light">{teamStats.totalProjectsHandled}</p>
+                            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Selesai</p>
+                                <p className="text-lg font-black text-slate-900">{teamStats.totalProjectsHandled}</p>
                             </div>
-                            <div className="p-3 bg-white/5 rounded-xl border border-white/5">
-                                <p className="text-[9px] text-brand-text-secondary font-bold uppercase tracking-tighter">Rating</p>
+                            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Rating</p>
                                 <div className="flex items-center gap-1.5">
-                                    <p className="text-lg font-black text-yellow-400">{teamStats.avgRating}</p>
-                                    <StarIcon className="w-3.5 h-3.5 text-yellow-400 fill-current" />
+                                    <p className="text-lg font-black text-amber-600">{teamStats.avgRating}</p>
+                                    <StarIcon className="w-3.5 h-3.5 text-amber-500 fill-current" />
                                 </div>
                             </div>
                         </div>
@@ -887,13 +922,13 @@ export const Freelancers: React.FC<FreelancersProps> = (props) => {
                 </div>
 
                 {/* Widget 3: Tren */}
-                <div className="bg-brand-surface/80 backdrop-blur-xl p-5 rounded-2xl shadow-xl border border-white/10">
+                <div className="bg-white p-5 rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100">
                     <div className="flex justify-between items-start mb-5">
-                        <h3 className="text-sm font-bold text-gradient flex items-center gap-2">
-                            <DollarSignIcon className="w-5 h-5" /> Tren
+                        <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                            <DollarSignIcon className="w-5 h-5 text-brand-accent" /> Tren
                         </h3>
                         <div className="text-right">
-                            <p className="text-[9px] text-brand-text-secondary font-bold uppercase">6 Bulan</p>
+                            <p className="text-[9px] text-slate-500 font-bold uppercase">6 Bulan</p>
                             <p className="text-sm font-black text-brand-accent">
                                 {(() => {
                                     const now = new Date();
@@ -934,11 +969,11 @@ export const Freelancers: React.FC<FreelancersProps> = (props) => {
                                         style={{
                                             height: `${(m.total / maxVal) * 100}%`,
                                             minHeight: '4px',
-                                            background: m.total > 0 ? 'linear-gradient(to top, #6366f1, #818cf8)' : '#1e293b',
-                                            boxShadow: m.total > 0 ? '0 0 10px rgba(99,102,241,0.3)' : 'none'
+                                            background: m.total > 0 ? 'linear-gradient(to top, #2563eb, #60a5fa)' : '#e2e8f0',
+                                            boxShadow: 'none'
                                         }}>
                                     </div>
-                                    <span className="text-[9px] font-bold text-brand-text-secondary mt-2">{m.name}</span>
+                                    <span className="text-[9px] font-bold text-slate-500 mt-2">{m.name}</span>
                                 </div>
                             ));
                         })()}
@@ -1001,9 +1036,12 @@ export const Freelancers: React.FC<FreelancersProps> = (props) => {
                                 .sort((a, b) => b.rating - a.rating)
                                 .map(member => (
                                     <div key={member.id} className="p-3 bg-brand-bg rounded-lg flex justify-between items-center">
-                                        <div>
-                                            <p className="font-semibold text-brand-text-light">{member.name}</p>
-                                            <p className="text-sm text-brand-text-secondary">{member.role}</p>
+                                        <div className="flex items-center gap-3">
+                                            <AvatarDisplay avatarBase64={member.avatar} name={member.name} size="sm" variant={activeStatModal.group === 'vendor' ? 'vendor' : 'team'} className="shrink-0" />
+                                            <div>
+                                                <p className="font-semibold text-brand-text-light">{member.name}</p>
+                                                <p className="text-sm text-brand-text-secondary">{member.role}</p>
+                                            </div>
                                         </div>
                                         <div className="flex items-center gap-1 font-semibold text-brand-text-light"><StarIcon className="w-4 h-4 text-yellow-400 fill-current" />{member.rating.toFixed(1)}</div>
                                     </div>

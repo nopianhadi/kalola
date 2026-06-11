@@ -38,7 +38,7 @@ export interface ClientDetailModalProps {
     onViewReceipt: (transaction: Transaction) => void;
     onViewInvoice: (project: Project) => void;
     handleNavigation: (view: ViewType, action?: NavigationAction) => void;
-    onRecordPayment: (projectId: string, amount: number, destinationCardId: string) => void;
+    onRecordPayment: (projectId: number, amount: number, destinationCardId: number) => void;
     cards: Card[];
     onSharePortal: (client: Client) => void;
     onDeleteProject: (projectId: string) => void;

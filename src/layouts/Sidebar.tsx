@@ -1,6 +1,7 @@
 import React, { useMemo, useEffect } from 'react';
 import { ViewType, User, Profile } from '@/types';
-import { NAV_ITEMS, LogOutIcon, UsersIcon } from '@/constants';
+import { NAV_ITEMS, LogOutIcon } from '@/constants';
+import { AvatarDisplay } from '@/shared/ui/AvatarUpload';
 
 interface SidebarProps {
   activeView: ViewType;
@@ -15,23 +16,40 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = React.memo(({ activeView, setActiveView, isOpen, setIsOpen, currentUser, profile, onLogout }) => {
   const navGroupConfig = useMemo(() => ([
     {
-      id: 'pengantin',
-      title: 'Pengantin',
-      description: 'Kelola Pengantin.',
+      id: 'pengantin-pipeline',
+      title: 'Alur Pengantin',
+      description: 'Dari leads hingga booking.',
       views: [
-        ViewType.DASHBOARD,
         ViewType["Calon Pengantin"],
         ViewType.BOOKING,
         ViewType.CALENDAR,
+      ],
+    },
+    {
+      id: 'manajemen-pengantin',
+      title: 'Manajemen Pengantin',
+      description: 'Database dan progress acara pernikahan.',
+      views: [
         ViewType.CLIENTS,
+        ViewType.PROJECTS,
+        ViewType.CONTRACTS,
       ],
     },
     {
       id: 'layanan-produk',
-      title: 'Paket Vendor',
-      description: 'Kelola paket dan Pricelist',
+      title: 'Paket & Pricelist',
+      description: 'Kelola Package, Add-on, dan Promo.',
       views: [
         ViewType.PACKAGES,
+        ViewType.PROMO_CODES,
+      ],
+    },
+    {
+      id: 'portfolio',
+      title: 'Portfolio',
+      description: 'Kelola portfolio proyek per project.',
+      views: [
+        ViewType.PORTFOLIO,
       ],
     },
     {
@@ -43,7 +61,7 @@ const Sidebar: React.FC<SidebarProps> = React.memo(({ activeView, setActiveView,
     {
       id: 'vendor',
       title: 'Tim & Vendor',
-      description: 'Kelola tim dan Vendor .',
+      description: 'Kelola tim dan Vendor.',
       views: [ViewType.TEAM],
     },
     {
@@ -138,13 +156,13 @@ const Sidebar: React.FC<SidebarProps> = React.memo(({ activeView, setActiveView,
           fixed xl:fixed 
           inset-y-0 left-0 
           w-72 sm:w-80 xl:w-64
-          bg-brand-surface 
+          bg-white
           flex-col flex-shrink-0 flex 
           z-40 
           transform transition-all duration-300 ease-out
           xl:translate-x-0
-          border-r border-brand-border/50
-          shadow-2xl xl:shadow-none
+          border-r border-white/20
+          shadow-2xl xl:shadow-[1px_0_0_rgba(0,0,0,0.02)]
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
         style={{
@@ -158,8 +176,8 @@ const Sidebar: React.FC<SidebarProps> = React.memo(({ activeView, setActiveView,
           h-16 sm:h-20 
           flex items-center 
           px-4 sm:px-6 
-          border-b border-brand-border/50
-          bg-brand-surface
+          border-b border-brand-border/30
+          bg-transparent
         ">
           <div className="flex items-center gap-3">
             {/* Logo/Brand Icon */}
@@ -205,12 +223,9 @@ const Sidebar: React.FC<SidebarProps> = React.memo(({ activeView, setActiveView,
           <div className="space-y-5">
             {groupedNavItems.map((group) => (
               <section key={group.id}>
-                <div className="px-3 sm:px-4 mb-2">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-brand-text-secondary">
+                <div className="px-3 sm:px-4 mb-1">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-brand-text-secondary/70">
                     {group.title}
-                  </p>
-                  <p className="text-xs text-brand-text-secondary/90 leading-snug mt-1">
-                    {group.description}
                   </p>
                 </div>
 
@@ -237,8 +252,8 @@ const Sidebar: React.FC<SidebarProps> = React.memo(({ activeView, setActiveView,
                           overflow-hidden
                           min-h-[48px]
                           ${activeView === item.view
-                            ? 'bg-brand-accent text-white shadow-lg shadow-brand-accent/25'
-                            : 'text-brand-text-primary hover:bg-brand-input active:bg-brand-input/80'
+                            ? 'bg-gradient-to-r from-brand-accent to-indigo-600 text-white shadow-lg shadow-brand-accent/20 border-t border-white/10'
+                            : 'text-brand-text-primary hover:bg-brand-input/60 active:bg-brand-input/80'
                           }
                         `}
                         style={{
@@ -311,8 +326,8 @@ const Sidebar: React.FC<SidebarProps> = React.memo(({ activeView, setActiveView,
           px-4 sm:px-6 
           py-4 sm:py-6 
           flex-shrink-0 
-          border-t border-brand-border/50
-          bg-brand-surface
+          border-t border-brand-border/30
+          bg-transparent
         ">
           {/* Enhanced User Profile */}
           {currentUser && (
@@ -325,19 +340,23 @@ const Sidebar: React.FC<SidebarProps> = React.memo(({ activeView, setActiveView,
               border border-brand-border/30
             ">
               <div className="
-                w-10 h-10 sm:w-12 sm:h-12 
+                w-10 h-10 sm:w-11 sm:h-11 
                 rounded-full 
-                bg-gradient-to-br from-brand-accent/20 to-brand-accent/10
-                flex items-center justify-center
-                border-2 border-brand-accent/20
+                overflow-hidden
                 flex-shrink-0
               ">
-                <UsersIcon className="w-5 h-5 sm:w-6 sm:h-6 text-brand-accent" />
+                <AvatarDisplay
+                  avatarBase64={profile?.avatar ?? null}
+                  name={profile?.fullName || currentUser.fullName || 'User'}
+                  size="sm"
+                  variant="team"
+                  className="!rounded-full w-full h-full"
+                />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="
                   font-semibold 
-                  text-sm sm:text-base 
+                  text-sm
                   text-brand-text-light
                   truncate
                   leading-tight
@@ -345,35 +364,31 @@ const Sidebar: React.FC<SidebarProps> = React.memo(({ activeView, setActiveView,
                   {profile?.fullName || currentUser.fullName}
                 </p>
                 <p className="
-                  text-xs sm:text-sm 
+                  text-[11px] 
                   text-brand-text-secondary
                   truncate
                   leading-tight
+                  mt-0.5
                 ">
                   {currentUser.role}
                 </p>
               </div>
+              <button
+                type="button"
+                onClick={onLogout}
+                className="
+                  p-2 rounded-lg
+                  text-brand-text-secondary hover:text-brand-danger hover:bg-red-500/10
+                  transition-colors duration-200
+                  flex-shrink-0
+                "
+                title="Keluar"
+                aria-label="Keluar"
+              >
+                <LogOutIcon className="w-4 h-4 text-brand-text-secondary hover:text-brand-danger" />
+              </button>
             </div>
           )}
-
-          {/* Logout Button */}
-          <button
-            type="button"
-            onClick={onLogout}
-            className="
-              mt-3 w-full flex items-center gap-3
-              px-3 py-2.5 rounded-lg
-              text-sm font-semibold
-              text-brand-text-primary
-              hover:bg-brand-input active:bg-brand-input/80
-              transition-colors
-              border border-transparent hover:border-brand-border/50
-            "
-            aria-label="Keluar"
-          >
-            <LogOutIcon className="w-5 h-5 text-brand-text-secondary" />
-            <span>Keluar</span>
-          </button>
         </div>
       </aside>
 

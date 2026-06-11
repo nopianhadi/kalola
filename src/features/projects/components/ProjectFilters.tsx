@@ -41,13 +41,13 @@ const ProjectFilters: React.FC<ProjectFiltersProps> = ({
                     type="search" 
                     value={searchTerm} 
                     onChange={e => setSearchTerm(e.target.value)} 
-                    className="w-full h-11 pl-4 pr-10 rounded-xl border border-brand-border bg-brand-bg/50 text-sm focus:outline-none focus:ring-2 focus:ring-brand-accent/50 focus:border-brand-accent transition-all placeholder:text-brand-text-secondary/50" 
+                    className="w-full h-11 pl-4 pr-10 rounded-xl border border-brand-border bg-brand-bg text-sm focus:outline-none focus:ring-2 focus:ring-brand-accent focus:border-brand-accent transition-all placeholder:text-brand-text-secondary" 
                     placeholder="Cari acara atau pengantin..." 
                 />
             </div>
 
             {/* Date Range */}
-            <div className="flex items-center gap-1.5 flex-shrink-0 bg-brand-bg/30 p-1 rounded-xl border border-brand-border/50">
+            <div className="flex items-center gap-1.5 flex-shrink-0 bg-brand-bg p-1 rounded-xl border border-brand-border">
                 <div className="flex items-center px-3 py-1.5 bg-brand-surface rounded-lg border border-brand-border h-9">
                     <CalendarIcon className="w-3.5 h-3.5 text-brand-accent mr-2" />
                     <input 
@@ -73,24 +73,24 @@ const ProjectFilters: React.FC<ProjectFiltersProps> = ({
             <select 
                 value={statusFilter} 
                 onChange={e => setStatusFilter(e.target.value)} 
-                className="h-11 px-4 rounded-xl border border-brand-border bg-brand-bg/50 text-sm font-bold text-brand-text-primary focus:outline-none focus:ring-2 focus:ring-brand-accent/50 min-w-[160px] appearance-none cursor-pointer hover:bg-brand-input transition-colors"
+                className="h-11 px-4 rounded-xl border border-brand-border bg-brand-bg text-sm font-bold text-brand-text-primary focus:outline-none focus:ring-2 focus:ring-brand-accent min-w-[160px] appearance-none cursor-pointer hover:bg-brand-input transition-colors"
             >
                 <option value="all">Semua Status</option>
                 {projectStatusConfig.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
             </select>
 
             {/* View Mode Toggle */}
-            <div className="flex-shrink-0 p-1 bg-brand-bg/50 rounded-xl border border-brand-border flex items-center h-11">
+            <div className="flex-shrink-0 p-1 bg-brand-bg rounded-xl border border-brand-border flex items-center h-11">
                 <button 
                     onClick={() => setViewMode('list')} 
-                    className={`px-3 py-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-brand-accent text-white shadow-lg shadow-brand-accent/20' : 'text-brand-text-secondary hover:text-brand-text-light'}`}
+                    className={`px-3 py-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-brand-accent text-white shadow-lg' : 'bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-900'}`}
                     title="List View"
                 >
                     <ListIcon className="w-4 h-4" />
                 </button>
                 <button 
                     onClick={() => setViewMode('kanban')} 
-                    className={`px-3 py-2 rounded-lg transition-all ${viewMode === 'kanban' ? 'bg-brand-accent text-white shadow-lg shadow-brand-accent/20' : 'text-brand-text-secondary hover:text-brand-text-light'}`}
+                    className={`px-3 py-2 rounded-lg transition-all ${viewMode === 'kanban' ? 'bg-brand-accent text-white shadow-lg' : 'bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-900'}`}
                     title="Kanban View"
                 >
                     <LayoutGridIcon className="w-4 h-4" />

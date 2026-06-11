@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
     ChevronLeftIcon,
@@ -13,11 +13,16 @@ import { useTeamMembers, useTeamProjectPayments } from '@/features/team/api/useT
 import { useTransactions, useCards, usePockets } from '@/features/finance/api/useFinanceQueries';
 import { useProjectActions } from '@/features/projects/hooks/useProjectActions';
 import ProjectForm from '@/features/projects/components/ProjectForm';
+import { useApp } from '@/app/AppContext';
 
 const ProjectEditPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const { showNotification } = useApp();
     const isEdit = !!id;
+
+    // Track if form has been initialized to avoid re-init on profile refetch
+    const initializedRef = useRef(false);
 
     const { data: project, isLoading: isProjectLoading } = useProject(id ? Number(id) : 0);
     const { data: projectsData } = useProjects();
@@ -42,26 +47,58 @@ const ProjectEditPage: React.FC = () => {
         cards,
         pockets,
         profile: profile || {} as any,
-        showNotification: (msg) => {
-            console.log(msg);
-            // Optionally use a toast system here
-        }
+        showNotification,
     });
 
     useEffect(() => {
-        if (isEdit && project && !projectActions.formData) {
-            projectActions.initializeForm('edit', project);
-        } else if (!isEdit && !projectActions.formData) {
-            projectActions.initializeForm('add');
-        }
-    }, [isEdit, project, projectActions.initializeForm, projectActions.formData]);
+        // Only initialize once per page load; prevent re-init when profile refetches
+        if (initializedRef.current) return;
 
-    if ((isEdit && isProjectLoading) || !profile || !projectActions.formData) {
+        if (isEdit) {
+            // Wait until both project and profile are loaded
+            if (project && profile) {
+                projectActions.initializeForm('edit', project);
+                initializedRef.current = true;
+            }
+        } else {
+            // For "add" mode, initialize as soon as profile is ready
+            if (profile) {
+                projectActions.initializeForm('add');
+                initializedRef.current = true;
+            }
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isEdit, project, profile]);
+
+    // Show loading only while data is actually being fetched
+    if (isEdit && (isProjectLoading || !project || !profile)) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-brand-bg">
                 <div className="flex flex-col items-center gap-4">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-accent"></div>
-                    <p className="text-brand-text-secondary text-sm font-medium">Memuat Form...</p>
+                    <p className="text-brand-text-secondary text-sm font-medium">Memuat Data Acara...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (!profile) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-brand-bg">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-accent"></div>
+                    <p className="text-brand-text-secondary text-sm font-medium">Memuat Konfigurasi...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (!projectActions.formData) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-brand-bg">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-accent"></div>
+                    <p className="text-brand-text-secondary text-sm font-medium">Menyiapkan Form...</p>
                 </div>
             </div>
         );
@@ -151,9 +188,9 @@ const ProjectEditPage: React.FC = () => {
                             teamProjectPayments={teamProjectPayments}
                             profile={profile}
                             teamByCategory={projectActions.teamByCategory}
-                            showNotification={(msg) => console.log(msg)}
+                            showNotification={showNotification}
                             setFormData={projectActions.setFormData}
-                            inline={true} // New prop to handle inline rendering
+                            inline={true}
                         />
                     </div>
                 </div>
@@ -162,8 +199,9 @@ const ProjectEditPage: React.FC = () => {
                     <div className="mt-8 flex justify-center">
                         <button 
                             onClick={() => {
-                                if (window.confirm("Yakin ingin menghapus Acara Pernikahan ini?")) {
-                                    // Handle delete
+                                if (window.confirm("Yakin ingin menghapus Acara Pernikahan ini? Semua data terkait akan ikut terhapus.")) {
+                                    projectActions.handleProjectDelete(Number(id));
+                                    navigate('/project');
                                 }
                             }}
                             className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-red-500/10 text-red-500 border border-red-500/20 text-xs font-bold hover:bg-red-500 hover:text-white transition-all"

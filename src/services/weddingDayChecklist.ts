@@ -104,9 +104,9 @@ export async function renameChecklistCategory(projectId: number, oldCategory: st
 }
 
 export const DEFAULT_CHECKLIST_TEMPLATES = [
-  { category: 'Persiapan', items: ['Cek perlengkapan makeup', 'Cek gaun/jas pengantin', 'Cek bunga tangan', 'Cek cincin'] },
-  { category: 'Mempelai Pria', items: ['Foto detail aksesoris', 'Prosesi pemakaian jas', 'Foto bersama orang tua', 'Keberangkatan'] },
-  { category: 'Mempelai Wanita', items: ['Foto makeup', 'Prosesi pemakaian gaun', 'Foto bersama bridesmaids', 'First look'] },
+  { category: 'Persiapan', items: ['Cek perlengkapan utama', 'Cek kelengkapan material', 'Cek aksesoris pendukung', 'Cek dokumen penting'] },
+  { category: 'Setup Lokasi', items: ['Loading barang', 'Setup perlengkapan', 'Test equipment', 'Final check'] },
+  { category: 'Pelaksanaan', items: ['Standby di lokasi', 'Eksekusi sesuai rundown', 'Koordinasi dengan vendor lain', 'Dokumentasi'] },
   { category: 'Foto Keluarga', items: ['Keluarga inti pria', 'Keluarga inti wanita', 'Keluarga besar', 'Sesi salaman'] },
   { category: 'Catering', items: ['Cek menu utama', 'Cek pondokan', 'Cek kebersihan area makan', 'Cek ketersediaan piring/sendok'] },
 ];

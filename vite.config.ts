@@ -1,30 +1,33 @@
 import path from 'path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import viteCompression from 'vite-plugin-compression';
 
 export default defineConfig(() => {
   return {
     plugins: [
-      react(),
-      viteCompression({
-        algorithm: 'brotliCompress',
-        ext: '.br',
-        threshold: 1024,
-        deleteOriginFile: false
-      })
+      react()
     ],
     test: {
       globals: true,
       environment: 'jsdom',
-      include: ['**/*.{test,spec}.{ts,tsx}'],
-      exclude: ['node_modules', 'dist'],
+      include: ['src/**/*.{test,spec}.{ts,tsx}'],
+      exclude: ['node_modules', 'dist', 'backend/**'],
     },
     // Enable compression
     server: {
+      host: 'localhost',
+      port: 5173,
+      strictPort: true,
       hmr: {
         overlay: false // Disable error overlay for better performance
-      }
+      },
+      watch: {
+        usePolling: true,
+        interval: 1000,
+      },
+    },
+    optimizeDeps: {
+      force: true,
     },
     resolve: {
       alias: {
@@ -56,18 +59,7 @@ export default defineConfig(() => {
             if (id.includes('/types.ts') || id.includes('/constants.tsx')) {
               return undefined; // Keep in main bundle
             }
-            // Large feature chunks by directory keywords
-            if (id.includes('/components/')) {
-              if (id.includes('Finance')) return 'feature-finance';
-              if (id.includes('Projects')) return 'feature-projects';
-              if (id.includes('Clients')) return 'feature-clients';
-              if (id.includes('Tim / Vendors') || id.includes('Team')) return 'feature-team';
-              if (id.includes('Marketing') || id.includes('SocialPlanner')) return 'feature-marketing';
-              if (id.includes('Public')) return 'feature-public';
-              if (id.includes('CalendarView')) return 'feature-calendar';
-              if (id.includes('Booking') || id.includes('Leads')) return 'feature-leads';
-              if (id.includes('Gallery')) return 'feature-gallery';
-            }
+            return undefined;
           }
         }
       }

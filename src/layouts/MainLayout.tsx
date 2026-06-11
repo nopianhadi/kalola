@@ -6,7 +6,10 @@ import GlobalSearch from "@/layouts/GlobalSearch";
 import { useApp } from "@/app/AppContext";
 import { ViewType, Profile } from "@/types";
 import { useProfile } from "@/features/settings/api/useProfileQueries";
+import { useCards } from "@/features/finance/api/useFinanceQueries";
 import { useNotifications } from "@/hooks/useNotifications";
+import { OnboardingFlow } from "@/features/onboarding/components/OnboardingFlow";
+import { useOnboarding } from "@/features/onboarding/hooks/useOnboarding";
 
 
 
@@ -24,6 +27,8 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
   } = useApp();
 
   const { data: profileData } = useProfile();
+  const { data: cards = [] } = useCards();
+  const { isCompleted, completeOnboarding } = useOnboarding();
   const profile = profileData || ({
     projectTypes: [],
     projectStatusConfig: [],
@@ -35,7 +40,6 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
   const handleNavigation = (view: ViewType, _action?: { type: string; id?: number | string }, _notificationId?: number | string) => {
       const pathMap: Partial<Record<ViewType, string>> = {
           [ViewType.HOMEPAGE]: "/",
-          [ViewType.DASHBOARD]: "/dashboard",
           [ViewType["Calon Pengantin"]]: "/prospek",
           [ViewType.BOOKING]: "/booking",
           [ViewType.CLIENTS]: "/clients",
@@ -45,6 +49,7 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
           [ViewType.CALENDAR]: "/calendar",
           [ViewType.PACKAGES]: "/packages",
           [ViewType.PROMO_CODES]: "/promo-codes",
+          [ViewType.PORTFOLIO]: "/admin-portfolio",
           [ViewType.CLIENT_REPORTS]: "/client-reports",
           [ViewType.SETTINGS]: "/settings",
           [ViewType.CONTRACTS]: "/kontrak",
@@ -86,6 +91,9 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
           <div className="animate-fade-in">
             {children}
           </div>
+          {!isCompleted && currentUser && (
+            <OnboardingFlow profile={profile} cards={cards} onComplete={completeOnboarding} />
+          )}
         </main>
       </div>
 

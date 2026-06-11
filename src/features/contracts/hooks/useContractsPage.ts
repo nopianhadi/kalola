@@ -58,7 +58,7 @@ export const useContractsPage = ({
     const [selectedProjectId, setSelectedProjectId] = useState('');
 
     const availableProjects = useMemo(() => {
-        return projects.filter(p => p.clientId === selectedClientId);
+        return projects.filter(p => String(p.clientId) === String(selectedClientId));
     }, [selectedClientId, projects]);
 
     // Auto-populate form when project is selected
@@ -137,6 +137,12 @@ export const useContractsPage = ({
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
+    const generateContractNumber = () => {
+        const stamp = Date.now().toString().slice(-6);
+        const suffix = Math.floor(100 + Math.random() * 900);
+        return `VP/CTR/${new Date().getFullYear()}/${stamp}${suffix}`;
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -147,11 +153,11 @@ export const useContractsPage = ({
 
         try {
             if (modalMode === 'add') {
-                const contractNumber = `VP/CTR/${new Date().getFullYear()}/${String(totalContracts + 1).padStart(3, '0')}`;
+                const contractNumber = generateContractNumber();
                 const payload = {
                     contractNumber,
-                    clientId: selectedClientId,
-                    projectId: selectedProjectId,
+                    clientId: Number(selectedClientId),
+                    projectId: Number(selectedProjectId),
                     ...formData,
                 } as Omit<Contract, 'id' | 'createdAt'>;
                 await createContractMutation.mutateAsync(payload);
@@ -159,8 +165,8 @@ export const useContractsPage = ({
             } else if (selectedContract) {
                 const patch = {
                     ...formData,
-                    clientId: selectedClientId,
-                    projectId: selectedProjectId,
+                    clientId: Number(selectedClientId),
+                    projectId: Number(selectedProjectId),
                 } as Partial<Contract>;
                 await updateContractMutation.mutateAsync({ id: selectedContract.id, patch });
                 showNotification('Kontrak berhasil diperbarui.');
@@ -168,7 +174,8 @@ export const useContractsPage = ({
             handleCloseModal();
         } catch (err: any) {
             console.error('[API][contracts.save] error:', err);
-            alert(`Gagal menyimpan kontrak ke database. ${err?.message || 'Coba lagi.'}`);
+            const detail = err?.response?.data?.error || err?.message || 'Coba lagi.';
+            alert(`Gagal menyimpan kontrak ke database. ${detail}`);
         }
 
     };

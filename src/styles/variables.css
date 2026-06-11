@@ -22,9 +22,9 @@
     --public-border: #cbd5e1; /* slate-300 for clearer delineation */
     --public-text-primary: #0f172a; /* slate-900 */
     --public-text-secondary: #475569; /* slate-600 (darker than slate-500) */
-    --public-accent: #2563eb; /* blue-600 */
-    --public-accent-hover: #1d4ed8; /* blue-700 */
-    --public-accent-hsl: 221 83% 53%;
+    --public-accent: #0f172a; /* slate-900 / black */
+    --public-accent-hover: #1e293b; /* slate-800 */
+    --public-accent-hsl: 222 47% 11%;
 
     /* iOS Safe Area Variables */
     --safe-area-inset-top: env(safe-area-inset-top, 0px);
@@ -60,4 +60,33 @@
   ::-webkit-scrollbar {
     display: none;
   }
+}
+
+/* ── Public Booking Form – Black Theme Overrides ────────────────────────────
+   Scoped to .public-page-body so dashboard styles are unaffected.
+   Overrides button-primary gradient, text-gradient, and focus rings.
+─────────────────────────────────────────────────────────────────────────────── */
+.public-page-body .button-primary {
+  background: #0f172a !important;
+  background-image: none !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.public-page-body .button-primary:hover {
+  background: #1e293b !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+.public-page-body .button-primary:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.3);
+}
+
+/* Step headings & summary titles */
+.public-page-body .text-gradient {
+  background: linear-gradient(135deg, #0f172a 0%, #374151 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }

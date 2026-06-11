@@ -1,7 +1,10 @@
 export const ensureOnlineOrNotify = (showNotification: (message: string) => void): boolean => {
-    if (!navigator.onLine) {
+    const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : false;
+
+    if (!isOnline) {
         showNotification('Harus online untuk melakukan perubahan');
         return false;
     }
+
     return true;
 };

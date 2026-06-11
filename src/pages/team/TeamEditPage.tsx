@@ -6,17 +6,11 @@ import { useApp } from '@/app/AppContext';
 import { TeamMember } from '@/types';
 import { createTeamMember as createTeamMemberRow, updateTeamMember as updateTeamMemberRow } from '@/services/teamMembers';
 import { useQueryClient } from '@tanstack/react-query';
-import { ChevronLeftIcon, UsersIcon } from 'lucide-react';
+import { ArrowLeftIcon, UsersIcon } from 'lucide-react';
 import { generatePrettyAccessId } from '@/utils/idUtils';
 
-const emptyMember: Omit<TeamMember, 'id' | 'rating' | 'performanceNotes' | 'portalAccessId'> = { 
-    name: '', 
-    role: '', 
-    email: '', 
-    phone: '', 
-    standardFee: 0, 
-    noRek: '', 
-    category: 'Tim' 
+const emptyMember: Omit<TeamMember, 'id' | 'rating' | 'performanceNotes' | 'portalAccessId'> = {
+    name: '', role: '', email: '', phone: '', standardFee: 0, noRek: '', category: 'Tim'
 };
 
 const TeamEditPage: React.FC = () => {
@@ -78,44 +72,37 @@ const TeamEditPage: React.FC = () => {
         }
     };
 
-    return (
-        <div className="min-h-screen bg-brand-bg relative overflow-x-hidden">
-            <div className="absolute top-0 left-0 w-full h-[400px] bg-gradient-to-b from-brand-accent/10 to-transparent pointer-events-none"></div>
-            
-            <header className="sticky top-0 z-40 bg-brand-bg/60 backdrop-blur-xl border-b border-brand-border/50">
-                <div className="max-w-5xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
-                    <div className="flex items-center gap-6">
-                        <button 
-                            onClick={() => navigate('/member')}
-                            className="group flex items-center gap-2 p-2 rounded-2xl hover:bg-brand-surface transition-all active:scale-95 border border-transparent hover:border-brand-border"
-                        >
-                            <div className="p-2 rounded-xl bg-brand-surface border border-brand-border group-hover:bg-brand-accent group-hover:text-white transition-all">
-                                <ChevronLeftIcon className="w-5 h-5" />
-                            </div>
-                            <span className="text-sm font-bold text-brand-text-secondary group-hover:text-brand-text-light hidden sm:block transition-colors">Batal</span>
-                        </button>
-                        
-                        <div className="h-8 w-[1px] bg-brand-border hidden sm:block"></div>
+    const onCancel = () => navigate('/member');
 
-                        <div className="flex items-center gap-4">
-                            <div className="hidden sm:flex w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-accent to-blue-600 items-center justify-center shadow-xl shadow-brand-accent/20">
-                                <UsersIcon className="w-6 h-6 text-white" />
-                            </div>
-                            <div>
-                                <h1 className="text-xl font-black text-brand-text-light tracking-tight">
-                                    {isEdit ? 'Edit Tim / Vendor' : 'Tambah Tim / Vendor'}
-                                </h1>
-                                <p className="text-[10px] text-brand-text-secondary font-bold uppercase tracking-widest mt-0.5">
-                                    {isEdit ? formData.name : 'Data Baru'}
-                                </p>
-                            </div>
+    return (
+        <div className="min-h-screen bg-brand-bg">
+            {/* ── Header ── */}
+            <header className="sticky top-0 z-40 bg-brand-bg/80 backdrop-blur-xl border-b border-brand-border">
+                <div className="max-w-3xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-4">
+                    <button onClick={onCancel}
+                        className="p-2 rounded-xl border border-brand-border hover:bg-brand-surface text-brand-text-secondary hover:text-brand-text-light transition active:scale-95">
+                        <ArrowLeftIcon className="w-4 h-4" />
+                    </button>
+                    <div className="h-6 w-px bg-brand-border" />
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-brand-accent to-blue-600 flex items-center justify-center flex-shrink-0 shadow-md shadow-brand-accent/20">
+                            <UsersIcon className="w-4 h-4 text-white" />
+                        </div>
+                        <div className="min-w-0">
+                            <h1 className="text-sm font-bold text-brand-text-light truncate">
+                                {isEdit ? 'Edit Tim / Vendor' : 'Tambah Tim / Vendor'}
+                            </h1>
+                            {isEdit && formData.name && (
+                                <p className="text-xs text-brand-text-secondary truncate">{formData.name}</p>
+                            )}
                         </div>
                     </div>
                 </div>
             </header>
 
-            <main className="max-w-3xl mx-auto px-4 sm:px-6 py-12 relative z-10">
-                <div className="bg-brand-surface border border-brand-border rounded-[2.5rem] p-8 md:p-12 shadow-sm">
+            {/* ── Content ── */}
+            <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8 pb-20">
+                <div className="bg-brand-surface rounded-2xl border border-brand-border p-6 md:p-8">
                     <TeamForm
                         mode={isEdit ? 'edit' : 'add'}
                         formData={formData}

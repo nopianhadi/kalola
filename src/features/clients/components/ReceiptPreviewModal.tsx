@@ -69,7 +69,7 @@ export const ReceiptPreviewModal: React.FC<ReceiptPreviewModalProps> = ({
         try {
             const opt = {
                 margin: 10,
-                filename: `Tanda_Terima-${transaction.id.slice(0, 8)}.pdf`,
+                filename: `Tanda_Terima-${transaction.id}.pdf`,
                 image: { type: 'jpeg' as 'jpeg', quality: 0.98 },
                 html2canvas: {
                     scale: 2,
@@ -92,7 +92,7 @@ export const ReceiptPreviewModal: React.FC<ReceiptPreviewModalProps> = ({
         }
     };
 
-    const portalUrl = `${window.location.host === 'localhost:3000' ? 'http://localhost:3000' : 'https://vandel-pro.web.app'}/#/r/${transaction.id}`;
+    const portalUrl = `${window.location.origin}/#/r/${transaction.id}`;
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Tanda Terima" size="4xl">
@@ -116,7 +116,7 @@ export const ReceiptPreviewModal: React.FC<ReceiptPreviewModalProps> = ({
                             <div className="text-right">
                                 <h1 className="text-4xl font-black text-slate-200 uppercase tracking-tighter leading-none mb-4">{documentTitle}</h1>
                                 <div className="inline-block bg-slate-100 px-3 py-1 rounded text-[10px] font-mono text-slate-500 uppercase">
-                                    REF: #{transaction.id.slice(0, 8).toUpperCase()}
+                                    REF: #{String(transaction.id).padStart(8, '0').toUpperCase()}
                                 </div>
                             </div>
                         </div>

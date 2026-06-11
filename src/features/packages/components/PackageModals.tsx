@@ -83,7 +83,7 @@ export const PackageShareModal: React.FC<{
                                         </div>
                                         <button 
                                             onClick={onCopyBookingLink} 
-                                            className="w-full py-3 rounded-xl bg-brand-accent/10 text-brand-accent border border-brand-accent/20 font-black text-[10px] uppercase tracking-widest hover:bg-brand-accent hover:text-white transition-all"
+                                            className="w-full py-3 rounded-xl bg-brand-accent text-white border border-brand-accent font-black text-[10px] uppercase tracking-widest hover:bg-brand-accent-hover transition-all shadow-sm"
                                         >
                                             Salin Booking
                                         </button>
@@ -111,18 +111,18 @@ export const PackageShareModal: React.FC<{
                                             <div className="relative p-5 bg-white/40 backdrop-blur-md rounded-2xl border border-brand-border/40 hover:border-brand-accent/50 transition-all">
                                                 <div className="flex items-center justify-between mb-4">
                                                     <span className="text-sm font-black text-brand-text-light tracking-tight">{region.label}</span>
-                                                    <span className="px-2 py-0.5 rounded-lg bg-brand-accent/10 text-[8px] font-black text-brand-accent uppercase tracking-tighter">Region Specific</span>
+                                                    <span className="px-2 py-0.5 rounded-lg bg-brand-accent text-[8px] font-black text-white uppercase tracking-tighter">Region Specific</span>
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-2">
                                                     <button
                                                         onClick={() => copyToClipboard(regPackagesUrl, `Tautan Katalog ${region.label}`)}
-                                                        className="py-2.5 rounded-xl bg-white/60 border border-brand-border/40 text-[9px] font-black text-brand-text-secondary uppercase tracking-tighter hover:bg-brand-accent hover:text-white hover:border-brand-accent transition-all"
+                                                        className="py-2.5 rounded-xl bg-blue-600 border border-blue-600 text-[9px] font-black text-white uppercase tracking-tighter hover:bg-blue-700 transition-all shadow-sm"
                                                     >
                                                         Salin Katalog
                                                     </button>
                                                     <button
                                                         onClick={() => copyToClipboard(regBookingUrl, `Tautan Booking ${region.label}`)}
-                                                        className="py-2.5 rounded-xl bg-white/60 border border-brand-border/40 text-[9px] font-black text-brand-text-secondary uppercase tracking-tighter hover:bg-brand-accent hover:text-white hover:border-brand-accent transition-all"
+                                                        className="py-2.5 rounded-xl bg-brand-accent border border-brand-accent text-[9px] font-black text-white uppercase tracking-tighter hover:bg-brand-accent-hover transition-all shadow-sm"
                                                     >
                                                         Salin Booking
                                                     </button>

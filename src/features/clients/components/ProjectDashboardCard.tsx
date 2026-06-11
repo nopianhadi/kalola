@@ -14,6 +14,7 @@ import {
 import { Project, Profile, Transaction } from '@/types';
 import ProjectTimeline from './ProjectTimeline';
 import { cleanProjectName } from '@/features/clients/utils/clients.utils';
+import { AvatarDisplay } from '@/shared/ui/AvatarUpload';
 
 interface ProjectDashboardCardProps {
     project: Project;
@@ -44,7 +45,6 @@ const ProjectDashboardCard: React.FC<ProjectDashboardCardProps> = ({
         const config = profile.projectStatusConfig.find(s => s.name === statusName);
         if (!config) return 'bg-brand-surface border-brand-border text-brand-text-secondary';
         
-        // Simple color mapping based on common names or just use a default brand color
         const colorMap: Record<string, string> = {
             'Baru': 'border-blue-500/50 text-blue-400 bg-blue-500/5',
             'Selesai': 'border-green-500/50 text-green-400 bg-green-500/5',
@@ -56,9 +56,9 @@ const ProjectDashboardCard: React.FC<ProjectDashboardCardProps> = ({
     };
 
     return (
-        <div className="bg-brand-surface border border-brand-border rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all group">
+        <div className="bg-brand-surface/75 backdrop-blur-xl border border-brand-border/50 rounded-3xl overflow-hidden shadow-md hover:shadow-xl hover:-translate-y-0.5 transition-all duration-500 group">
             {/* Header: Project Name & Date */}
-            <div className="p-6 border-b border-brand-border/50 bg-gradient-to-r from-brand-surface to-brand-bg/30">
+            <div className="p-6 border-b border-brand-border/30 bg-gradient-to-r from-brand-accent/[0.02] to-transparent">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
                         <div className="flex items-center gap-2 mb-1">
@@ -124,10 +124,10 @@ const ProjectDashboardCard: React.FC<ProjectDashboardCardProps> = ({
                                 return (
                                     <label 
                                         key={sub.name}
-                                        className={`flex items-center gap-3 p-3 rounded-2xl border transition-all cursor-pointer ${
+                                        className={`flex items-center gap-3 p-3 rounded-2xl border transition-all duration-300 cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.01)] hover:-translate-y-0.5 ${
                                             isDone 
-                                            ? 'bg-brand-accent/5 border-brand-accent/30 text-brand-text-light' 
-                                            : 'bg-brand-bg/50 border-brand-border text-brand-text-secondary hover:border-brand-accent/50'
+                                            ? 'bg-brand-accent/[0.04] border-brand-accent/40 text-brand-text-light shadow-brand-accent/5' 
+                                            : 'bg-brand-bg/40 border-brand-border/80 text-brand-text-secondary hover:border-brand-accent/40 hover:bg-white/60'
                                         }`}
                                     >
                                         <div className={`w-5 h-5 rounded-lg border-2 flex items-center justify-center transition-all ${
@@ -149,12 +149,16 @@ const ProjectDashboardCard: React.FC<ProjectDashboardCardProps> = ({
                             })}
                         </div>
                     ) : (
-                        <div className="py-8 text-center bg-brand-bg/30 rounded-2xl border border-dashed border-brand-border">
-                            <p className="text-xs text-brand-text-secondary italic">Belum ada sub-tahapan untuk status ini.</p>
+                        <div className="py-8 flex flex-col items-center text-center bg-brand-bg/30 rounded-2xl border border-dashed border-brand-border px-4">
+                            <div className="w-12 h-12 rounded-full bg-brand-surface border border-brand-border flex items-center justify-center mb-3">
+                                <CheckCircleIcon className="w-6 h-6 text-brand-text-secondary opacity-50" />
+                            </div>
+                            <p className="text-xs font-semibold text-brand-text-secondary mb-1">Belum ada progress</p>
+                            <p className="text-[10px] text-brand-text-secondary/70 max-w-[200px]">Ubah status proyek untuk melihat atau tambahkan sub-tahapan di Pengaturan.</p>
                         </div>
                     )}
 
-                    {/* Timeline Toggle Section */}
+                    {/* Timeline Toggle */}
                     <div className="mt-8 pt-6 border-t border-brand-border/50">
                         <button 
                             onClick={() => setShowHistory(!showHistory)}
@@ -217,10 +221,14 @@ const ProjectDashboardCard: React.FC<ProjectDashboardCardProps> = ({
                             {internalTeam.length > 0 ? (
                                 <div className="space-y-2">
                                     {internalTeam.map((member, idx) => (
-                                        <div key={idx} className="flex items-center gap-3 p-2.5 rounded-2xl bg-white/5 border border-brand-border/50">
-                                            <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center text-[10px] font-black text-blue-500 border border-blue-500/20">
-                                                {member.name.substring(0, 2).toUpperCase()}
-                                            </div>
+                                        <div key={idx} className="flex items-center gap-3 p-2.5 rounded-2xl bg-white/60 border border-brand-border/40 hover:border-brand-accent/30 transition-all hover:-translate-y-0.5 shadow-sm">
+                                            <AvatarDisplay
+                                                avatarBase64={(member as any).avatar ?? null}
+                                                name={member.name}
+                                                size="sm"
+                                                variant="team"
+                                                className="shrink-0 rounded-xl"
+                                            />
                                             <div className="min-w-0 flex-1">
                                                 <p className="text-xs font-black text-brand-text-primary truncate">{member.name}</p>
                                                 <p className="text-[10px] font-bold text-brand-text-secondary uppercase">{member.role}</p>
@@ -239,10 +247,14 @@ const ProjectDashboardCard: React.FC<ProjectDashboardCardProps> = ({
                             {vendors.length > 0 ? (
                                 <div className="space-y-2">
                                     {vendors.map((member, idx) => (
-                                        <div key={idx} className="flex items-center gap-3 p-2.5 rounded-2xl bg-white/5 border border-brand-border/50">
-                                            <div className="w-8 h-8 rounded-full bg-purple-500/10 flex items-center justify-center text-[10px] font-black text-purple-500 border border-purple-500/20">
-                                                {member.name.substring(0, 2).toUpperCase()}
-                                            </div>
+                                        <div key={idx} className="flex items-center gap-3 p-2.5 rounded-2xl bg-white/60 border border-brand-border/40 hover:border-brand-accent/30 transition-all hover:-translate-y-0.5 shadow-sm">
+                                            <AvatarDisplay
+                                                avatarBase64={(member as any).avatar ?? null}
+                                                name={member.name}
+                                                size="sm"
+                                                variant="vendor"
+                                                className="shrink-0 rounded-xl"
+                                            />
                                             <div className="min-w-0 flex-1">
                                                 <p className="text-xs font-black text-brand-text-primary truncate">{member.name}</p>
                                                 <p className="text-[10px] font-bold text-brand-text-secondary uppercase">{member.role}</p>

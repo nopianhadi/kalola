@@ -54,7 +54,9 @@ export interface ClientsProps {
 import { updateProject as updateProjectInDb } from '@/services/projects';
 import { createTransaction, updateCardBalance, updateTransaction as updateTransactionInDb } from '@/services/transactions';
 import { useTeamMembers, useTeamProjectPayments } from '@/features/team/api/useTeamQueries';
-import { TransactionType, PaymentStatus } from '@/types';
+import { TransactionType, PaymentStatus, ClientStatus } from '@/types';
+import { ClientStatsCards } from '@/features/clients/components/ClientStatsCards';
+import { formatCurrency } from '@/features/clients/utils/clients.utils';
 
 export const ClientsPage: React.FC<ClientsProps> = (props) => {
 
@@ -98,7 +100,7 @@ export const ClientsPage: React.FC<ClientsProps> = (props) => {
     const queryClient = useQueryClient();
 
     // Local Handlers (previously in AppRoutes)
-    const onSignInvoice = async (pId: string, sig: string) => {
+    const onSignInvoice = async (pId: number, sig: string) => {
         try {
             await updateProjectInDb(pId, { invoiceSignature: sig } as any);
             queryClient.invalidateQueries({ queryKey: ['projects'] });
@@ -106,7 +108,7 @@ export const ClientsPage: React.FC<ClientsProps> = (props) => {
         } catch (e) { showNotification("Gagal menyimpan tanda tangan invoice."); }
     };
 
-    const onSignTransaction = async (tId: string, sig: string) => {
+    const onSignTransaction = async (tId: number, sig: string) => {
         try {
             await updateTransactionInDb(tId, { vendorSignature: sig } as any);
             queryClient.invalidateQueries({ queryKey: ['transactions'] });
@@ -114,7 +116,7 @@ export const ClientsPage: React.FC<ClientsProps> = (props) => {
         } catch (e) { showNotification("Gagal menyimpan tanda tangan kuitansi."); }
     };
 
-    const onRecordPayment = async (projectId: string, amount: number, destinationCardId: string) => {
+    const onRecordPayment = async (projectId: number, amount: number, destinationCardId: number) => {
         try {
             const today = new Date().toISOString().split("T")[0];
             const proj = (projectsData || []).find(p => String(p.id) === String(projectId));
@@ -139,6 +141,26 @@ export const ClientsPage: React.FC<ClientsProps> = (props) => {
     const clients = clientsData || [];
     const projects = projectsData || [];
     const transactions = transactionsData || [];
+    const clientSummaryStats = React.useMemo(() => {
+        const locationCounts = projects.reduce((acc: Record<string, number>, project: Project) => {
+            const location = project.location?.trim();
+            if (location) {
+                const mainLocation = location.split(',')[0].trim();
+                acc[mainLocation] = (acc[mainLocation] || 0) + 1;
+            }
+            return acc;
+        }, {});
+
+        const mostFrequentLocation = Object.keys(locationCounts).sort((a, b) => locationCounts[b] - locationCounts[a])[0] || '—';
+        const totalReceivables = (clients as ExtendedClient[]).reduce((sum, client) => sum + (client.balanceDue || 0), 0);
+
+        return {
+            totalClients: clients.length,
+            activeClients: (clients as ExtendedClient[]).filter(client => client.status === ClientStatus.ACTIVE).length,
+            mostFrequentLocation,
+            totalReceivables: formatCurrency(totalReceivables),
+        };
+    }, [clients, projects]);
     const cards = cardsData || [];
     const pockets = pocketsData || [];
 
@@ -150,7 +172,10 @@ export const ClientsPage: React.FC<ClientsProps> = (props) => {
         activeTab, setActiveTab,
         searchQuery, setSearchQuery,
         statusFilter, setStatusFilter,
+        clientStatusFilter, setClientStatusFilter,
         typeFilter, setTypeFilter,
+        locationFilter, setLocationFilter,
+        locationOptions,
         startDate, setStartDate,
         endDate, setEndDate,
         sortConfig, setSortConfig,
@@ -162,7 +187,8 @@ export const ClientsPage: React.FC<ClientsProps> = (props) => {
         handleDeleteProject,
         handleDownloadClients,
         isDetailModalOpen, selectedClientForDetail, handleCloseDetail,
-        isBillingModalOpen, handleCloseBilling,
+        isBillingModalOpen, handleCloseBilling, handleOpenBillingForClient,
+        selectedClientForBilling,
         qrModalContent, handleCloseQrModal, handleDownloadQr, handleShareWhatsApp,
         isBookingFormShareModalOpen, handleOpenBookingModal, handleCloseBookingModal,
         bookingFormUrl, handleCopyBookingLink,
@@ -242,7 +268,7 @@ export const ClientsPage: React.FC<ClientsProps> = (props) => {
                         </svg>
                     }
                 >
-                    Progress & Timeline
+                    Progress & Timeline Acara Pernikahan 
                 </Button>
                 <Button 
                     onClick={() => setMainTab('contracts')}
@@ -260,14 +286,25 @@ export const ClientsPage: React.FC<ClientsProps> = (props) => {
 
             {mainTab === 'database' ? (
                 <>
+                    <ClientStatsCards
+                        stats={clientSummaryStats}
+                        onCardClick={(type) => {
+                            setActiveTab('all');
+                            setStatusFilter('Semua Status');
+                            setTypeFilter('Semua Tipe');
+                            if (type === 'active') {
+                                setClientStatusFilter(ClientStatus.ACTIVE);
+                            } else if (type === 'location') {
+                                setLocationFilter(clientSummaryStats.mostFrequentLocation === '—' ? 'Semua Lokasi' : clientSummaryStats.mostFrequentLocation);
+                            } else if (type === 'unpaid') {
+                                setActiveTab('unpaid');
+                            }
+                        }}
+                    />
+
                     <ClientHeader
                         onAddClient={handleAddClient}
                         onDownloadClients={handleDownloadClients}
-                    />
-
-                    <ClientUnpaidList
-                        clients={filteredClientData.filter(c => c.balanceDue > 0)}
-                        onViewDetail={handleViewDetail}
                     />
 
                     <ClientFilterBar
@@ -279,6 +316,9 @@ export const ClientsPage: React.FC<ClientsProps> = (props) => {
                         onStatusFilterChange={setStatusFilter}
                         typeFilter={typeFilter}
                         onTypeFilterChange={setTypeFilter}
+                        locationFilter={locationFilter}
+                        onLocationFilterChange={setLocationFilter}
+                        locationOptions={locationOptions}
                         startDate={startDate}
                         onStartDateChange={setStartDate}
                         endDate={endDate}
@@ -288,7 +328,7 @@ export const ClientsPage: React.FC<ClientsProps> = (props) => {
                     />
 
                     <div className="space-y-6">
-                        {(activeTab === 'all' || activeTab === 'unpaid') && (
+                        {activeTab === 'all' && (
                             <>
                                 <ClientActiveList
                                     clients={filteredClientData}
@@ -311,6 +351,13 @@ export const ClientsPage: React.FC<ClientsProps> = (props) => {
                                     onDeleteClient={handleDeleteClient}
                                 />
                             </>
+                        )}
+                        {activeTab === 'unpaid' && (
+                            <ClientUnpaidList
+                                clients={filteredClientData.filter(c => c.balanceDue > 0)}
+                                onViewDetail={handleViewDetail}
+                                onSendBilling={handleOpenBillingForClient}
+                            />
                         )}
                         {activeTab === 'inactive' && (
                             <ClientInactiveList
@@ -381,7 +428,7 @@ export const ClientsPage: React.FC<ClientsProps> = (props) => {
             <BillingChatModal
                 isOpen={isBillingModalOpen}
                 onClose={handleCloseBilling}
-                client={selectedClientForDetail}
+                client={selectedClientForBilling}
                 projects={projects}
                 userProfile={userProfile}
                 showNotification={showNotification}

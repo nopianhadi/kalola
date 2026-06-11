@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { 
     ChevronLeftIcon,
@@ -21,6 +21,9 @@ const ClientEditPage: React.FC = () => {
     const location = useLocation();
     const isEdit = !!id;
     const { showNotification } = useApp();
+
+    // Guard to only populate form once, preventing re-init on any dependency refetch
+    const initializedRef = useRef(false);
 
     // Parse query params (e.g. ?projectId=...&section=...)
     const queryParams = new URLSearchParams(location.search);
@@ -47,68 +50,80 @@ const ClientEditPage: React.FC = () => {
     });
 
     useEffect(() => {
-        if (isEdit && client && projects.length > 0 && !clientsPage.formData.clientName) {
-            // Find projects for this client
-            const clientProjects = projects.filter(p => String(p.clientId) === String(client.id));
-            
-            // Determine which project to edit
-            let selectedProjectToEdit = null;
-            if (targetProjectId) {
-                selectedProjectToEdit = clientProjects.find(p => String(p.id) === String(targetProjectId)) || null;
-            }
-            
-            // If no specific project requested or not found, fallback to most recent
-            if (!selectedProjectToEdit) {
-                selectedProjectToEdit = clientProjects.length > 0 
-                    ? [...clientProjects].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]
-                    : null;
-            }
+        // Only initialize once; prevent re-init on React Query background refetches
+        if (!isEdit || initializedRef.current) return;
+        // Wait until all required data is loaded
+        if (!client || projects.length === 0 || packages.length === 0) return;
 
-            // Find DP transaction to get the card ID
-            const dpTx = selectedProjectToEdit 
-                ? transactions.find(t => t.projectId === selectedProjectToEdit!.id && (t.category === 'DP Acara Pernikahan' || t.description.toLowerCase().includes('dp')))
-                : null;
-
-            // Fill form with client and selected project data
-            clientsPage.setModalMode('edit');
-            clientsPage.setSelectedClient(client);
-            if (selectedProjectToEdit) {
-                clientsPage.setSelectedProject(selectedProjectToEdit);
-            }
-
-            // Ensure date is in YYYY-MM-DD format for input[type="date"]
-            const formattedDate = selectedProjectToEdit?.date ? selectedProjectToEdit.date.split('T')[0] : new Date().toISOString().split('T')[0];
-
-            clientsPage.setFormData({
-                ...initialFormState,
-                clientId: String(client.id),
-                clientName: client.name,
-                clientType: client.clientType,
-                email: client.email,
-                phone: client.phone,
-                whatsapp: client.whatsapp || '',
-                instagram: client.instagram || '',
-                address: client.address || '',
-                
-                // Project data
-                projectId: selectedProjectToEdit?.id ? String(selectedProjectToEdit.id) : '',
-                projectName: selectedProjectToEdit?.projectName || '',
-                projectType: selectedProjectToEdit?.projectType || 'Wedding',
-                location: selectedProjectToEdit?.location || '',
-                date: formattedDate,
-                packageId: packages.find(p => p.name === selectedProjectToEdit?.packageName)?.id?.toString() || '',
-                selectedAddOnIds: selectedProjectToEdit?.addOns ? selectedProjectToEdit.addOns.map(a => String(a.id)) : [],
-                durationSelection: (selectedProjectToEdit as any)?.durationSelection || '',
-                unitPrice: (selectedProjectToEdit as any)?.unitPrice,
-                dp: String(selectedProjectToEdit?.amountPaid || ''),
-                dpDestinationCardId: dpTx?.cardId?.toString() || '',
-                notes: selectedProjectToEdit?.notes || '',
-                accommodation: selectedProjectToEdit?.accommodation || '',
-                driveLink: selectedProjectToEdit?.driveLink || '',
-                promoCodeId: selectedProjectToEdit?.promoCodeId?.toString() || '',
-            });
+        // Find projects for this client
+        const clientProjects = projects.filter(p => String(p.clientId) === String(client.id));
+        
+        // Determine which project to edit
+        let selectedProjectToEdit = null;
+        if (targetProjectId) {
+            selectedProjectToEdit = clientProjects.find(p => String(p.id) === String(targetProjectId)) || null;
         }
-    }, [isEdit, client, projects, packages, transactions, targetProjectId, clientsPage.setFormData, clientsPage.formData.clientName, clientsPage.setModalMode, clientsPage.setSelectedClient, clientsPage.setSelectedProject]);
+        
+        // If no specific project requested or not found, fallback to most recent
+        if (!selectedProjectToEdit) {
+            selectedProjectToEdit = clientProjects.length > 0 
+                ? [...clientProjects].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]
+                : null;
+        }
+
+        // Find DP transaction to get the card ID
+        const dpTx = selectedProjectToEdit 
+            ? transactions.find(t => t.projectId === selectedProjectToEdit!.id && (t.category === 'DP Acara Pernikahan' || t.description.toLowerCase().includes('dp')))
+            : null;
+
+        // Look up packageId by ID first (stored in project.packageId), fallback to name lookup
+        // This is more reliable than name-based lookup which breaks if package is renamed
+        const resolvedPackageId = selectedProjectToEdit?.packageId
+            ? String(selectedProjectToEdit.packageId)
+            : packages.find(p => p.name === selectedProjectToEdit?.packageName)?.id?.toString() || '';
+
+        // Fill form with client and selected project data
+        clientsPage.setModalMode('edit');
+        clientsPage.setSelectedClient(client);
+        if (selectedProjectToEdit) {
+            clientsPage.setSelectedProject(selectedProjectToEdit);
+        }
+
+        // Ensure date is in YYYY-MM-DD format for input[type="date"]
+        const formattedDate = selectedProjectToEdit?.date ? selectedProjectToEdit.date.split('T')[0] : new Date().toISOString().split('T')[0];
+
+        clientsPage.setFormData({
+            ...initialFormState,
+            clientId: String(client.id),
+            clientName: client.name,
+            clientType: client.clientType,
+            email: client.email,
+            phone: client.phone,
+            whatsapp: client.whatsapp || '',
+            instagram: client.instagram || '',
+            address: client.address || '',
+            
+            // Project data
+            projectId: selectedProjectToEdit?.id ? String(selectedProjectToEdit.id) : '',
+            projectName: selectedProjectToEdit?.projectName || '',
+            projectType: selectedProjectToEdit?.projectType || 'Wedding',
+            location: selectedProjectToEdit?.location || '',
+            date: formattedDate,
+            packageId: resolvedPackageId,
+            selectedAddOnIds: selectedProjectToEdit?.addOns ? selectedProjectToEdit.addOns.map(a => String(a.id)) : [],
+            durationSelection: (selectedProjectToEdit as any)?.durationSelection || '',
+            unitPrice: (selectedProjectToEdit as any)?.unitPrice,
+            dp: String(selectedProjectToEdit?.amountPaid || ''),
+            dpDestinationCardId: dpTx?.cardId?.toString() || '',
+            notes: selectedProjectToEdit?.notes || '',
+            accommodation: selectedProjectToEdit?.accommodation || '',
+            driveLink: selectedProjectToEdit?.driveLink || '',
+            promoCodeId: selectedProjectToEdit?.promoCodeId?.toString() || '',
+        });
+
+        initializedRef.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isEdit, client, projects, packages, transactions, targetProjectId]);
 
     if (isEdit && isClientLoading) {
         return (

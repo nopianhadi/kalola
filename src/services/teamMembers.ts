@@ -28,6 +28,7 @@ function normalize(row: Record<string, unknown>): TeamMember {
     performanceNotes: safeParse<PerformanceNote[]>(row.performance_notes || row.performanceNotes, []),
     portalAccessId: String(row.portalAccessId || row.portal_access_id),
     category: row.category ? (String(row.category) as 'Tim' | 'Vendor') : 'Tim',
+    avatar: (row.avatar as string) ?? null,
   };
 }
 
@@ -47,6 +48,7 @@ function denormalize(obj: Partial<TeamMember>): Record<string, unknown> {
     ...(obj.performanceNotes !== undefined ? { performance_notes: JSON.stringify(obj.performanceNotes) } : {}),
     ...(obj.portalAccessId !== undefined ? { portal_access_id: obj.portalAccessId } : {}),
     ...(obj.category !== undefined ? { category: obj.category } : {}),
+    ...(obj.avatar !== undefined ? { avatar: obj.avatar } : {}),
   };
   return result;
 }

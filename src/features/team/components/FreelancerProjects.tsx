@@ -11,6 +11,7 @@ interface FreelancerProjectsProps {
     projectsToPay?: number[];
     onToggleProject?: (paymentId: number) => void;
     showOnlyUnpaid?: boolean;
+    onNavigateToProject?: (projectId: number) => void;
 }
 
 export const FreelancerProjects: React.FC<FreelancerProjectsProps> = ({ 
@@ -21,7 +22,8 @@ export const FreelancerProjects: React.FC<FreelancerProjectsProps> = ({
     formatDate,
     projectsToPay = [],
     onToggleProject,
-    showOnlyUnpaid = false
+    showOnlyUnpaid = false,
+    onNavigateToProject,
 }) => {
     const memberPayments = teamProjectPayments.filter(p => {
         const isMember = String(p.teamMemberId) === String(member.id);
@@ -42,65 +44,114 @@ export const FreelancerProjects: React.FC<FreelancerProjectsProps> = ({
         );
     }
 
+    const getClientPaymentBadge = (project: Project) => {
+        switch (project.paymentStatus) {
+            case PaymentStatus.LUNAS:
+                return { label: 'Klien Lunas', cls: 'bg-emerald-600 text-white border-emerald-600' };
+            case PaymentStatus.DP_TERBAYAR:
+                return { label: 'DP Terbayar', cls: 'bg-blue-600 text-white border-blue-600' };
+            default:
+                return { label: 'Klien Belum Bayar', cls: 'bg-red-600 text-white border-red-600' };
+        }
+    };
+
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {memberPayments.map(payment => {
-                const project = projectMap.get(payment.projectId);
-                if (!project) return null;
-                
-                const isSelected = projectsToPay.includes(payment.id);
+        <div className="overflow-hidden rounded-2xl border border-brand-border bg-brand-surface">
+            <div className="overflow-x-auto">
+                <table className="w-full min-w-[980px] text-left">
+                    <thead className="bg-brand-bg/80">
+                        <tr className="border-b border-brand-border/60">
+                            {onToggleProject && <th className="w-12 px-4 py-4" />}
+                            <th className="px-4 py-4 text-[11px] font-black uppercase tracking-widest text-brand-text-secondary">Proyek</th>
+                            <th className="px-4 py-4 text-[11px] font-black uppercase tracking-widest text-brand-text-secondary">Tanggal</th>
+                            <th className="px-4 py-4 text-[11px] font-black uppercase tracking-widest text-brand-text-secondary">Honor</th>
+                            <th className="px-4 py-4 text-[11px] font-black uppercase tracking-widest text-brand-text-secondary">Pengantin</th>
+                            <th className="px-4 py-4 text-[11px] font-black uppercase tracking-widest text-brand-text-secondary">Bayar Klien</th>
+                            <th className="px-4 py-4 text-[11px] font-black uppercase tracking-widest text-brand-text-secondary text-right">Sisa Tagihan</th>
+                            <th className="px-4 py-4 text-[11px] font-black uppercase tracking-widest text-brand-text-secondary text-right">Honor Tim</th>
+                            <th className="px-4 py-4 text-[11px] font-black uppercase tracking-widest text-brand-text-secondary">Lokasi</th>
+                            <th className="w-16 px-4 py-4 text-right text-[11px] font-black uppercase tracking-widest text-brand-text-secondary">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-brand-border/40">
+                        {memberPayments.map(payment => {
+                            const project = projectMap.get(payment.projectId);
+                            if (!project) return null;
 
-                return (
-                    <div 
-                        key={payment.id} 
-                        className={`bg-white/5 backdrop-blur-md rounded-2xl border p-5 transition-all group shadow-lg ${
-                            isSelected ? 'border-brand-accent ring-1 ring-brand-accent/50' : 'border-white/10 hover:border-brand-accent/30'
-                        }`}
-                    >
-                        <div className="flex justify-between items-start mb-4">
-                            <div className="flex-1">
-                                <h3 className="font-bold text-lg text-brand-text-primary group-hover:text-brand-accent transition-colors">
-                                    {project.projectName}
-                                </h3>
-                                <p className="text-xs text-brand-text-secondary mt-1">{formatDate(project.date)}</p>
-                            </div>
-                            <div className="flex flex-col items-end gap-2">
-                                <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                                    payment.status === PaymentStatus.LUNAS 
-                                    ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
-                                    : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
-                                }`}>
-                                    {payment.status}
-                                </div>
-                                {onToggleProject && payment.status === PaymentStatus.BELUM_BAYAR && (
-                                    <input
-                                        type="checkbox"
-                                        checked={isSelected}
-                                        onChange={() => onToggleProject(payment.id)}
-                                        className="w-5 h-5 rounded border-brand-border text-brand-accent focus:ring-brand-accent bg-transparent cursor-pointer"
-                                    />
-                                )}
-                            </div>
-                        </div>
+                            const isSelected = projectsToPay.includes(payment.id);
+                            const clientBadge = getClientPaymentBadge(project);
+                            const remainingBill = Math.max(0, project.totalCost - project.amountPaid);
+                            const packageName = project.packageName ? ` (${project.packageName})` : '';
 
-                        <div className="space-y-3 mb-6">
-                            <div className="flex justify-between items-center text-sm">
-                                <span className="text-brand-text-secondary">Fee</span>
-                                <span className="font-bold text-brand-text-primary">{formatCurrency(payment.fee)}</span>
-                            </div>
-                            <div className="flex justify-between items-center text-sm">
-                                <span className="text-brand-text-secondary">Lokasi</span>
-                                <span className="text-brand-text-primary truncate max-w-[150px]">{project.location}</span>
-                            </div>
-                        </div>
-
-                        <button className="w-full py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-bold text-brand-text-primary flex items-center justify-center gap-2 transition-all">
-                            <EyeIcon className="w-4 h-4" />
-                            Detail Proyek
-                        </button>
-                    </div>
-                );
-            })}
+                            return (
+                                <tr
+                                    key={payment.id}
+                                    className={`transition-colors hover:bg-blue-50 ${isSelected ? 'bg-blue-100' : ''}`}
+                                >
+                                    {onToggleProject && (
+                                        <td className="px-4 py-4 align-middle">
+                                            {payment.status === PaymentStatus.BELUM_BAYAR && (
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isSelected}
+                                                    onChange={() => onToggleProject(payment.id)}
+                                                    aria-label={`Pilih ${project.projectName} untuk dibayar`}
+                                                    className="h-4 w-4 rounded border-brand-border bg-transparent text-brand-accent focus:ring-brand-accent"
+                                                />
+                                            )}
+                                        </td>
+                                    )}
+                                    <td className="px-4 py-4 align-middle">
+                                        <p className="max-w-[240px] truncate text-sm font-black text-brand-text-primary" title={`${project.projectName}${packageName}`}>
+                                            {project.projectName}{packageName}
+                                        </p>
+                                    </td>
+                                    <td className="px-4 py-4 align-middle text-sm font-medium text-brand-text-secondary whitespace-nowrap">
+                                        {formatDate(project.date)}
+                                    </td>
+                                    <td className="px-4 py-4 align-middle">
+                                        <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${
+                                            payment.status === PaymentStatus.LUNAS
+                                                ? 'border-green-600 bg-green-600 text-white'
+                                                : 'border-amber-500 bg-amber-500 text-white'
+                                        }`}>
+                                            {payment.status}
+                                        </span>
+                                    </td>
+                                    <td className="px-4 py-4 align-middle text-sm font-bold text-brand-text-primary">
+                                        <span className="block max-w-[150px] truncate" title={project.clientName}>{project.clientName}</span>
+                                    </td>
+                                    <td className="px-4 py-4 align-middle">
+                                        <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${clientBadge.cls}`}>
+                                            {clientBadge.label.replace('Klien ', '')}
+                                        </span>
+                                    </td>
+                                    <td className="px-4 py-4 align-middle text-right text-sm font-black text-red-400 whitespace-nowrap">
+                                        {remainingBill > 0 ? formatCurrency(remainingBill) : '-'}
+                                    </td>
+                                    <td className="px-4 py-4 align-middle text-right text-sm font-black text-brand-text-primary whitespace-nowrap">
+                                        {formatCurrency(payment.fee)}
+                                    </td>
+                                    <td className="px-4 py-4 align-middle text-sm font-medium text-brand-text-secondary">
+                                        <span className="block max-w-[160px] truncate" title={project.location}>{project.location || '-'}</span>
+                                    </td>
+                                    <td className="px-4 py-4 align-middle text-right">
+                                        <button
+                                            type="button"
+                                            onClick={() => onNavigateToProject && onNavigateToProject(project.id)}
+                                            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-brand-accent bg-brand-accent text-white shadow-sm transition-all hover:bg-brand-accent-hover"
+                                            title="Detail Proyek"
+                                            aria-label={`Buka detail ${project.projectName}`}
+                                        >
+                                            <EyeIcon className="h-4 w-4" />
+                                        </button>
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
         </div>
     );
 };

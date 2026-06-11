@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { EyeIcon, PencilIcon, Trash2Icon, PlusIcon, ArrowUpIcon, ArrowDownIcon } from '@/constants';
+import { MoreHorizontalIcon } from 'lucide-react';
 import { ClientStatus } from '@/types';
 import { ExtendedClient } from '@/features/clients/types';
 import { formatCurrency, getPaymentStatusClass } from '@/features/clients/utils/clients.utils';
 import { Button, Badge, Card, CardHeader } from '@/shared/ui';
+import { AvatarDisplay } from '@/shared/ui/AvatarUpload';
 
 interface ClientActiveListProps {
     clients: ExtendedClient[];
@@ -49,7 +51,7 @@ export const ClientActiveList: React.FC<ClientActiveListProps> = ({
         <div className="bg-brand-surface rounded-2xl shadow-lg border border-brand-border">
             <div className="p-3 md:p-4 border-b border-brand-border">
                 <button onClick={() => setIsOpen(!isOpen)} className="w-full flex justify-between items-center">
-                    <h3 className="text-sm md:text-base font-semibold text-brand-text-light">Pengantin Yang Aktif (sedang Berjalan & Baru ) ({activeClients.length})</h3>
+                    <h3 className="text-sm md:text-base font-semibold text-brand-text-light">Pengantin Aktif ({activeClients.length})</h3>
                     {isOpen ? <ArrowUpIcon className="w-4 h-4 md:w-5 md:h-5 text-brand-text-secondary" /> : <ArrowDownIcon className="w-4 h-4 md:w-5 md:h-5 text-brand-text-secondary" />}
                 </button>
             </div>
@@ -60,9 +62,18 @@ export const ClientActiveList: React.FC<ClientActiveListProps> = ({
                         {activeClients.map(client => (
                             <div key={client.id} className="rounded-xl bg-white/5 border border-brand-border p-3 shadow-sm hover:shadow-md transition-all">
                                 <div className="flex items-start justify-between gap-2">
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-semibold text-sm text-brand-text-light leading-tight truncate">{client.name}</p>
-                                        <p className="text-[10px] text-brand-text-secondary mt-0.5 truncate">{client.email}</p>
+                                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                                        <AvatarDisplay
+                                            avatarBase64={client.avatar}
+                                            name={client.name}
+                                            size="sm"
+                                            variant="client"
+                                            className="shrink-0"
+                                        />
+                                        <div className="min-w-0">
+                                            <p className="font-semibold text-sm text-brand-text-light leading-tight truncate">{client.name}</p>
+                                            <p className="text-[10px] text-brand-text-secondary mt-0.5 truncate">{client.email}</p>
+                                        </div>
                                     </div>
                                     <div className="flex items-center gap-1 flex-shrink-0">
                                         {client.overallPaymentStatus && (
@@ -87,15 +98,6 @@ export const ClientActiveList: React.FC<ClientActiveListProps> = ({
                                     <Button onClick={() => onViewDetail(client)} variant="ghost" size="xs" leftIcon={<EyeIcon className="w-3.5 h-3.5" />}>
                                         Detail
                                     </Button>
-                                    <Button onClick={() => onEditClient(client)} variant="ghost" size="xs" leftIcon={<PencilIcon className="w-3.5 h-3.5" />}>
-                                        Edit
-                                    </Button>
-                                    <Button onClick={() => onDeleteClient(client.id)} variant="ghost" size="xs" leftIcon={<Trash2Icon className="w-3.5 h-3.5" />} className="text-red-500 hover:text-red-600">
-                                        Hapus
-                                    </Button>
-                                    <Button onClick={() => onAddProject(client)} variant="ghost" size="xs" leftIcon={<PlusIcon className="w-3.5 h-3.5" />}>
-                                        + Acara
-                                    </Button>
                                     <Button onClick={() => onManageProjects(client)} variant="ghost" size="xs" leftIcon={
                                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
@@ -103,6 +105,22 @@ export const ClientActiveList: React.FC<ClientActiveListProps> = ({
                                     }>
                                         Kelola
                                     </Button>
+                                    <details className="relative">
+                                        <summary className="list-none inline-flex items-center justify-center w-8 h-8 rounded-lg text-brand-text-secondary hover:bg-brand-surface hover:text-brand-text-primary cursor-pointer">
+                                            <MoreHorizontalIcon className="w-4 h-4" />
+                                        </summary>
+                                        <div className="absolute right-0 z-20 mt-1 w-36 rounded-xl border border-brand-border bg-brand-surface p-1 shadow-xl">
+                                            <button onClick={() => onEditClient(client)} className="w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold text-brand-text-primary hover:bg-brand-bg">
+                                                <PencilIcon className="w-3.5 h-3.5" /> Edit
+                                            </button>
+                                            <button onClick={() => onAddProject(client)} className="w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold text-brand-text-primary hover:bg-brand-bg">
+                                                <PlusIcon className="w-3.5 h-3.5" /> Tambah Acara
+                                            </button>
+                                            <button onClick={() => onDeleteClient(client.id)} className="w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold text-red-500 hover:bg-red-500/10">
+                                                <Trash2Icon className="w-3.5 h-3.5" /> Hapus
+                                            </button>
+                                        </div>
+                                    </details>
                                 </div>
                             </div>
                         ))}
@@ -113,56 +131,79 @@ export const ClientActiveList: React.FC<ClientActiveListProps> = ({
                     {/* Desktop table */}
                     <div className="hidden md:block overflow-x-auto">
                         <table className="w-full text-sm text-left">
-                            <thead className="text-xs text-blue-800 uppercase bg-blue-100">
+                            <thead className="text-[10px] tracking-wider text-slate-700 uppercase bg-slate-100">
                                 <tr>
-                                    <th className="px-6 py-4 font-medium tracking-wider border-r border-blue-200">Pengantin</th>
-                                    <th className="px-6 py-4 font-medium tracking-wider border-r border-blue-200">Total Package</th>
-                                    <th className="px-6 py-4 font-medium tracking-wider border-r border-blue-200">Sisa Tagihan</th>
-                                    <th className="px-6 py-4 font-medium tracking-wider border-r border-blue-200">Acara Pernikahan Terbaru</th>
-                                    <th className="px-6 py-4 font-medium tracking-wider text-center">Aksi</th>
+                                    <th className="px-4 py-3.5 font-bold border-r border-slate-300">Pengantin</th>
+                                    <th className="px-4 py-3.5 font-bold border-r border-slate-300">Total Package</th>
+                                    <th className="px-4 py-3.5 font-bold border-r border-slate-300">Sisa Tagihan</th>
+                                    <th className="px-4 py-3.5 font-bold border-r border-slate-300">Acara Pernikahan Terbaru</th>
+                                    <th className="px-4 py-3.5 text-center font-bold">Aksi</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-blue-200">
+                            <tbody className="bg-white/40 divide-y divide-slate-300">
                                 {activeClients.map(client => (
-                                    <tr key={client.id} className="hover:bg-brand-bg transition-colors">
-                                        <td className="px-6 py-4 border-r border-blue-200">
-                                            <p className="font-semibold text-brand-text-light">{client.name}</p>
-                                            <p className="text-xs text-brand-text-secondary">{client.email}</p>
+                                    <tr key={client.id} className="hover:bg-brand-input/40 transition-colors">
+                                        <td className="px-4 py-3.5 border-r border-slate-300">
+                                            <div className="flex items-center gap-3">
+                                                <AvatarDisplay
+                                                    avatarBase64={client.avatar}
+                                                    name={client.name}
+                                                    size="md"
+                                                    variant="client"
+                                                    className="shrink-0"
+                                                />
+                                                <div>
+                                                    <p className="font-semibold text-brand-text-light">{client.name}</p>
+                                                    <p className="text-xs text-brand-text-secondary">{client.email}</p>
+                                                </div>
+                                            </div>
                                         </td>
-                                        <td className="px-6 py-4 font-semibold border-r border-blue-200">{formatCurrency(client.totalProjectValue)}</td>
-                                        <td className="px-6 py-4 font-semibold text-red-400 border-r border-blue-200">{formatCurrency(client.balanceDue)}</td>
-                                        <td className="px-6 py-4 border-r border-blue-200">
-                                            <p>{client.mostRecentProject?.projectName || '-'}</p>
+                                        <td className="px-4 py-3.5 font-semibold text-brand-text-light border-r border-slate-300">{formatCurrency(client.totalProjectValue)}</td>
+                                        <td className="px-4 py-3.5 font-semibold text-brand-danger border-r border-slate-300">{formatCurrency(client.balanceDue)}</td>
+                                        <td className="px-4 py-3.5 text-brand-text-primary border-r border-slate-300">
+                                            <p className="font-medium text-brand-text-light">{client.mostRecentProject?.projectName || '-'}</p>
                                             {client.overallPaymentStatus && (
                                                 <Badge 
                                                     variant={client.overallPaymentStatus === 'LUNAS' ? 'success' : client.overallPaymentStatus === 'DP_TERBAYAR' ? 'warning' : 'danger'}
-                                                    size="sm"
+                                                    size="xs"
+                                                    className="mt-1"
                                                 >
                                                     {client.overallPaymentStatus}
                                                 </Badge>
                                             )}
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center justify-center flex-wrap gap-1.5">
-                                                <Button onClick={() => onViewDetail(client)} variant="ghost" size="xs" leftIcon={<EyeIcon className="w-4 h-4" />}>
+                                        <td className="px-4 py-3.5">
+                                            <div className="flex items-center justify-center space-x-1.5">
+                                                <Button onClick={() => onViewDetail(client)} variant="ghost" size="xs" leftIcon={<EyeIcon className="w-3.5 h-3.5" />}>
                                                     Detail
                                                 </Button>
-                                                <Button onClick={() => onEditClient(client)} variant="ghost" size="xs" leftIcon={<PencilIcon className="w-4 h-4" />}>
-                                                    Edit
-                                                </Button>
-                                                <Button onClick={() => onDeleteClient(client.id)} variant="ghost" size="xs" leftIcon={<Trash2Icon className="w-4 h-4" />} className="text-red-500 hover:text-red-600">
-                                                    Hapus
-                                                </Button>
-                                                <Button onClick={() => onAddProject(client)} variant="ghost" size="xs" leftIcon={<PlusIcon className="w-4 h-4" />}>
-                                                    + Acara
-                                                </Button>
                                                 <Button onClick={() => onManageProjects(client)} variant="ghost" size="xs" leftIcon={
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
                                                     </svg>
                                                 }>
                                                     Kelola
                                                 </Button>
+                                                <details className="relative inline-block text-left">
+                                                    <summary className="list-none inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-brand-text-secondary hover:bg-brand-input hover:text-brand-text-primary transition-all">
+                                                        <MoreHorizontalIcon className="w-4 h-4" />
+                                                    </summary>
+                                                    <div className="absolute right-0 z-30 mt-1.5 w-40 rounded-xl border border-brand-border bg-brand-surface p-1 text-left shadow-xl animate-in fade-in zoom-in-95 duration-100">
+                                                        <button onClick={() => onEditClient(client)} className="w-full flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-brand-text-primary hover:bg-brand-input transition-colors">
+                                                            <PencilIcon className="w-4 h-4 text-brand-text-secondary" /> 
+                                                            <span>Edit Pengantin</span>
+                                                        </button>
+                                                        <button onClick={() => onAddProject(client)} className="w-full flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-brand-text-primary hover:bg-brand-input transition-colors">
+                                                            <PlusIcon className="w-4 h-4 text-brand-text-secondary" />
+                                                            <span>Tambah Acara</span>
+                                                        </button>
+                                                        <hr className="my-1 border-brand-border/60" />
+                                                        <button onClick={() => onDeleteClient(client.id)} className="w-full flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-brand-danger hover:bg-red-500/10 transition-colors">
+                                                            <Trash2Icon className="w-4 h-4 text-brand-danger" /> 
+                                                            <span>Hapus Pengantin</span>
+                                                        </button>
+                                                    </div>
+                                                </details>
                                             </div>
                                         </td>
                                     </tr>

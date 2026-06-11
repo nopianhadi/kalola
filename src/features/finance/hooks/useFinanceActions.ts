@@ -120,7 +120,8 @@ export const useFinanceActions = () => {
                         bankName: form.bankName || null,
                         cardType: form.cardType,
                         lastFourDigits: form.lastFourDigits,
-                        balance: Number(form.initialBalance) || 0
+                        balance: Number(form.initialBalance) || 0,
+                        initialBalance: Number(form.initialBalance) || 0,
                     });
                     toast.success('Kartu/Akun berhasil ditambah');
                 } else {

@@ -18,10 +18,10 @@ const AccessDenied: React.FC = () => (
         </p>
         <div className="flex flex-col sm:flex-row gap-3">
             <Link
-                to="/dashboard"
+                to="/prospek"
                 className="px-5 py-2.5 bg-brand-accent text-white rounded-xl font-semibold text-sm hover:bg-brand-accent/90 transition-colors shadow-lg shadow-brand-accent/20"
             >
-                Kembali ke Dashboard
+                Kembali ke Beranda
             </Link>
         </div>
     </div>
@@ -42,7 +42,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requir
         }
     }, [isAuthenticated, location]);
 
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !currentUser) {
         return <Navigate to="/login" replace />;
     }
 

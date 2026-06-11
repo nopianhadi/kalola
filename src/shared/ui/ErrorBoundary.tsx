@@ -50,11 +50,11 @@ class ErrorBoundary extends Component<Props, State> {
               <button
                 onClick={() => {
                   this.setState({ hasError: false, error: undefined });
-                  window.location.replace('#/dashboard');
+                  window.location.replace('#/prospek');
                 }}
                 className="w-full button-secondary"
               >
-                Kembali ke Dashboard
+                Kembali ke Beranda
               </button>
             </div>
             {process.env.NODE_ENV === 'development' && this.state.error && (

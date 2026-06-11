@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { DownloadIcon, PrinterIcon, DollarSignIcon, UsersIcon, TrendingUpIcon, TargetIcon } from 'lucide-react';
 import { Project, Profile } from '@/types';
 import { formatCurrency } from '@/features/finance/utils/finance.utils';
@@ -84,35 +84,35 @@ export const ProfitabilityReportView: React.FC<ProfitabilityReportViewProps> = (
 
                 <div className="overflow-x-auto max-h-[600px] print:max-h-none print:overflow-visible">
                     <table className="w-full text-sm">
-                        <thead className="text-xs uppercase print-bg-slate bg-brand-input">
-                            <tr className="print-text-black">
-                                <th className="p-3 text-left">Pelanggan</th>
-                                <th className="p-3 text-right">Harga Package</th>
-                                <th className="p-3 text-right">Tambahan</th>
-                                <th className="p-3 text-right">Transport</th>
-                                <th className="p-3 text-right">Tagihan</th>
-                                <th className="p-3 text-right">Terbayar</th>
-                                <th className="p-3 text-right">Biaya Prod.</th>
+                        <thead className="text-xs uppercase print-bg-slate bg-slate-100 sticky top-0">
+                            <tr className="text-slate-700">
+                                <th className="p-3 text-left border-r border-slate-300">Pelanggan</th>
+                                <th className="p-3 text-right border-r border-slate-300">Harga Package</th>
+                                <th className="p-3 text-right border-r border-slate-300">Tambahan</th>
+                                <th className="p-3 text-right border-r border-slate-300">Transport</th>
+                                <th className="p-3 text-right border-r border-slate-300">Tagihan</th>
+                                <th className="p-3 text-right border-r border-slate-300">Terbayar</th>
+                                <th className="p-3 text-right border-r border-slate-300">Biaya Prod.</th>
                                 <th className="p-3 text-right">Laba</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-brand-border">
+                        <tbody className="bg-white/40 divide-y divide-slate-300">
                             {data.map(item => {
                                 const totalTagihan = item.totalPackageRevenue + item.totalCustomCosts + item.totalTransportCosts;
                                 return (
                                     <tr key={item.clientId}>
-                                        <td className="p-3">
+                                        <td className="p-3 border-r border-slate-300">
                                             <p className="font-semibold text-brand-text-light">{item.clientName}</p>
                                             <p className="text-[10px] text-brand-text-secondary">
                                                 {item.projects.map((p: any) => p.packageName).join(', ')}
                                             </p>
                                         </td>
-                                        <td className="p-3 text-right text-brand-text-secondary">{formatCurrency(item.totalPackageRevenue)}</td>
-                                        <td className="p-3 text-right text-orange-400 font-medium">+{formatCurrency(item.totalCustomCosts)}</td>
-                                        <td className="p-3 text-right text-brand-text-secondary">{formatCurrency(item.totalTransportCosts)}</td>
-                                        <td className="p-3 text-right font-bold text-brand-text-primary">{formatCurrency(totalTagihan)}</td>
-                                        <td className="p-3 text-right text-brand-success font-semibold">{formatCurrency(item.totalIncome)}</td>
-                                        <td className="p-3 text-right text-brand-danger">{formatCurrency(item.totalCost)}</td>
+                                        <td className="p-3 text-right text-brand-text-secondary border-r border-slate-300">{formatCurrency(item.totalPackageRevenue)}</td>
+                                        <td className="p-3 text-right text-orange-400 font-medium border-r border-slate-300">+{formatCurrency(item.totalCustomCosts)}</td>
+                                        <td className="p-3 text-right text-brand-text-secondary border-r border-slate-300">{formatCurrency(item.totalTransportCosts)}</td>
+                                        <td className="p-3 text-right font-bold text-brand-text-primary border-r border-slate-300">{formatCurrency(totalTagihan)}</td>
+                                        <td className="p-3 text-right text-brand-success font-semibold border-r border-slate-300">{formatCurrency(item.totalIncome)}</td>
+                                        <td className="p-3 text-right text-brand-danger border-r border-slate-300">{formatCurrency(item.totalCost)}</td>
                                         <td className={`p-3 text-right font-black ${item.profit >= 0 ? 'text-brand-success' : 'text-brand-danger'}`}>
                                             {formatCurrency(item.profit)}
                                         </td>

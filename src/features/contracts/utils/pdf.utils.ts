@@ -11,7 +11,7 @@ export const handleDownloadPDF = async (selectedContract: Contract | null) => {
         margin: [15, 15, 20, 15] as [number, number, number, number],
         filename: `kontrak-${selectedContract.contractNumber || 'digital'}.pdf`,
         image: { type: 'jpeg' as const, quality: 0.98 },
-        pagebreak: { mode: ['css', 'legacy'] },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
         html2canvas: {
             scale: 2,
             useCORS: true,
@@ -70,7 +70,7 @@ export const handleDownloadPDFWithoutTTD = async (
             margin: [15, 15, 20, 15] as [number, number, number, number],
             filename: `kontrak-${selectedContract.contractNumber || 'digital'}-tanpa-ttd.pdf`,
             image: { type: 'jpeg' as const, quality: 0.98 },
-            pagebreak: { mode: ['css', 'legacy'] },
+            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
             html2canvas: {
                 scale: 2,
                 useCORS: true,

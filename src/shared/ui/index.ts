@@ -41,3 +41,7 @@ export { default as SignaturePad } from './SignaturePad';
 export { default as StatCard } from './StatCard';
 export { default as StatCardModal } from './StatCardModal';
 export { default as SwipeableCard } from './SwipeableCard';
+
+// Cloudinary upload components
+export { CloudinaryAvatarUpload, AvatarDisplay as CloudinaryAvatarDisplay } from './CloudinaryAvatarUpload';
+export type { CloudinaryAvatarUploadProps } from './CloudinaryAvatarUpload';

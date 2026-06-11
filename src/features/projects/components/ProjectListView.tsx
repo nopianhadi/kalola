@@ -87,15 +87,15 @@ const ProjectListView: React.FC<ProjectListViewProps> = ({
                             <td className="px-6 py-4 text-brand-text-primary border-r border-blue-200">{p.team.map(t => t.name.split(' ')[0]).join(', ') || '-'}</td>
                             <td className="px-6 py-4">
                                 <div className="flex items-center justify-center space-x-2">
-                                    <button onClick={() => handleOpenDetailModal(p)} className="inline-flex items-center space-x-2 px-3 h-9 rounded-lg bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white transition-all shadow-sm group" title="Detail Acara Pernikahan">
+                                    <button onClick={() => handleOpenDetailModal(p)} className="inline-flex items-center space-x-2 px-3 h-9 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-all shadow-sm group" title="Detail Acara Pernikahan">
                                         <EyeIcon className="w-4 h-4" />
                                         <span className="text-xs font-bold">Detail</span>
                                     </button>
-                                    <button onClick={() => handleOpenForm('edit', p)} className="inline-flex items-center space-x-2 px-3 h-9 rounded-lg bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white transition-all shadow-sm group" title="Edit Acara Pernikahan">
+                                    <button onClick={() => handleOpenForm('edit', p)} className="inline-flex items-center space-x-2 px-3 h-9 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-all shadow-sm group" title="Edit Acara Pernikahan">
                                         <PencilIcon className="w-4 h-4" />
                                         <span className="text-xs font-bold">Edit</span>
                                     </button>
-                                    <button onClick={() => handleProjectDelete(p.id)} className="inline-flex items-center space-x-2 px-3 h-9 rounded-lg bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white transition-all shadow-sm group" title="Hapus Acara Pernikahan">
+                                    <button onClick={() => handleProjectDelete(p.id)} className="inline-flex items-center space-x-2 px-3 h-9 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-all shadow-sm group" title="Hapus Acara Pernikahan">
                                         <Trash2Icon className="w-4 h-4" />
                                         <span className="text-xs font-bold">Hapus</span>
                                     </button>
@@ -134,7 +134,7 @@ const ProjectListView: React.FC<ProjectListViewProps> = ({
             <div className="bg-brand-surface rounded-2xl shadow-lg border border-brand-border overflow-hidden">
                 <div className="p-4 border-b border-brand-border bg-brand-bg/10">
                     <h3 className="text-base md:text-lg font-bold text-gradient">
-                        Acara Pernikahan Yang Sedang berjalan dan Baru ({activeProjects.length})
+                        Acara Aktif ({activeProjects.length})
                     </h3>
                 </div>
 
@@ -146,7 +146,7 @@ const ProjectListView: React.FC<ProjectListViewProps> = ({
                 </div>
 
                 {activeProjects.length === 0 && (
-                    <p className="text-center py-8 text-sm text-brand-text-secondary">Tidak ada Acara Pernikahan Yang Sedang berjalan dan Baru.</p>
+                    <p className="text-center py-8 text-sm text-brand-text-secondary">Tidak ada acara aktif.</p>
                 )}
 
                 {totalPages > 1 && setPage && (
@@ -200,7 +200,7 @@ const ProjectListView: React.FC<ProjectListViewProps> = ({
                         className="w-full h-14 px-6 flex items-center justify-between hover:bg-brand-bg/50 transition-colors outline-none"
                     >
                         <h3 className="text-base md:text-lg font-bold text-blue-900/40">
-                            Acara Pernikahan Selesai & Dibatalkan ({inactiveProjects.length})
+                            Acara Selesai & Dibatalkan ({inactiveProjects.length})
                         </h3>
                         {isInactiveOpen ? (
                             <ChevronUpIcon className="w-5 h-5 text-brand-text-secondary" />

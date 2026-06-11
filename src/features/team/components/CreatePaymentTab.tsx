@@ -21,11 +21,12 @@ interface CreatePaymentTabProps {
     paymentSourceId: string;
     setPaymentSourceId: (id: string) => void;
     onSign: () => void;
+    isSubmitting?: boolean;
 }
 
 export const CreatePaymentTab: React.FC<CreatePaymentTabProps> = ({
     paymentDetails, paymentAmount, setPaymentAmount, isInstallment, setIsInstallment, onPay, renderPaymentDetailsContent, cards,
-    monthlyBudgetPocket, paymentSourceId, setPaymentSourceId, onSign
+    monthlyBudgetPocket, paymentSourceId, setPaymentSourceId, onSign, isSubmitting = false
 }) => {
 
     const handlePayClick = () => {
@@ -93,8 +94,13 @@ export const CreatePaymentTab: React.FC<CreatePaymentTabProps> = ({
                             <PrinterIcon className="w-4 h-4" /> Cetak
                         </button>
                     </div>
-                    <button type="button" onClick={handlePayClick} className="button-primary w-full sm:w-auto">
-                        Bayar Sekarang & Buat Catatan
+                    <button
+                        type="button"
+                        onClick={handlePayClick}
+                        className="button-primary w-full sm:w-auto disabled:cursor-not-allowed disabled:opacity-70"
+                        disabled={isSubmitting}
+                    >
+                        {isSubmitting ? 'Memproses Pembayaran...' : 'Bayar Sekarang & Buat Catatan'}
                     </button>
                 </div>
             </div>

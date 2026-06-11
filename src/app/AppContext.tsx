@@ -8,6 +8,9 @@ export interface AppContextType {
   setIsAuthenticated: (val: boolean) => void;
   setCurrentUser: (user: User | null) => void;
 
+  // Vendor ID (milik user yang sedang login — digunakan untuk scope semua API call)
+  vendorId: number | null;
+
   // UI State
   activeView: ViewType;
   setActiveView: React.Dispatch<React.SetStateAction<ViewType>>;

@@ -63,6 +63,7 @@ export enum ViewType {
   SOCIAL_MEDIA_PLANNER = 'Perencana Media Sosial',
   MARKETING = 'Marketing',
   GALLERY = 'Pricelist Upload',
+  PORTFOLIO = 'Portfolio',
   SETTINGS = 'Pengaturan',
   CONTRACTS = 'Kontrak',
 }
@@ -111,6 +112,33 @@ export interface Gallery {
   updated_at?: string;
 }
 
+export interface PortfolioItem {
+  id: number;
+  url: string;
+  thumbnailUrl?: string;
+  caption?: string;
+  sort_order?: number;
+  uploadedAt: string;
+}
+
+export interface Portfolio {
+  id: number;
+  vendor_id?: number; // Owner vendor ID (multi-tenant isolation)
+  user_id?: number;   // DEPRECATED: kept for backward compatibility
+  title: string;
+  category?: string;
+  description?: string;
+  hero_image_url?: string;
+  is_public: boolean;
+  public_id: string;
+  booking_link?: string;
+  project_date?: string;
+  location?: string;
+  items: PortfolioItem[];
+  created_at: string;
+  updated_at?: string;
+}
+
 export enum ClientStatus {
   ACTIVE = 'Aktif',
   INACTIVE = 'Tidak Aktif',
@@ -132,6 +160,33 @@ export enum ContactChannel {
   REFERRAL = 'Referensi',
   SUGGESTION_FORM = 'Form Saran',
   OTHER = 'Lainnya',
+}
+
+export enum LeadSource {
+  FRIENDS_FAMILY = 'Friends/Family',
+  INSTAGRAM = 'Instagram',
+  TIKTOK = 'TikTok',
+  ADS = 'Ads',
+}
+
+export enum LeadStatus {
+  NEW = 'Baru',
+  CONTACTED = 'Dihubungi',
+  CONVERTED = 'Konversi',
+  LOST = 'Hilang',
+}
+
+export interface Lead {
+  id: number;
+  name: string;
+  city?: string;
+  whatsapp: string;
+  source: LeadSource | string;
+  status: LeadStatus | string;
+  notes?: string;
+  clientId?: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export enum CardType {
@@ -157,20 +212,6 @@ export enum SatisfactionLevel {
 
 
 
-export enum PostType {
-  INSTAGRAM_FEED = 'Instagram Feed',
-  INSTAGRAM_STORY = 'Instagram Story',
-  INSTAGRAM_REELS = 'Instagram Reels',
-  TIKTOK = 'TikTok Video',
-  BLOG = 'Artikel Blog',
-}
-
-export enum PostStatus {
-  DRAFT = 'Draf',
-  SCHEDULED = 'Terjadwal',
-  POSTED = 'Diposting',
-  CANCELED = 'Dibatalkan',
-}
 
 
 
@@ -207,6 +248,7 @@ export interface Client {
   lastContact: string; // ISO Date String
   portalAccessId: string;
   address?: string;
+  avatar?: string | null; // base64 foto profil
 }
 
 export interface PhysicalItem {
@@ -283,6 +325,7 @@ export interface TeamMember {
   performanceNotes: PerformanceNote[];
   portalAccessId: string;
   category: 'Tim' | 'Vendor';
+  avatar?: string | null; // base64 foto profil
 }
 
 export interface AssignedTeamMember {
@@ -292,6 +335,7 @@ export interface AssignedTeamMember {
   fee: number; // The fee for THIS project
   category?: 'Tim' | 'Vendor';
   subJob?: string;
+  avatar?: string | null; // base64 foto profil dari team member
 }
 
 export interface PrintingItem {
@@ -352,6 +396,7 @@ export interface Project {
   projectName: string;
   clientName: string;
   clientId: number;
+  clientAvatar?: string | null; // base64 foto profil dari client
   projectType: string;
   packageName: string;
   packageId: number;
@@ -557,7 +602,9 @@ export interface Profile {
   securitySettings: SecuritySettings;
   briefingTemplate: string;
   termsAndConditions?: string;
+  /** URL Cloudinary atau base64 string (legacy). Kolom DB: logo_base64 */
   logoBase64?: string;
+  /** URL Cloudinary atau base64 string (legacy). Kolom DB: signature_base64 */
   signatureBase64?: string;
   brandColor?: string;
   publicPageConfig: PublicPageConfig;
@@ -582,6 +629,8 @@ export interface Profile {
   signature?: string;
   role?: 'Admin' | 'Member' | 'Kasir';
   permissions?: ViewType[];
+  customRegions?: string[];
+  avatar?: string | null; // base64 foto profil admin
 }
 
 export interface TeamProjectPayment {
@@ -628,26 +677,6 @@ export interface ClientFeedback {
   date: string; // ISO date string
 }
 
-export interface FreelancerFeedback {
-  id: number;
-  freelancerId: number;
-  teamMemberName: string;
-  date: string; // ISO date string
-  message: string;
-}
-
-export interface SocialMediaPost {
-  id: number;
-  projectId: number;
-  clientName: string;
-  postType: PostType;
-  platform: 'Instagram' | 'TikTok' | 'Website';
-  scheduledDate: string; // ISO date string
-  caption: string;
-  mediaUrl?: string; // Link to the image/video in GDrive
-  status: PostStatus;
-  notes?: string;
-}
 
 export interface VendorData {
   clients: Client[];

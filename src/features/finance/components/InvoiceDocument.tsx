@@ -191,7 +191,7 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({
                   <td className="px-4 py-3 text-right font-medium text-slate-700 print:text-black">{formatCurrency(addon.price)}</td>
                 </tr>
               ))}
-              {project.transportCost && Number(project.transportCost) > 0 && (
+              {Number(project.transportCost) > 0 && (
                 <tr>
                   <td className="px-4 py-3">
                     <p className="font-medium text-slate-700 print:text-black">Biaya Transport</p>

@@ -5,12 +5,13 @@ import { ClientStats } from '@/features/clients/types';
 
 interface ClientStatsCardsProps {
     stats: ClientStats;
+    onCardClick?: (type: 'all' | 'active' | 'location' | 'unpaid') => void;
 }
 
-export const ClientStatsCards: React.FC<ClientStatsCardsProps> = ({ stats }) => {
+export const ClientStatsCards: React.FC<ClientStatsCardsProps> = ({ stats, onCardClick }) => {
     return (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="transition-transform duration-200 hover:scale-105">
+            <div className="transition-transform duration-200 hover:scale-105" onClick={() => onCardClick?.('all')}>
                 <StatCard
                     icon={<UsersIcon className="w-6 h-6" />}
                     title="Total Pengantin"
@@ -19,7 +20,7 @@ export const ClientStatsCards: React.FC<ClientStatsCardsProps> = ({ stats }) => 
                     colorVariant="blue"
                 />
             </div>
-            <div className="transition-transform duration-200 hover:scale-105">
+            <div className="transition-transform duration-200 hover:scale-105" onClick={() => onCardClick?.('active')}>
                 <StatCard
                     icon={<TrendingUpIcon className="w-6 h-6" />}
                     title="Pengantin Aktif"
@@ -28,7 +29,7 @@ export const ClientStatsCards: React.FC<ClientStatsCardsProps> = ({ stats }) => 
                     colorVariant="green"
                 />
             </div>
-            <div className="transition-transform duration-200 hover:scale-105">
+            <div className="transition-transform duration-200 hover:scale-105" onClick={() => onCardClick?.('location')}>
                 <StatCard
                     icon={<MapPinIcon className="w-6 h-6" />}
                     title="Lokasi Terbanyak"
@@ -37,7 +38,7 @@ export const ClientStatsCards: React.FC<ClientStatsCardsProps> = ({ stats }) => 
                     colorVariant="orange"
                 />
             </div>
-            <div className="transition-transform duration-200 hover:scale-105">
+            <div className="transition-transform duration-200 hover:scale-105" onClick={() => onCardClick?.('unpaid')}>
                 <StatCard
                     icon={<DollarSignIcon className="w-6 h-6" />}
                     title="Sisa Tagihan"

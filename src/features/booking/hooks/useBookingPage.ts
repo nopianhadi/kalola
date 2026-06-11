@@ -95,7 +95,7 @@ export const useBookingPage = (props: {
     const handleDeleteBooking = async (projectId: string, clientName: string) => {
         if (!window.confirm(`Apakah Anda yakin ingin menghapus booking untuk ${clientName}? Tindakan ini tidak dapat dibatalkan.`)) return;
         try {
-            await deleteProject(projectId);
+            await deleteProject(Number(projectId));
             setProjects(prev => prev.filter(p => String(p.id) !== String(projectId)));
             showNotification('Booking berhasil dihapus.');
         } catch (err) {
@@ -110,14 +110,14 @@ export const useBookingPage = (props: {
 
     const handleStatusChange = async (projectId: string, newStatus: BookingStatus) => {
         const prevStatus = projects.find(p => String(p.id) === String(projectId))?.bookingStatus;
-        // Optimistic update
+        // Optimistic update in local state
         setProjects(prev => prev.map(p => (String(p.id) === String(projectId) ? { ...p, bookingStatus: newStatus } : p)));
         try {
-            await updateProject(projectId, { bookingStatus: newStatus });
+            await updateProject(Number(projectId), { bookingStatus: newStatus });
             showNotification(`Booking berhasil ${newStatus === BookingStatus.TERKONFIRMASI ? 'dikonfirmasi' : 'ditolak'}.`);
         } catch (err) {
             console.warn('[Booking] Failed to persist booking status:', err);
-            // Revert on failure
+            // Revert optimistic update on failure
             setProjects(prev => prev.map(p => (String(p.id) === String(projectId) ? { ...p, bookingStatus: prevStatus } : p)));
             showNotification('Gagal menyimpan perubahan status booking. Silakan coba lagi.');
         }

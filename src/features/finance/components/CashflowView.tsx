@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { ShieldIcon, DollarSignIcon, TrendingUpIcon, TrendingDownIcon } from 'lucide-react';
 import StatCard from '@/shared/ui/StatCard';
 import { InteractiveCashflowChart, DonutChart } from '@/features/finance/components/FinanceCharts';
@@ -110,22 +110,22 @@ export const CashflowView: React.FC<CashflowViewProps> = ({
                 <h4 className="text-lg font-bold text-gradient mb-4">Data Arus Kas Bulanan</h4>
                 <div className="overflow-x-auto max-h-96">
                     <table className="w-full text-sm">
-                        <thead className="text-xs uppercase print-bg-slate bg-brand-input">
-                            <tr className="print-text-black">
-                                <th className="p-3 text-left">Periode</th>
-                                <th className="p-3 text-right">Pemasukan</th>
-                                <th className="p-3 text-right">Pengeluaran</th>
-                                <th className="p-3 text-right">Laba/Rugi</th>
+                        <thead className="text-xs uppercase bg-slate-100 sticky top-0">
+                            <tr className="text-slate-700">
+                                <th className="p-3 text-left border-r border-slate-300">Periode</th>
+                                <th className="p-3 text-right border-r border-slate-300">Pemasukan</th>
+                                <th className="p-3 text-right border-r border-slate-300">Pengeluaran</th>
+                                <th className="p-3 text-right border-r border-slate-300">Laba/Rugi</th>
                                 <th className="p-3 text-right">Saldo Akhir</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-brand-border">
+                        <tbody className="bg-white/40 divide-y divide-slate-300">
                             {chartData.map(d => (
                                 <tr key={d.label}>
-                                    <td className="p-3 font-semibold">{d.label}</td>
-                                    <td className="p-3 text-right text-brand-success">{formatCurrency(d.income)}</td>
-                                    <td className="p-3 text-right text-brand-danger">{formatCurrency(d.expense)}</td>
-                                    <td className={`p-3 text-right font-semibold ${d.income - d.expense >= 0 ? 'text-brand-success' : 'text-brand-danger'}`}>
+                                    <td className="p-3 font-semibold border-r border-slate-300">{d.label}</td>
+                                    <td className="p-3 text-right text-brand-success border-r border-slate-300">{formatCurrency(d.income)}</td>
+                                    <td className="p-3 text-right text-brand-danger border-r border-slate-300">{formatCurrency(d.expense)}</td>
+                                    <td className={`p-3 text-right font-semibold border-r border-slate-300 ${d.income - d.expense >= 0 ? 'text-brand-success' : 'text-brand-danger'}`}>
                                         {formatCurrency(d.income - d.expense)}
                                     </td>
                                     <td className="p-3 text-right font-bold text-brand-text-light">{formatCurrency(d.balance)}</td>

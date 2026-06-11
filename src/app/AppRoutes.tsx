@@ -9,6 +9,7 @@ import { dashboardRoutes } from "./routes/dashboardRoutes";
 const LAST_ROUTE_STORAGE_KEY = "vena-lastRoute";
 
 const Login = lazy(() => import("@/pages/auth/LoginPage"));
+const Signup = lazy(() => import("@/pages/auth/SignupPage"));
 
 const PageLoader = () => (
     <div className="min-h-screen flex items-center justify-center bg-[#FAF9F6]">
@@ -20,14 +21,15 @@ const PageLoader = () => (
 );
 
 export const AppRoutes: React.FC = () => {
-    const { isAuthenticated, setIsAuthenticated, setCurrentUser } = useApp();
+    const { isAuthenticated, currentUser, setIsAuthenticated, setCurrentUser } = useApp();
     const navigate = useNavigate();
+    const isLoggedIn = isAuthenticated && !!currentUser;
 
     const handleLoginSuccess = (u: any) => {
         setIsAuthenticated(true);
         setCurrentUser(u);
         const lastRoute = window.localStorage.getItem(LAST_ROUTE_STORAGE_KEY);
-        navigate(lastRoute || "/dashboard", { replace: true });
+        navigate(lastRoute || "/prospek", { replace: true });
     };
 
     return (
@@ -37,14 +39,23 @@ export const AppRoutes: React.FC = () => {
                     {/* Public Routes */}
                     {publicRoutes}
 
-                    {/* Authentication Route */}
+                    {/* Authentication Routes */}
                     <Route path="/login" element={
-                        isAuthenticated ? <Navigate to="/dashboard" replace /> : 
+                        isLoggedIn ? <Navigate to="/prospek" replace /> :
                         <Login onLoginSuccess={handleLoginSuccess} />
                     } />
+                    <Route path="/signup" element={
+                        isLoggedIn ? <Navigate to="/prospek" replace /> :
+                        <Signup onSignupSuccess={handleLoginSuccess} />
+                    } />
+                    <Route path="/register" element={<Navigate to="/signup" replace />} />
 
                     {/* Protected Dashboard Routes */}
                     {dashboardRoutes}
+
+                    {/* Root & Dashboard redirect to Leads */}
+                    <Route path="/" element={isLoggedIn ? <Navigate to="/prospek" replace /> : <Navigate to="/login" replace />} />
+                    <Route path="/dashboard" element={<Navigate to="/prospek" replace />} />
 
                     {/* Fallback */}
                     <Route path="*" element={<Navigate to="/" replace />} />

@@ -5,6 +5,7 @@ import { FolderKanbanIcon, ClockIcon, StarIcon, FileTextIcon, CreditCardIcon, Ch
 import Modal from '@/shared/ui/Modal';
 import SignaturePad from '@/shared/ui/SignaturePad';
 import { createClientFeedback } from '@/services/clientFeedback';
+import { getAuthToken } from '@/lib/apiClient';
 import HelpBox from '@/shared/ui/HelpBox';
 import InvoiceDocument from '@/features/finance/components/InvoiceDocument';
 
@@ -59,7 +60,7 @@ const getDisplayProgressForProject = (project: Project, config: ProjectStatusCon
 
 
 import { listClients } from '@/services/clients';
-import { listProjects } from '@/services/projects';
+import { listProjectsWithRelations } from '@/services/projects';
 import { listTransactions } from '@/services/transactions';
 import { getProfile } from '@/services/profile';
 import { listPackages } from '@/services/packages';
@@ -79,8 +80,8 @@ const ClientPortal: React.FC = () => {
 
     useEffect(() => {
         console.log("Page Loaded: Client Portal", accessId);
-        const loadPortalData = async () => {
-            setLoading(true);
+        const loadPortalData = async (showLoadingSpinner = true) => {
+            if (showLoadingSpinner) setLoading(true);
             try {
                 // 1. Fetch all clients to find the one with accessId
                 // In a real app, we'd have a specific "getByAccessId" endpoint for security
@@ -89,22 +90,23 @@ const ClientPortal: React.FC = () => {
 
                 if (!foundClient) {
                     setError('Portal tidak ditemukan');
-                    setLoading(false);
+                    if (showLoadingSpinner) setLoading(false);
                     return;
                 }
                 setClient(foundClient);
 
                 // 2. Fetch other related data in parallel
                 const [projs, trans, prof, pkgs, tm] = await Promise.all([
-                    listProjects(),
-                    listTransactions(),
+                    listProjectsWithRelations(),
+                    listTransactions({ clientId: foundClient.id, limit: 500 }),
                     getProfile(),
                     listPackages(),
                     listTeamMembers()
                 ]);
 
-                setProjects(projs.filter(p => String(p.clientId) === String(foundClient.id)));
-                setTransactions(trans.filter(t => projs.some(p => String(p.id) === String(t.projectId) && String(p.clientId) === String(foundClient.id))));
+                const clientProjs = projs.filter(p => String(p.clientId) === String(foundClient.id));
+                setProjects(clientProjs);
+                setTransactions(trans.filter(t => clientProjs.some(p => String(p.id) === String(t.projectId))));
                 setProfile(prof);
                 setPackages(pkgs);
                 setTeamMembers(tm);
@@ -112,11 +114,58 @@ const ClientPortal: React.FC = () => {
                 console.error('Error loading portal data:', err);
                 setError('Gagal memuat data portal');
             } finally {
-                setLoading(false);
+                if (showLoadingSpinner) setLoading(false);
             }
         };
 
-        loadPortalData();
+        loadPortalData(true);
+
+        // SSE-based real-time updates for the client portal.
+        // The portal doesn't use React Query, so we subscribe to the SSE stream
+        // directly and silently refresh data when relevant resources change.
+        const API_BASE_URL = import.meta.env.VITE_API_URL
+            ? (import.meta.env.VITE_API_URL as string).replace(/\/api$/, '')
+            : 'http://localhost:5000';
+        let es: EventSource | null = null;
+        let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+        let reconnectDelay = 2000;
+        let isMounted = true;
+
+        const connectSSE = () => {
+            if (!isMounted) return;
+            const token = getAuthToken();
+            es = new EventSource(`${API_BASE_URL}/api/events${token ? `?token=${encodeURIComponent(token)}` : ''}`);
+
+            es.onopen = () => { reconnectDelay = 2000; };
+
+            es.onmessage = (event) => {
+                try {
+                    const payload = JSON.parse(event.data);
+                    if (payload.type === 'connected') return;
+                    const { resource } = payload;
+                    // Refresh portal data when projects, transactions, or clients change
+                    if (['projects', 'transactions', 'clients', 'profiles'].includes(resource)) {
+                        loadPortalData(false);
+                    }
+                } catch { /* ignore */ }
+            };
+
+            es.onerror = () => {
+                es?.close();
+                es = null;
+                if (!isMounted) return;
+                reconnectDelay = Math.min(reconnectDelay * 2, 30000);
+                reconnectTimer = setTimeout(connectSSE, reconnectDelay);
+            };
+        };
+
+        connectSSE();
+
+        return () => {
+            isMounted = false;
+            es?.close();
+            if (reconnectTimer) clearTimeout(reconnectTimer);
+        };
     }, [accessId]);
 
     const isVendorClient = client?.clientType === 'Vendor';
@@ -204,7 +253,7 @@ const ClientPortal: React.FC = () => {
                     background: rgba(255, 255, 255, 0.95); 
                     backdrop-filter: blur(24px); 
                     -webkit-backdrop-filter: blur(24px); 
-                    border: 1px solid rgba(255, 255, 255, 1); 
+                    border: 1px solid #cbd5e1; 
                     box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08);
                 }
                 .portal-text-primary { color: #0f172a; }
@@ -268,13 +317,29 @@ const ClientPortal: React.FC = () => {
                                 <h1 className="text-3xl font-black tracking-tight text-slate-800 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 inline-block">
                                     {profile.companyName}
                                 </h1>
-                                <h2 className="text-3xl md:text-5xl font-black text-slate-900 leading-tight">
-                                    Halo Pasangan Pengantin , <br className="sm:hidden" />
-                                    <span className="text-blue-600">{client.name.split(' ')[0]}! 👋</span>
-                                </h2>
-                                <p className="text-lg text-slate-600 font-medium max-w-xl">
-                                    Ini adalah pusat informasi untuk semua Acara Pernikahan Anda bersama kami. Silakan gulir ke bawah untuk melihat detail lengkapnya.
-                                </p>
+                                {/* Client Avatar + Greeting */}
+                                <div className="flex items-center gap-4">
+                                    {client.avatar ? (
+                                        <img
+                                            src={client.avatar}
+                                            alt={client.name}
+                                            className="w-16 h-16 rounded-2xl object-cover border-2 border-blue-200 shadow-md shrink-0"
+                                        />
+                                    ) : (
+                                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center text-white text-2xl font-black shadow-md shrink-0">
+                                            {client.name.split(' ').map((w: string) => w[0]).slice(0, 2).join('').toUpperCase()}
+                                        </div>
+                                    )}
+                                    <div>
+                                        <h2 className="text-3xl md:text-5xl font-black text-slate-900 leading-tight">
+                                            Halo Pasangan Pengantin, <br className="sm:hidden" />
+                                            <span className="text-blue-600">{client.name.split(' ')[0]}! 👋</span>
+                                        </h2>
+                                        <p className="text-lg text-slate-600 font-medium max-w-xl mt-2">
+                                            Ini adalah pusat informasi untuk semua Acara Pernikahan Anda bersama kami. Silakan gulir ke bawah untuk melihat detail lengkapnya.
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
                             {profile?.phone && (
                                 <div className="lg:w-[360px] shrink-0">
@@ -406,194 +471,6 @@ const DashboardTab: React.FC<{ projects: Project[], profile: Profile, packages: 
                 </div>
             </div>
 
-            {activeProject && (
-                <div className="portal-surface p-5 md:p-6 rounded-[2rem] border-slate-200/80 widget-animate" style={{ animationDelay: '600ms' }}>
-                    <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/30">
-                                <ClockIcon className="w-5 h-5" />
-                            </div>
-                            <div>
-                                <h3 className="text-sm md:text-base font-black text-slate-800">Progres Acara Pernikahan</h3>
-                                <p className="text-xs text-slate-500 font-medium">{activeProject.projectName}</p>
-                            </div>
-                        </div>
-                        <span className="text-2xl font-black text-blue-600 tabular-nums">{displayProgress}%</span>
-                    </div>
-
-                    <div className="relative h-4 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner border border-slate-200/50">
-                        <div
-                            className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full shadow-lg transition-all duration-1000 ease-out"
-                            style={{ width: `${displayProgress}%` }}
-                        >
-                            <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,0.2)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.2)_50%,rgba(255,255,255,0.2)_75%,transparent_75%,transparent)] bg-[length:20px_20px] animate-[shimmer_2s_linear_infinite]"></div>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center justify-between mt-4">
-                        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-100">
-                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></div>
-                            <span className="text-[10px] md:text-xs font-bold text-blue-700 uppercase tracking-wider">{activeProject.status}</span>
-                        </div>
-                        <p className="text-[10px] md:text-xs font-black uppercase tracking-widest text-slate-400">
-                            {displayProgress === 100 ? '✅ Selesai' : displayProgress >= 75 ? '🎯 Finis' : '⚡ On Going'}
-                        </p>
-                    </div>
-                </div>
-            )}
-
-            {activeProject && (
-                <div className="portal-surface p-6 md:p-10 rounded-[2.5rem] border-none bg-white widget-animate" style={{ animationDelay: '700ms' }}>
-                    <div className="flex items-center justify-between mb-8">
-                        <div>
-                            <h3 className="text-xl md:text-2xl font-black text-slate-800 tracking-tight">Rincian Package Vendor</h3>
-                            <p className="text-xs md:text-sm font-medium text-slate-500 mt-1">Detail pesanan dan status pembayaran Anda</p>
-                        </div>
-                        <div className="hidden sm:block">
-                            <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                                <BriefcaseIcon className="w-6 h-6" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                        {/* Main Package Info */}
-                        <div className="lg:col-span-12 grid grid-cols-1 md:grid-cols-2 gap-8 pb-8 border-b border-slate-50">
-                            <div className="space-y-4">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-blue-600">Terpilih</label>
-                                <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100 relative overflow-hidden group">
-                                    <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                                        <StarIcon className="w-12 h-12" />
-                                    </div>
-                                    <p className="text-2xl font-black text-slate-800 tracking-tight">{activeProject.packageName || activePackage?.name || 'Custom Package'}</p>
-                                    <p className="text-sm font-bold text-blue-600 mt-2">
-                                        {formatDisplayCurrency(packagePrice)}
-                                        {(activeProject as any)?.durationSelection && <span className="text-slate-400 font-medium ml-2">/ {(activeProject as any).durationSelection}</span>}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="space-y-4">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Tambahan & Penyesuaian</label>
-                                <div className="space-y-3">
-                                    {/* Add Ons */}
-                                    {activeProject.addOns && activeProject.addOns.length > 0 && (
-                                        <div className="space-y-2">
-                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.1em] px-1">Layanan Add-On</p>
-                                            {activeProject.addOns.map(ao => (
-                                                <div key={ao.id} className="flex justify-between items-center p-3 px-4 bg-white border border-slate-100 rounded-2xl shadow-sm">
-                                                    <span className="text-sm font-bold text-slate-700">{ao.name}</span>
-                                                    <span className="text-sm font-black text-slate-900">{formatDisplayCurrency(ao.price)}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    {/* Custom Costs */}
-                                    {activeProject.customCosts && activeProject.customCosts.length > 0 && (
-                                        <div className="space-y-2">
-                                            <p className="text-[9px] font-bold text-blue-500 uppercase tracking-[0.1em] px-1">Biaya Tambahan Terdaftar</p>
-                                            {activeProject.customCosts.map(cc => (
-                                                <div key={cc.id} className="flex justify-between items-center p-3 px-4 bg-blue-50/50 border border-blue-100/50 rounded-2xl">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-blue-500">+</span>
-                                                        <span className="text-sm font-bold text-slate-700">{cc.description}</span>
-                                                    </div>
-                                                    <span className="text-sm font-black text-slate-900">{formatDisplayCurrency(cc.amount)}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    {(!activeProject.addOns || activeProject.addOns.length === 0) && (!activeProject.customCosts || activeProject.customCosts.length === 0) && (
-                                        <div className="p-4 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 text-center">
-                                            <p className="text-xs font-bold text-slate-400 italic">Tidak ada tambahan khusus</p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Payment & Content Grid */}
-                        <div className="lg:col-span-5 space-y-6">
-                            <div className="space-y-4">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Ringkasan Biaya</label>
-                                <div className="p-6 bg-slate-900 rounded-[2rem] text-white shadow-xl shadow-slate-900/10">
-                                    <div className="space-y-3">
-                                        <div className="flex justify-between text-sm">
-                                            <span className="opacity-60">Subtotal</span>
-                                            <span className="font-bold">{formatDisplayCurrency(packagePrice + addOnsTotal + customCostsTotal)}</span>
-                                        </div>
-                                        {Boolean(activeProject.discountAmount) && (
-                                            <div className="flex justify-between text-sm">
-                                                <span className="text-rose-400">Diskon</span>
-                                                <span className="font-bold text-rose-400">- {formatDisplayCurrency(activeProject.discountAmount || 0)}</span>
-                                            </div>
-                                        )}
-                                        <div className="pt-3 border-t border-white/10 flex justify-between items-end">
-                                            <span className="text-xs font-black uppercase tracking-widest opacity-60">Total</span>
-                                            <span className="text-2xl font-black">{formatDisplayCurrency(activeProject.totalCost)}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="p-5 bg-green-50 border border-green-100 rounded-3xl">
-                                    <div className="flex justify-between items-center mb-1">
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-green-700">Sudah Terbayar</span>
-                                        <span className="text-sm font-black text-green-700">{formatDisplayCurrency(activeProject.amountPaid)}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-rose-700">Sisa Tagihan</span>
-                                        <span className="text-sm font-black text-rose-700">{formatDisplayCurrency(activeProject.totalCost - activeProject.amountPaid)}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="lg:col-span-7 space-y-6">
-                            <div className="space-y-4">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Rincian Package & Vendor</label>
-                                <p className="text-xs text-slate-500 -mt-2">Daftar rincian layanan dan vendor yang diterima (digital dan fisik)</p>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div className="p-5 bg-indigo-50/50 border border-indigo-100 rounded-3xl">
-                                        <p className="text-xs font-black text-indigo-700 uppercase tracking-widest mb-4">Vendor (Allpackage)</p>
-                                        <ul className="space-y-3">
-                                            {(() => {
-                                                // Use project's printing details if available, otherwise use package physical items
-                                                const physicalItems = (activeProject.printingDetails && activeProject.printingDetails.length > 0)
-                                                    ? activeProject.printingDetails
-                                                    : (activePackage?.physicalItems || []);
-                                                return physicalItems.length > 0 ? physicalItems.map((it: any, idx: number) => (
-                                                    <li key={idx} className="flex items-center gap-3">
-                                                        <div className={`w-1.5 h-1.5 rounded-full ${it.paymentStatus === 'Paid' ? 'bg-green-500' : 'bg-indigo-400'}`}></div>
-                                                        <span className={`text-xs font-bold ${it.paymentStatus === 'Paid' ? 'text-green-700' : 'text-slate-700'}`}>
-                                                            {it.customName || it.type || it.name}
-                                                        </span>
-                                                    </li>
-                                                )) : <li className="text-xs text-slate-400 italic">Tidak ada rincian vendor.</li>;
-                                            })()}
-                                        </ul>
-                                    </div>
-                                    <div className="p-5 bg-blue-50/50 border border-blue-100 rounded-3xl">
-                                        <p className="text-xs font-black text-blue-700 uppercase tracking-widest mb-4">Deskripsi Package</p>
-                                        <ul className="space-y-3">
-                                            {(() => {
-                                                // Use package digital items for description
-                                                const digitalItems = activePackage?.digitalItems || [];
-                                                return digitalItems.length > 0 ? digitalItems.map((it, idx) => (
-                                                    <li key={idx} className="flex items-start gap-3">
-                                                        <div className={`w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${activeProject.completedDigitalItems?.includes(it) ? 'bg-green-500' : 'bg-blue-400'}`}></div>
-                                                        <span className={`text-xs font-bold ${activeProject.completedDigitalItems?.includes(it) ? 'text-green-700 line-through' : 'text-slate-700'}`}>{it}</span>
-                                                    </li>
-                                                )) : <li className="text-xs text-slate-400 italic">Tidak ada deskripsi Package.</li>;
-                                            })()}
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };
@@ -685,21 +562,21 @@ const ProjectsTab: React.FC<{ projects: Project[], profile: Profile, teamMembers
                             </div>
 
                             {/* Clean Stats Grid */}
-                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-                                <div className="space-y-1">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Tahap Saat Ini</p>
-                                    <p className="text-base font-bold text-slate-700">{selectedProject.status}</p>
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                                <div className="p-4 bg-white rounded-2xl border border-slate-300 shadow-sm">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Tahap Saat Ini</p>
+                                    <p className="text-sm md:text-base font-bold text-slate-800">{selectedProject.status}</p>
                                 </div>
-                                <div className="space-y-1">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Progres</p>
+                                <div className="p-4 bg-white rounded-2xl border border-slate-300 shadow-sm">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Progres</p>
                                     <p className="text-base font-bold text-blue-600">{displayProgress}%</p>
                                 </div>
-                                <div className="space-y-1">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Tahapan</p>
-                                    <p className="text-base font-bold text-slate-700">{profile.projectStatusConfig.length} Langkah</p>
+                                <div className="p-4 bg-white rounded-2xl border border-slate-300 shadow-sm">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Total Tahapan</p>
+                                    <p className="text-base font-bold text-slate-800">{profile.projectStatusConfig.length} Langkah</p>
                                 </div>
-                                <div className="space-y-1">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Tujuan</p>
+                                <div className="p-4 bg-white rounded-2xl border border-slate-300 shadow-sm">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Tujuan</p>
                                     <p className="text-base font-bold text-green-600 truncate">{profile.projectStatusConfig[profile.projectStatusConfig.length - 1]?.name || 'Selesai'}</p>
                                 </div>
                             </div>
@@ -749,11 +626,11 @@ const ProjectsTab: React.FC<{ projects: Project[], profile: Profile, teamMembers
                                         </div>
 
                                         {/* Stage Content Card */}
-                                        <div className={`stage-card p-6 md:p-8 rounded-[2.5rem] border transition-all duration-300 ${isCurrentStage
-                                            ? 'bg-white border-indigo-200 shadow-2xl shadow-indigo-500/10 ring-1 ring-indigo-50'
+                                        <div className={`stage-card p-6 md:p-8 rounded-[2.5rem] border-2 transition-all duration-300 ${isCurrentStage
+                                            ? 'bg-white border-indigo-400 shadow-2xl shadow-indigo-500/10 ring-2 ring-indigo-100'
                                             : isPastStage
-                                                ? 'bg-slate-50/50 border-slate-100 opacity-80'
-                                                : 'bg-transparent border-transparent opacity-50'
+                                                ? 'bg-slate-50/50 border-slate-300 opacity-90'
+                                                : 'bg-transparent border-slate-300 border-dashed opacity-70'
                                             }`}>
                                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                                                 <div>
@@ -791,9 +668,9 @@ const ProjectsTab: React.FC<{ projects: Project[], profile: Profile, teamMembers
                                                     return (
                                                         <div
                                                             key={subStatus.name}
-                                                            className={`flex items-start gap-4 p-4 rounded-2xl transition-all duration-300 ${isConfirmed ? 'bg-green-50/50 grayscale-[0.5] opacity-60' :
-                                                                isActive ? 'bg-blue-50 shadow-sm border border-blue-100/50' :
-                                                                    'bg-slate-50/50'
+                                                            className={`flex items-start gap-4 p-4 rounded-2xl border transition-all duration-300 ${isConfirmed ? 'bg-green-50/50 border-green-200 grayscale-[0.2] opacity-90' :
+                                                                isActive ? 'bg-blue-50 shadow-sm border-blue-300' :
+                                                                    'bg-slate-50 border-slate-300'
                                                                 }`}
                                                         >
                                                             <div className={`mt-1 flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-all ${isConfirmed ? 'bg-green-500 text-white' :
@@ -933,7 +810,7 @@ const GalleryTab: React.FC<{ projects: Project[] }> = ({ projects }) => (
                             </div>
                         </a>
 
-                        <a href={project.driveLink || '#'} target="_blank" rel="noopener noreferrer" className={`group p-6 rounded-[2rem] border transition-all duration-500 flex flex-col justify-between h-48 ${project.driveLink ? 'bg-white border-slate-200 text-slate-700 hover:border-blue-300 hover:shadow-xl hover:scale-[1.02] active:scale-95' : 'bg-slate-50 border-slate-200 text-slate-400 cursor-not-allowed opacity-60'}`}>
+                        <a href={project.driveLink || '#'} target="_blank" rel="noopener noreferrer" className={`group p-6 rounded-[2rem] border transition-all duration-500 flex flex-col justify-between h-48 ${project.driveLink ? 'bg-white border-slate-300 text-slate-700 hover:border-blue-400 hover:shadow-xl hover:scale-[1.02] active:scale-95 shadow-sm' : 'bg-slate-50 border-slate-300 text-slate-400 cursor-not-allowed opacity-60'}`}>
                             <div className="flex justify-between items-start">
                                 <div className="p-3 bg-blue-50 rounded-2xl">
                                     <GoogleIcon className="w-6 h-6" />
@@ -949,7 +826,7 @@ const GalleryTab: React.FC<{ projects: Project[] }> = ({ projects }) => (
                             </div>
                         </a>
 
-                        <a href={project.clientDriveLink || '#'} target="_blank" rel="noopener noreferrer" className={`group p-6 rounded-[2rem] border transition-all duration-500 flex flex-col justify-between h-48 ${project.clientDriveLink ? 'bg-white border-slate-200 text-slate-700 hover:border-green-300 hover:shadow-xl hover:scale-[1.02] active:scale-95' : 'bg-slate-50 border-slate-200 text-slate-400 cursor-not-allowed opacity-60'}`}>
+                        <a href={project.clientDriveLink || '#'} target="_blank" rel="noopener noreferrer" className={`group p-6 rounded-[2rem] border transition-all duration-500 flex flex-col justify-between h-48 ${project.clientDriveLink ? 'bg-white border-slate-300 text-slate-700 hover:border-green-400 hover:shadow-xl hover:scale-[1.02] active:scale-95 shadow-sm' : 'bg-slate-50 border-slate-300 text-slate-400 cursor-not-allowed opacity-60'}`}>
                             <div className="flex justify-between items-start">
                                 <div className="p-3 bg-green-50 rounded-2xl">
                                     <GoogleIcon className="w-6 h-6" />
@@ -966,7 +843,7 @@ const GalleryTab: React.FC<{ projects: Project[] }> = ({ projects }) => (
                         </a>
                     </div>
 
-                    <div className="mt-10 p-6 md:p-8 bg-slate-50 rounded-[2rem] border border-slate-100">
+                    <div className="mt-10 p-6 md:p-8 bg-slate-50 rounded-[2rem] border border-slate-300 shadow-sm">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                             <div>
                                 <h4 className="text-sm font-black text-slate-800 tracking-tight">Kelengkapan File Digital</h4>
@@ -994,21 +871,42 @@ const GalleryTab: React.FC<{ projects: Project[] }> = ({ projects }) => (
     </div>
 );
 
-const FinanceTab: React.FC<{ projects: Project[], transactions: Transaction[], packages: Package[] }> = ({ projects, transactions }) => {
+const FinanceTab: React.FC<{ projects: Project[], transactions: Transaction[], packages: Package[] }> = ({ projects, transactions, packages }) => {
     const navigate = useNavigate();
     return (
-        <div className="space-y-4 md:space-y-6">
+        <div className="space-y-6 md:space-y-8">
             {projects.map((project, index) => {
-                const projectTransactions = transactions.filter(t => String(t.projectId) === String(project.id) && t.type === 'Pemasukan');
+                const projectTransactions = transactions.filter(t => String(t.projectId) === String(project.id) && (t.type === 'Pemasukan' || (t.type as string) === 'Income'));
+                const activePackage = packages.find(pk => String(pk.id) === String(project.packageId)) || null;
+
+                // Calculate package price
+                let packagePrice = 0;
+                if ((project as any).unitPrice && Number((project as any).unitPrice) > 0) {
+                    packagePrice = Number((project as any).unitPrice);
+                } else if (activePackage) {
+                    const durationSelection = (project as any).durationSelection;
+                    if (durationSelection && activePackage.durationOptions && activePackage.durationOptions.length > 0) {
+                        const durationOption = activePackage.durationOptions.find(opt => opt.label === durationSelection);
+                        packagePrice = durationOption ? Number(durationOption.price) : Number(activePackage.price);
+                    } else {
+                        packagePrice = Number(activePackage.price);
+                    }
+                }
+                const addOnsTotal = (project.addOns || []).reduce((s, a) => s + (a.price || 0), 0);
+                const customCostsTotal = (project.customCosts || []).reduce((s, c) => s + (c.amount || 0), 0);
 
                 return (
                     <div key={project.id} className="portal-surface p-5 md:p-8 rounded-[2rem] border-slate-200/80 widget-animate" style={{ animationDelay: `${index * 100}ms` }}>
+                        {/* Header */}
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-xl bg-green-50 text-green-600 flex items-center justify-center">
                                     <DollarSignIcon className="w-5 h-5" />
                                 </div>
-                                <h3 className="text-lg font-black text-slate-800 tracking-tight">{project.projectName}</h3>
+                                <div>
+                                    <h3 className="text-lg font-black text-slate-800 tracking-tight">{project.projectName}</h3>
+                                    <p className="text-xs text-slate-400 font-medium">ID: #PRJ-{project.id} • {formatDate(project.date)}</p>
+                                </div>
                             </div>
                             <button
                                 onClick={() => navigate(`/i/${project.id}`)}
@@ -1018,39 +916,144 @@ const FinanceTab: React.FC<{ projects: Project[], transactions: Transaction[], p
                             </button>
                         </div>
 
+                        {/* Package & Addon Details */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 pb-6 border-b border-slate-100">
+                            {/* Package Info */}
+                            <div className="space-y-3">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-blue-600">Paket Dipilih</p>
+                                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                    <p className="text-base font-black text-slate-800">{project.packageName || activePackage?.name || 'Custom Package'}</p>
+                                    <p className="text-sm font-bold text-blue-600 mt-1">
+                                        {formatDisplayCurrency(packagePrice)}
+                                        {(project as any)?.durationSelection && <span className="text-slate-400 font-medium ml-2">/ {(project as any).durationSelection}</span>}
+                                    </p>
+                                    {/* Package description (digitalItems) */}
+                                    {activePackage?.digitalItems && activePackage.digitalItems.length > 0 && (
+                                        <ul className="mt-3 space-y-1.5 border-t border-slate-200 pt-3">
+                                            {activePackage.digitalItems.map((item, idx) => (
+                                                <li key={idx} className="flex items-start gap-2">
+                                                    <div className={`w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${project.completedDigitalItems?.includes(item) ? 'bg-green-500' : 'bg-blue-400'}`}></div>
+                                                    <span className={`text-xs font-medium ${project.completedDigitalItems?.includes(item) ? 'text-green-700 line-through' : 'text-slate-600'}`}>{item}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Addons & Cost Summary */}
+                            <div className="space-y-3">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Tambahan & Ringkasan Biaya</p>
+                                <div className="space-y-2">
+                                    {/* Addons */}
+                                    {project.addOns && project.addOns.length > 0 && (
+                                        <div className="space-y-1.5">
+                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.1em] px-1">Layanan Add-On</p>
+                                            {project.addOns.map(ao => (
+                                                <div key={ao.id} className="flex justify-between items-center p-3 px-4 bg-white border border-slate-100 rounded-xl shadow-sm">
+                                                    <span className="text-xs font-bold text-slate-700">{ao.name}</span>
+                                                    <span className="text-xs font-black text-slate-900">{formatDisplayCurrency(ao.price)}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {/* Custom Costs */}
+                                    {project.customCosts && project.customCosts.length > 0 && (
+                                        <div className="space-y-1.5">
+                                            <p className="text-[9px] font-bold text-blue-500 uppercase tracking-[0.1em] px-1">Biaya Tambahan</p>
+                                            {project.customCosts.map(cc => (
+                                                <div key={cc.id} className="flex justify-between items-center p-3 px-4 bg-blue-50/50 border border-blue-100/50 rounded-xl">
+                                                    <span className="text-xs font-bold text-slate-700">{cc.description}</span>
+                                                    <span className="text-xs font-black text-slate-900">{formatDisplayCurrency(cc.amount)}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {/* Cost Summary */}
+                                    <div className="p-4 bg-slate-900 rounded-2xl text-white mt-2">
+                                        <div className="space-y-2">
+                                            <div className="flex justify-between text-xs">
+                                                <span className="opacity-60">Paket Utama</span>
+                                                <span className="font-bold">{formatDisplayCurrency(packagePrice)}</span>
+                                            </div>
+                                            {addOnsTotal > 0 && (
+                                                <div className="flex justify-between text-xs">
+                                                    <span className="opacity-60">Add-On</span>
+                                                    <span className="font-bold">{formatDisplayCurrency(addOnsTotal)}</span>
+                                                </div>
+                                            )}
+                                            {customCostsTotal > 0 && (
+                                                <div className="flex justify-between text-xs">
+                                                    <span className="opacity-60">Biaya Tambahan</span>
+                                                    <span className="font-bold">{formatDisplayCurrency(customCostsTotal)}</span>
+                                                </div>
+                                            )}
+                                            {Boolean(project.discountAmount) && (
+                                                <div className="flex justify-between text-xs">
+                                                    <span className="text-rose-400">Diskon</span>
+                                                    <span className="font-bold text-rose-400">- {formatDisplayCurrency(project.discountAmount || 0)}</span>
+                                                </div>
+                                            )}
+                                            <div className="pt-2 border-t border-white/10 flex justify-between items-center">
+                                                <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Total Tagihan</span>
+                                                <span className="text-lg font-black">{formatDisplayCurrency(project.totalCost)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="p-3 bg-green-50 border border-green-100 rounded-xl">
+                                        <div className="flex justify-between items-center mb-1">
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-green-700">DP Terbayar</span>
+                                            <span className="text-sm font-black text-green-700">{formatDisplayCurrency(project.amountPaid)}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-rose-700">Sisa Tagihan</span>
+                                            <span className="text-sm font-black text-rose-700">{formatDisplayCurrency(project.totalCost - project.amountPaid)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Transaction History */}
                         <div className="space-y-3">
-                            <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4 px-1">Riwayat Pembayaran</h4>
-                            {projectTransactions.map(tx => (
-                                <div key={tx.id} className="p-4 bg-white/50 rounded-2xl border border-white/60 flex justify-between items-center group hover:bg-white hover:shadow-sm transition-all">
+                            <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4 px-1">Detail Transaksi Pembayaran</h4>
+                            <p className="text-xs text-slate-400 -mt-3 mb-3 px-1">Riwayat semua pembayaran yang telah dilakukan</p>
+                            {projectTransactions.length > 0 ? projectTransactions.map(tx => (
+                                <div key={tx.id} className="p-4 bg-white rounded-2xl border border-slate-300 flex justify-between items-center group hover:border-blue-400 hover:shadow-md transition-all">
                                     <div className="flex items-center gap-4">
                                         <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-green-500 group-hover:bg-green-50 transition-colors">
                                             <CreditCardIcon className="w-5 h-5" />
                                         </div>
                                         <div>
-                                            <p className="text-sm font-bold text-slate-700">{tx.description}</p>
-                                            <p className="text-[10px] font-medium text-slate-400">{formatDate(tx.date)}</p>
+                                            <p className="text-sm font-bold text-slate-700">{tx.description || 'Pembayaran'}</p>
+                                            <div className="flex items-center gap-2 mt-0.5">
+                                                <p className="text-[10px] font-medium text-slate-400">{formatDate(tx.date)}</p>
+                                                {tx.category && <span className="text-[9px] font-bold px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded-full uppercase tracking-wide">{tx.category}</span>}
+                                            </div>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-4">
                                         <p className="text-base font-black text-green-600">{formatDisplayCurrency(tx.amount)}</p>
                                         <button
                                             onClick={() => navigate(`/r/${tx.id}`)}
-                                            className="p-2 text-slate-300 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-all"
+                                            className="px-4 py-2 bg-slate-100 text-slate-700 border border-slate-300 hover:text-white hover:bg-blue-600 hover:border-blue-600 rounded-xl transition-all text-[10px] md:text-xs font-black uppercase tracking-widest flex items-center gap-2"
                                             title="Lihat Tanda Terima"
                                         >
-                                            <FileTextIcon className="w-5 h-5" />
+                                            <FileTextIcon className="w-4 h-4" />
+                                            <span>Bukti</span>
                                         </button>
                                     </div>
                                 </div>
-                            ))}
-                            {projectTransactions.length === 0 && (
+                            )) : (
                                 <div className="p-8 text-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                                    <CreditCardIcon className="w-8 h-8 text-slate-300 mx-auto mb-2" />
                                     <p className="text-sm font-bold text-slate-400">Belum ada pembayaran tercatat</p>
+                                    <p className="text-xs text-slate-300 mt-1">Riwayat DP dan pembayaran akan muncul di sini</p>
                                 </div>
                             )}
                         </div>
                     </div>
-                )
+                );
             })}
         </div>
     );
@@ -1111,7 +1114,7 @@ const FeedbackTab: React.FC<{ client: Client }> = ({ client }) => {
                             aria-label={`Beri ${star} bintang`}
                             className="transform hover:scale-125 transition-all duration-300 active:scale-95"
                         >
-                            <StarIcon className={`w-10 h-10 md:w-12 md:h-12 transition-all ${rating >= star ? 'text-yellow-400 fill-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.4)]' : 'text-slate-200'}`} />
+                            <StarIcon className={`w-10 h-10 md:w-12 md:h-12 transition-all ${rating >= star ? 'text-yellow-400 fill-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.4)]' : 'text-slate-300'}`} />
                         </button>
                     ))}
                 </div>
@@ -1124,7 +1127,7 @@ const FeedbackTab: React.FC<{ client: Client }> = ({ client }) => {
                     value={feedbackText}
                     onChange={(e) => setFeedbackText(e.target.value)}
                     placeholder="Tuliskan pengalaman berkesan Anda..."
-                    className="w-full p-4 bg-white/50 border border-slate-200 rounded-2xl flex-grow focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:outline-none font-medium text-slate-800 transition-all placeholder:text-slate-300 shadow-inner"
+                    className="w-full p-4 bg-white/50 border border-slate-300 rounded-2xl flex-grow focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:outline-none font-medium text-slate-800 transition-all placeholder:text-slate-400 shadow-inner"
                     rows={5}
                 ></textarea>
             </div>
@@ -1132,7 +1135,7 @@ const FeedbackTab: React.FC<{ client: Client }> = ({ client }) => {
             <button
                 type="submit"
                 disabled={isSubmitting}
-                className="mt-8 w-full py-4 px-6 portal-accent-bg text-white font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-blue-500/30 hover:shadow-2xl hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center gap-3"
+                className="mt-8 w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-blue-500/30 hover:shadow-2xl hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center gap-3"
             >
                 {isSubmitting ? 'Mengirim...' : (
                     <>

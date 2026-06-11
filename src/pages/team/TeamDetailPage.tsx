@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
     ChevronLeftIcon,
@@ -37,6 +37,8 @@ import { createTeamPaymentRecord, updateTeamPaymentRecord } from '@/services/tea
 import { createTransaction as createTransactionApi, updateCardBalance as updateCardBalanceApi } from '@/services/transactions';
 import { updatePocket as updatePocketRow } from '@/services/pockets';
 import { markTeamPaymentStatus } from '@/services/teamProjectPayments';
+import { AvatarDisplay } from '@/shared/ui/AvatarUpload';
+import { CloudinaryAvatarUpload } from '@/shared/ui/CloudinaryAvatarUpload';
 
 const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
@@ -73,8 +75,9 @@ const TeamDetailPage: React.FC = () => {
     const [paymentSourceId, setPaymentSourceId] = useState('');
     const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
     const [paymentSlipToView, setPaymentSlipToView] = useState<TeamPaymentRecord | null>(null);
-
     const [isInstallment, setIsInstallment] = useState(false);
+    const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
+    const paymentSubmitLockRef = useRef(false);
 
     // Performance states
     const [newNote, setNewNote] = useState('');
@@ -104,6 +107,8 @@ const TeamDetailPage: React.FC = () => {
     };
 
     const handlePay = async () => {
+        if (paymentSubmitLockRef.current || isSubmittingPayment) return;
+        paymentSubmitLockRef.current = true;
         if (!paymentSourceId) {
             showNotification('Pilih sumber dana pembayaran.');
             return;
@@ -113,33 +118,29 @@ const TeamDetailPage: React.FC = () => {
             return;
         }
 
+        setIsSubmittingPayment(true);
+
         try {
             const isFromPocket = paymentSourceId.startsWith('pocket-');
             const sourceId = paymentSourceId.replace('card-', '').replace('pocket-', '');
-            
-            // 1. Create Transaction
+            const sourceName = isFromPocket
+                ? pockets.find(p => p.id === Number(sourceId))?.name
+                : cards.find(c => c.id === Number(sourceId))?.bankName;
+
+            // 1. Create Transaction (this already updates the source balance)
             const transactionPayload = {
                 date: new Date().toISOString(),
                 description: `Pembayaran Honor: ${member.name} (${projectsToPay.length} Acara)`,
-                amount: paymentAmount,
+                amount: Number(paymentAmount),
                 type: TransactionType.EXPENSE,
                 category: 'Gaji & Honor Tim',
                 method: 'Transfer Bank',
                 cardId: isFromPocket ? null : Number(sourceId),
+                pocketId: isFromPocket ? Number(sourceId) : null,
             };
             await createTransactionApi(transactionPayload as any);
 
-            // 2. Update Balance
-            if (isFromPocket) {
-                const pocket = pockets.find(p => p.id === Number(sourceId));
-                if (pocket) {
-                    await updatePocketRow(Number(sourceId), { amount: pocket.amount - Number(paymentAmount) });
-                }
-            } else {
-                await updateCardBalanceApi(Number(sourceId), -Number(paymentAmount));
-            }
-
-            // 3. Create Team Payment Record
+            // 2. Create Team Payment Record
             const recordPayload = {
                 teamMemberId: member.id,
                 teamMemberName: member.name,
@@ -149,6 +150,9 @@ const TeamDetailPage: React.FC = () => {
                 totalAmount: Number(paymentAmount),
                 recordNumber: `PAY-FR-${String(member.id).slice(-4)}-${Date.now()}`,
                 vendorSignature: profile.signatureBase64 || '',
+                sourceType: isFromPocket ? 'pocket' : 'card',
+                sourceId: sourceId,
+                sourceName,
             };
             await createTeamPaymentRecord(recordPayload as any);
 
@@ -166,7 +170,11 @@ const TeamDetailPage: React.FC = () => {
             setPaymentAmount('');
             setPaymentSourceId('');
         } catch (err) {
-            showNotification('Gagal mencatat pembayaran.');
+            const detail = err instanceof Error ? err.message : 'Coba lagi.';
+            showNotification(`Gagal mencatat pembayaran: ${detail}`);
+        } finally {
+            paymentSubmitLockRef.current = false;
+            setIsSubmittingPayment(false);
         }
     };
 
@@ -287,25 +295,25 @@ const TeamDetailPage: React.FC = () => {
                         <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4 ml-1">Rincian Pekerjaan & Honor</h3>
                         <table className="w-full text-left border-collapse">
                             <thead>
-                                <tr className="bg-slate-100 border-b-2 border-slate-200">
-                                    <th className="px-5 py-4 text-[11px] font-black text-slate-600 uppercase tracking-widest w-[60%]">Deskripsi Acara Pernikahan / Tugas</th>
-                                    <th className="px-5 py-4 text-[11px] font-black text-slate-600 uppercase tracking-widest text-center w-[15%]">Peran</th>
-                                    <th className="px-5 py-4 text-[11px] font-black text-slate-600 uppercase tracking-widest text-right w-[25%]">Jumlah Fee</th>
+                                <tr className="bg-slate-100 border-b-2 border-slate-300">
+                                    <th className="px-5 py-4 text-[11px] font-black text-slate-700 uppercase tracking-widest w-[60%] border-r border-slate-300">Deskripsi Acara Pernikahan / Tugas</th>
+                                    <th className="px-5 py-4 text-[11px] font-black text-slate-700 uppercase tracking-widest text-center w-[15%] border-r border-slate-300">Peran</th>
+                                    <th className="px-5 py-4 text-[11px] font-black text-slate-700 uppercase tracking-widest text-right w-[25%]">Jumlah Fee</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100">
+                            <tbody className="bg-white/40 divide-y divide-slate-300">
                                 {projectsBeingPaid.map((p: TeamProjectPayment) => {
                                     const project = projects.find(proj => String(proj.id) === String(p.projectId));
                                     return (
-                                        <tr key={p.id} className="hover:bg-slate-50/50 transition-colors">
-                                            <td className="px-5 py-5">
+                                        <tr key={p.id} className="hover:bg-blue-50/30 transition-colors">
+                                            <td className="px-5 py-5 border-r border-slate-300">
                                                 <p className="font-bold text-slate-800">{project?.projectName || 'Acara Pernikahan'}</p>
                                                 <p className="text-[10px] text-slate-500 mt-1 flex items-center gap-2">
                                                     <span className="w-1.5 h-1.5 rounded-full bg-brand-accent"></span>
                                                     ID: {String(p.id).slice(-8).toUpperCase()} • Selesai: {formatDate(project?.date || '')}
                                                 </p>
                                             </td>
-                                            <td className="px-5 py-5 text-center">
+                                            <td className="px-5 py-5 text-center border-r border-slate-300">
                                                 <span className="inline-block px-2 py-1 bg-slate-100 rounded text-[10px] font-bold text-slate-600 uppercase">
                                                     {project?.team.find((t: AssignedTeamMember) => Number(t.memberId) === Number(member.id))?.role || member.role}
                                                 </span>
@@ -390,7 +398,7 @@ const TeamDetailPage: React.FC = () => {
                             <div>
                                 <h1 className="text-xl font-black text-brand-text-light tracking-tight truncate max-w-[200px] md:max-w-md">Detail Tim / Vendor</h1>
                                 <div className="flex items-center gap-2 mt-0.5">
-                                    <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-brand-accent/10 text-brand-accent border border-brand-accent/20">
+                                    <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-brand-accent text-white border border-brand-accent">
                                         {member.category}
                                     </span>
                                     <span className="text-brand-text-secondary text-[10px] font-bold">•</span>
@@ -402,7 +410,7 @@ const TeamDetailPage: React.FC = () => {
 
                     <button 
                         onClick={() => navigate(`/member/${member.id}/edit`)}
-                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-accent/10 text-brand-accent text-xs font-bold hover:bg-brand-accent hover:text-white transition-all"
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-accent text-white text-xs font-bold hover:bg-brand-accent-hover transition-all shadow-sm"
                     >
                         <PencilIcon className="w-4 h-4" />
                         Edit Data
@@ -411,79 +419,96 @@ const TeamDetailPage: React.FC = () => {
             </header>
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 md:py-12 relative z-10">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                    {/* Sidebar */}
-                    <aside className="lg:col-span-4 space-y-6">
-                        <div className="bg-brand-surface border border-brand-border rounded-[2.5rem] p-8 shadow-sm relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                                <BriefcaseIcon className="w-24 h-24 text-brand-accent -mr-8 -mt-8 rotate-12" />
-                            </div>
+                <div className="space-y-8">
+                    {/* Top Row: Profile Summary */}
+                    <div className="bg-brand-surface border border-brand-border rounded-[2.5rem] p-6 md:p-8 shadow-sm relative overflow-hidden group flex flex-col md:flex-row items-center gap-8">
+                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                            <BriefcaseIcon className="w-24 h-24 text-brand-accent -mr-8 -mt-8 rotate-12" />
+                        </div>
 
-                            <div className="relative z-10 text-center mb-8">
-                                <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-brand-accent to-blue-600 mx-auto mb-4 flex items-center justify-center shadow-xl shadow-brand-accent/20 text-white text-3xl font-black">
-                                    {member.name.charAt(0)}
-                                </div>
-                                <h2 className="text-2xl font-black text-brand-text-light leading-tight">{member.name}</h2>
-                                <p className="text-brand-accent font-bold mt-1 uppercase tracking-widest text-[10px]">{member.role}</p>
-                            </div>
+                        <div className="relative z-10 text-center md:text-left flex flex-col items-center md:items-start shrink-0 min-w-[250px]">
+                            <CloudinaryAvatarUpload
+                                value={member.avatar}
+                                context="team"
+                                onChange={async (url) => {
+                                    try {
+                                        await updateTeamMemberRow(member.id, { avatar: url });
+                                        queryClient.invalidateQueries({ queryKey: ['teamMembers'] });
+                                        showNotification(url ? 'Foto profil diperbarui.' : 'Foto profil dihapus.');
+                                    } catch {
+                                        showNotification('Gagal menyimpan foto profil.');
+                                    }
+                                }}
+                                name={member.name}
+                                size="xl"
+                                variant={member.category === 'Vendor' ? 'vendor' : 'team'}
+                            />
+                            <h2 className="text-2xl font-black text-brand-text-light leading-tight mt-3">{member.name}</h2>
+                            <p className="text-brand-accent font-bold mt-1 uppercase tracking-widest text-[10px]">{member.role}</p>
+                        </div>
 
-                            <div className="relative z-10 space-y-4 pt-6 border-t border-brand-border/30">
-                                <div className="flex items-center justify-between p-4 rounded-2xl bg-brand-bg/50 border border-brand-border/30">
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2 rounded-lg bg-yellow-400/10">
-                                            <StarIcon className="w-4 h-4 text-yellow-400 fill-current" />
-                                        </div>
-                                        <span className="text-xs font-bold text-brand-text-secondary uppercase">Rating</span>
+                        <div className="relative z-10 w-full flex-1 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div className="flex flex-col p-5 rounded-2xl bg-brand-bg border border-brand-border h-full justify-center">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <div className="p-2 rounded-lg bg-amber-500">
+                                        <StarIcon className="w-4 h-4 text-white fill-current" />
                                     </div>
-                                    <span className="text-lg font-black text-brand-text-light">{member.rating.toFixed(1)}</span>
+                                    <span className="text-[10px] font-bold text-brand-text-secondary uppercase tracking-widest">Rating</span>
                                 </div>
-                                <div className="flex justify-between items-center p-4 rounded-2xl bg-brand-bg/50 border border-brand-border/30">
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2 rounded-lg bg-blue-500/10">
-                                            <DollarSignIcon className="w-4 h-4 text-blue-500" />
-                                        </div>
-                                        <span className="text-xs font-bold text-brand-text-secondary uppercase">Fee Standar</span>
+                                <span className="text-xl font-black text-brand-text-light ml-1">{member.rating.toFixed(1)}</span>
+                            </div>
+                            <div className="flex flex-col p-5 rounded-2xl bg-brand-bg border border-brand-border h-full justify-center">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <div className="p-2 rounded-lg bg-blue-600">
+                                        <DollarSignIcon className="w-4 h-4 text-white" />
                                     </div>
-                                    <span className="text-sm font-black text-brand-text-light">{formatCurrency(member.standardFee)}</span>
+                                    <span className="text-[10px] font-bold text-brand-text-secondary uppercase tracking-widest">Fee Standar</span>
                                 </div>
-                                <div className="flex justify-between items-center p-4 rounded-2xl bg-brand-accent/5 border border-brand-accent/20">
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2 rounded-lg bg-brand-accent/20">
-                                            <HistoryIcon className="w-4 h-4 text-brand-accent" />
-                                        </div>
-                                        <span className="text-xs font-bold text-brand-accent uppercase">Tagihan Belum Lunas</span>
+                                <span className="text-lg font-black text-brand-text-light ml-1">{formatCurrency(member.standardFee)}</span>
+                            </div>
+                            <div className="flex justify-between items-center p-5 rounded-2xl bg-blue-50 border border-blue-200 h-full">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 rounded-lg bg-brand-accent">
+                                        <HistoryIcon className="w-4 h-4 text-white" />
                                     </div>
-                                    <span className="text-lg font-black text-brand-accent">
-                                        {formatCurrency(memberUnpaidProjects.reduce((sum, p) => sum + p.fee, 0))}
-                                    </span>
+                                    <div>
+                                        <span className="block text-[10px] font-bold text-brand-accent uppercase tracking-widest mb-0.5">Tagihan Belum Lunas</span>
+                                        <span className="block text-xl font-black text-brand-accent mt-1">
+                                            {formatCurrency(memberUnpaidProjects.reduce((sum, p) => sum + p.fee, 0))}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        <div className="bg-brand-surface border border-brand-border rounded-[2.5rem] p-8 shadow-sm">
-                            <h3 className="text-xs font-black text-brand-text-secondary uppercase tracking-[0.2em] mb-6">Navigasi Detail</h3>
-                            <nav className="space-y-2">
-                                {[
-                                    { id: 'projects', label: 'Acara Pernikahan', icon: FileTextIcon },
-                                    { id: 'payments', label: 'Riwayat Pembayaran', icon: HistoryIcon },
-                                    { id: 'performance', label: 'Evaluasi Kinerja', icon: StarIcon },
-                                ].map(tab => (
-                                    <button
-                                        key={tab.id}
-                                        onClick={() => setDetailTab(tab.id as any)}
-                                        className={`w-full flex items-center gap-3 px-6 py-4 rounded-2xl text-sm font-bold transition-all ${String(detailTab) === String(tab.id) || (String(tab.id) === String('projects') && detailTab === 'create-payment') ? 'bg-brand-accent text-white shadow-lg shadow-brand-accent/25' : 'text-brand-text-secondary hover:bg-brand-bg hover:text-brand-text-light'}`}
-                                    >
-                                        <tab.icon className="w-5 h-5" />
-                                        {tab.label}
-                                    </button>
-                                ))}
-                            </nav>
-                        </div>
-                    </aside>
+                    {/* Horizontal Tab Navigation */}
+                    <div className="flex items-center gap-2 sm:gap-6 border-b border-brand-border w-full overflow-x-auto pb-1 scrollbar-hide">
+                        {[
+                            { id: 'projects', label: 'Acara Pernikahan', icon: FileTextIcon },
+                            { id: 'payments', label: 'Riwayat Pembayaran', icon: HistoryIcon },
+                            { id: 'performance', label: 'Evaluasi Kinerja', icon: StarIcon },
+                        ].map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setDetailTab(tab.id as any)}
+                                className={`flex items-center gap-2 pb-4 pt-2 px-1 text-sm font-black transition-all relative whitespace-nowrap ${String(detailTab) === String(tab.id) || (String(tab.id) === String('projects') && detailTab === 'create-payment')
+                                    ? 'text-brand-accent'
+                                    : 'text-brand-text-secondary hover:text-brand-text-light'
+                                    }`}
+                            >
+                                <tab.icon className="w-4 h-4" />
+                                {tab.label}
+                                {(String(detailTab) === String(tab.id) || (String(tab.id) === String('projects') && detailTab === 'create-payment')) && (
+                                    <div className="absolute bottom-0 left-0 w-full h-1 bg-brand-accent rounded-t-full"></div>
+                                )}
+                            </button>
+                        ))}
+                    </div>
 
-                    {/* Content Area */}
-                    <div className="lg:col-span-8">
-                        <div className="bg-brand-surface border border-brand-border rounded-[2.5rem] shadow-sm overflow-hidden p-8 md:p-12 min-h-[600px]">
+                    {/* Content Area (Full Width) */}
+                    <div className="w-full">
+                        <div className="bg-brand-surface border border-brand-border rounded-[2.5rem] shadow-sm overflow-hidden p-6 md:p-12 min-h-[500px]">
                             {detailTab === 'projects' && (
                                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-10">
@@ -494,23 +519,26 @@ const TeamDetailPage: React.FC = () => {
                                         {memberUnpaidProjects.length > 0 && (
                                             <button 
                                                 onClick={handleCreatePayment}
-                                                className="px-6 py-3 rounded-2xl bg-brand-accent text-white font-black text-sm uppercase tracking-widest hover:shadow-xl hover:shadow-brand-accent/30 transition-all active:scale-95"
+                                                className="px-6 py-3 rounded-2xl bg-brand-accent text-white font-black text-sm uppercase tracking-widest hover:shadow-xl hover:shadow-brand-accent/30 transition-all active:scale-95 whitespace-nowrap"
                                             >
                                                 Proses Pembayaran
                                             </button>
                                         )}
                                     </div>
 
-                                    <FreelancerProjects 
-                                        projects={projects} 
-                                        teamProjectPayments={teamProjectPayments} 
-                                        member={member} 
-                                        formatCurrency={formatCurrency} 
-                                        formatDate={formatDate}
-                                        projectsToPay={projectsToPay}
-                                        onToggleProject={(paymentId: number) => setProjectsToPay(prev => prev.includes(paymentId) ? prev.filter(i => i !== paymentId) : [...prev, paymentId])}
-                                        showOnlyUnpaid={true}
-                                    />
+                                    <div className="w-full overflow-x-auto pb-4">
+                                        <FreelancerProjects 
+                                            projects={projects} 
+                                            teamProjectPayments={teamProjectPayments} 
+                                            member={member} 
+                                            formatCurrency={formatCurrency} 
+                                            formatDate={formatDate}
+                                            projectsToPay={projectsToPay}
+                                            onToggleProject={(paymentId: number) => setProjectsToPay(prev => prev.includes(paymentId) ? prev.filter(i => i !== paymentId) : [...prev, paymentId])}
+                                            showOnlyUnpaid={false}
+                                            onNavigateToProject={(projectId: number) => navigate(`/projects/${projectId}`)}
+                                        />
+                                    </div>
                                 </div>
                             )}
 
@@ -518,7 +546,7 @@ const TeamDetailPage: React.FC = () => {
                                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                                     <h3 className="text-2xl font-black text-brand-text-light tracking-tight mb-10">Riwayat Pembayaran</h3>
                                     
-                                    <div className="space-y-6">
+                                    <div className="space-y-6 max-w-4xl">
                                         {memberRecords.length === 0 ? (
                                             <div className="text-center py-20 border-2 border-dashed border-brand-border rounded-[2rem]">
                                                 <HistoryIcon className="w-12 h-12 text-brand-text-secondary/20 mx-auto mb-4" />
@@ -560,16 +588,18 @@ const TeamDetailPage: React.FC = () => {
                             {detailTab === 'performance' && (
                                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                                     <h3 className="text-2xl font-black text-brand-text-light tracking-tight mb-10">Evaluasi Kinerja</h3>
-                                    <PerformanceTab 
-                                        member={member} 
-                                        onSetRating={handleSetRating} 
-                                        newNote={newNote} 
-                                        setNewNote={setNewNote} 
-                                        newNoteType={newNoteType} 
-                                        setNewNoteType={setNewNoteType} 
-                                        onAddNote={handleAddNote} 
-                                        onDeleteNote={(noteId: number) => { handleDeleteNote(noteId); }} 
-                                    />
+                                    <div className="max-w-4xl">
+                                        <PerformanceTab 
+                                            member={member} 
+                                            onSetRating={handleSetRating} 
+                                            newNote={newNote} 
+                                            setNewNote={setNewNote} 
+                                            newNoteType={newNoteType} 
+                                            setNewNoteType={setNewNoteType} 
+                                            onAddNote={handleAddNote} 
+                                            onDeleteNote={(noteId: number) => { handleDeleteNote(noteId); }} 
+                                        />
+                                    </div>
                                 </div>
                             )}
 
@@ -582,35 +612,38 @@ const TeamDetailPage: React.FC = () => {
                                         <h3 className="text-2xl font-black text-brand-text-light tracking-tight">Proses Pembayaran</h3>
                                     </div>
 
-                                    <CreatePaymentTab
-                                        member={member}
-                                        paymentDetails={{
-                                            projects: memberUnpaidProjects.filter(p => projectsToPay.includes(p.id)),
-                                            total: typeof paymentAmount === 'number' ? paymentAmount : 0
-                                        }}
-                                        paymentAmount={paymentAmount}
-                                        setPaymentAmount={setPaymentAmount}
-                                        isInstallment={isInstallment}
-                                        setIsInstallment={setIsInstallment}
-                                        onPay={handlePay}
-                                        onSetTab={() => setDetailTab('projects')}
-                                        renderPaymentDetailsContent={() => renderPaymentSlipBody({ 
-                                            id: `TEMP-${Date.now()}`, 
-                                            recordNumber: `PAY-FR-${String(member.id).slice(-4)}-${Date.now()}`, 
-                                            teamMemberId: member.id, 
-                                            teamMemberName: member.name,
-                                            teamMemberRole: member.role,
-                                            date: new Date().toISOString(), 
-                                            projectPaymentIds: projectsToPay, 
-                                            totalAmount: typeof paymentAmount === 'number' ? paymentAmount : 0,
-                                            items: [] // This prop isn't used in renderPaymentSlipBody but needed for type
-                                        } as any)}
-                                        cards={cards}
-                                        monthlyBudgetPocket={monthlyBudgetPocket}
-                                        paymentSourceId={paymentSourceId}
-                                        setPaymentSourceId={setPaymentSourceId}
-                                        onSign={() => { setIsSignatureModalOpen(true); }}
-                                    />
+                                    <div className="max-w-5xl mx-auto">
+                                        <CreatePaymentTab
+                                            member={member}
+                                            paymentDetails={{
+                                                projects: memberUnpaidProjects.filter(p => projectsToPay.includes(p.id)),
+                                                total: typeof paymentAmount === 'number' ? paymentAmount : 0
+                                            }}
+                                            paymentAmount={paymentAmount}
+                                            setPaymentAmount={setPaymentAmount}
+                                            isInstallment={isInstallment}
+                                            setIsInstallment={setIsInstallment}
+                                            onPay={handlePay}
+                                            onSetTab={() => setDetailTab('projects')}
+                                            renderPaymentDetailsContent={() => renderPaymentSlipBody({ 
+                                                id: `TEMP-${Date.now()}`, 
+                                                recordNumber: `PAY-FR-${String(member.id).slice(-4)}-${Date.now()}`, 
+                                                teamMemberId: member.id, 
+                                                teamMemberName: member.name,
+                                                teamMemberRole: member.role,
+                                                date: new Date().toISOString(), 
+                                                projectPaymentIds: projectsToPay, 
+                                                totalAmount: typeof paymentAmount === 'number' ? paymentAmount : 0,
+                                                items: [] // This prop isn't used in renderPaymentSlipBody but needed for type
+                                            } as any)}
+                                            cards={cards}
+                                            monthlyBudgetPocket={monthlyBudgetPocket}
+                                            paymentSourceId={paymentSourceId}
+                                            setPaymentSourceId={setPaymentSourceId}
+                                            onSign={() => { setIsSignatureModalOpen(true); }}
+                                            isSubmitting={isSubmittingPayment}
+                                        />
+                                    </div>
                                 </div>
                             )}
                         </div>

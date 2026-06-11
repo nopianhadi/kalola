@@ -39,7 +39,7 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
         try {
             const opt = {
                 margin: 10,
-                filename: `Invoice_${project?.clientName?.replace(/\s+/g, '_') || 'Klien'}_${project.id.slice(-8)}.pdf`,
+                filename: `Invoice_${project?.clientName?.replace(/\s+/g, '_') || 'Klien'}_${project.id}.pdf`,
                 image: { type: 'jpeg' as 'jpeg', quality: 0.98 },
                 html2canvas: {
                     scale: 2,
@@ -69,7 +69,7 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
         setIsSignatureModalOpen(false);
     };
 
-    const portalUrl = `${window.location.host === 'localhost:3000' ? 'http://localhost:3000' : 'https://vandel-pro.web.app'}/#/i/${project.id}`;
+    const portalUrl = `${window.location.origin}/#/i/${project.id}`;
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Invoice" size="4xl">

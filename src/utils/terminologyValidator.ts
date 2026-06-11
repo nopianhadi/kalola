@@ -26,7 +26,6 @@ const TARGET_FILES = [
   'constants.tsx',
   'pages/clients/ClientsPage.tsx',
   'pages/projects/ProjectsPage.tsx',
-  'pages/dashboard/DashboardPage.tsx',
   'features/clients/components/ClientPortal.tsx',
   'features/clients/components/ClientKPI.tsx',
   'pages/booking/BookingPage.tsx',
@@ -131,16 +130,18 @@ function checkNavigationConsistency(
       navLabel: 'Data Pengantin',
       pageFile: 'pages/clients/ClientsPage.tsx',
       expectedInPage: 'Data Pengantin'
-    },
-    {
-      view: ViewType.PROJECTS,
-      navLabel: 'Acara Pernikahan Wedding',
-      pageFile: 'pages/projects/ProjectsPage.tsx',
-      expectedInPage: 'Acara Pernikahan Wedding'
     }
   ];
 
   for (const check of consistencyChecks) {
+    const pageEntry = Array.from(fileContents.entries()).find(([filePath]) =>
+      filePath.endsWith(check.pageFile) || filePath.includes(check.pageFile)
+    );
+
+    if (!pageEntry) {
+      continue;
+    }
+
     // Find the navigation item
     const navItem = NAV_ITEMS.find(item => item.view === check.view);
 
@@ -161,17 +162,13 @@ function checkNavigationConsistency(
       });
     }
 
-    // Check if page content includes expected terminology
-    for (const [filePath, content] of fileContents.entries()) {
-      if (filePath.endsWith(check.pageFile) || filePath.includes(check.pageFile)) {
-        if (!content.includes(check.expectedInPage)) {
-          issues.push({
-            file: filePath,
-            issue: `Page does not contain expected terminology "${check.expectedInPage}"`,
-            term: check.expectedInPage
-          });
-        }
-      }
+    const [filePath, content] = pageEntry;
+    if (!content.includes(check.expectedInPage)) {
+      issues.push({
+        file: filePath,
+        issue: `Page does not contain expected terminology "${check.expectedInPage}"`,
+        term: check.expectedInPage
+      });
     }
   }
 

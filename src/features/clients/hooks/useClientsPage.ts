@@ -65,7 +65,9 @@ export const useClientsPage = ({
     // --- Filters & Sort ---
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('Semua Status');
+    const [clientStatusFilter, setClientStatusFilter] = useState<string>('Semua Status Klien');
     const [typeFilter, setTypeFilter] = useState<string>('Semua Tipe');
+    const [locationFilter, setLocationFilter] = useState<string>('Semua Lokasi');
 
     // --- Pagination State ---
     const [page, setPage] = useState(1);
@@ -77,7 +79,7 @@ export const useClientsPage = ({
     // Reset page on search or filter change
     useEffect(() => {
         setPage(1);
-    }, [searchQuery, statusFilter, typeFilter, activeTab]);
+    }, [searchQuery, statusFilter, clientStatusFilter, typeFilter, locationFilter, activeTab]);
 
     const { data: paginatedData, isLoading: isLoadingClients } = useClientsPaginated(
         page, 
@@ -92,6 +94,9 @@ export const useClientsPage = ({
     const clients = paginatedData?.clients || [];
     const totalClients = paginatedData?.total || 0;
     const { data: projects = [] } = useProjects();
+    const locationOptions = useMemo(() => Array.from(new Set(projects
+        .map(project => project.location?.split(',')[0].trim())
+        .filter(Boolean) as string[])).sort(), [projects]);
     const { data: cards = [] } = useCards();
     const { data: packages = [] } = usePackages();
     const { data: addOns = [] } = useAddOns();
@@ -121,6 +126,7 @@ export const useClientsPage = ({
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [selectedClientForDetail, setSelectedClientForDetail] = useState<ExtendedClient | null>(null);
     const [isBillingModalOpen, setIsBillingModalOpen] = useState(false);
+    const [selectedClientForBilling, setSelectedClientForBilling] = useState<ExtendedClient | null>(null);
     const [qrModalContent, setQrModalContent] = useState<{ title: string; url: string; clientName: string; clientPhone?: string } | null>(null);
     const [isBookingFormShareModalOpen, setIsBookingFormShareModalOpen] = useState(false);
     const [sharePortalContent, setSharePortalContent] = useState<{ client: Client; url: string } | null>(null);
@@ -159,17 +165,22 @@ export const useClientsPage = ({
             const searchMatch = !searchQuery || 
                 [client.name, client.email, client.phone].some(f => f?.toLowerCase().includes(searchQuery.toLowerCase()));
             const statusMatch = statusFilter === 'Semua Status' || client.overallPaymentStatus === statusFilter;
+            const clientStatusMatch = clientStatusFilter === 'Semua Status Klien' || client.status === clientStatusFilter;
             const typeMatch = typeFilter === 'Semua Tipe' || client.clientType === typeFilter;
+            const locationMatch = locationFilter === 'Semua Lokasi' || client.projects.some(project => {
+                const projectLocation = project.location?.split(',')[0].trim().toLowerCase();
+                return projectLocation === locationFilter.toLowerCase();
+            });
             
             // Date Filter (using client.since as the primary reference)
             const clientDate = new Date(client.since);
             const startMatch = !startDate || clientDate >= new Date(startDate);
             const endMatch = !endDate || clientDate <= new Date(endDate);
             
-            if (activeTab === 'inactive') return searchMatch && statusMatch && typeMatch && startMatch && endMatch && client.status === ClientStatus.INACTIVE;
-            if (activeTab === 'unpaid') return searchMatch && statusMatch && typeMatch && startMatch && endMatch && client.balanceDue > 0;
+            if (activeTab === 'inactive') return searchMatch && statusMatch && clientStatusMatch && typeMatch && locationMatch && startMatch && endMatch && client.status === ClientStatus.INACTIVE;
+            if (activeTab === 'unpaid') return searchMatch && statusMatch && clientStatusMatch && typeMatch && locationMatch && startMatch && endMatch && client.balanceDue > 0;
             
-            return searchMatch && statusMatch && typeMatch && startMatch && endMatch;
+            return searchMatch && statusMatch && clientStatusMatch && typeMatch && locationMatch && startMatch && endMatch;
         });
 
         if (sortConfig) {
@@ -183,7 +194,7 @@ export const useClientsPage = ({
         }
 
         return result;
-    }, [allClientData, searchQuery, statusFilter, typeFilter, startDate, endDate, sortConfig, activeTab]);
+    }, [allClientData, searchQuery, statusFilter, clientStatusFilter, typeFilter, locationFilter, startDate, endDate, sortConfig, activeTab]);
 
     const stats = useMemo(() => {
         const locations = allClientData.flatMap(c => c.projects.map(p => p.location)).filter(Boolean);
@@ -455,7 +466,14 @@ export const useClientsPage = ({
     };
 
     const handleOpenBilling = () => setIsBillingModalOpen(true);
-    const handleCloseBilling = () => setIsBillingModalOpen(false);
+    const handleOpenBillingForClient = (client: ExtendedClient) => {
+        setSelectedClientForBilling(client);
+        setIsBillingModalOpen(true);
+    };
+    const handleCloseBilling = () => {
+        setIsBillingModalOpen(false);
+        setSelectedClientForBilling(null);
+    };
 
     const handleCloseQrModal = () => setQrModalContent(null);
     const handleDownloadQr = (id: string) => {
@@ -540,7 +558,10 @@ export const useClientsPage = ({
         activeTab, setActiveTab,
         searchQuery, setSearchQuery,
         statusFilter, setStatusFilter,
+        clientStatusFilter, setClientStatusFilter,
         typeFilter, setTypeFilter,
+        locationFilter, setLocationFilter,
+        locationOptions,
         startDate, setStartDate,
         endDate, setEndDate,
         sortConfig, setSortConfig,
@@ -554,7 +575,8 @@ export const useClientsPage = ({
         handleDeleteProject,
         handleDownloadClients,
         isDetailModalOpen, selectedClientForDetail, handleViewDetail, handleCloseDetail,
-        isBillingModalOpen, handleOpenBilling, handleCloseBilling,
+        isBillingModalOpen, handleOpenBilling, handleOpenBillingForClient, handleCloseBilling,
+        selectedClientForBilling,
         qrModalContent, handleCloseQrModal, handleDownloadQr, handleShareWhatsApp,
         isBookingFormShareModalOpen, handleOpenBookingModal, handleCloseBookingModal,
         bookingFormUrl, handleCopyBookingLink,

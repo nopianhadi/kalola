@@ -3,7 +3,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Package, AddOn, PhysicalItem, Region, REGIONS, DurationOption } from '@/types';
 import { createPackage as createPackageRow, updatePackage as updatePackageRow, deletePackage as deletePackageRow } from '@/services/packages';
 import { createAddOn as createAddOnRow, updateAddOn as updateAddOnRow, deleteAddOn as deleteAddOnRow } from '@/services/addOns';
-import { toBase64, titleCase } from '@/features/packages/utils/packages.utils';
+import { titleCase } from '@/features/packages/utils/packages.utils';
+import { uploadImage } from '@/services/upload';
 import { usePackages as usePackagesQuery, useAddOns as useAddOnsQuery } from '@/features/packages/api/usePackagesQueries';
 import { useProjects } from '@/features/projects/api/useProjects';
 import { useProfile } from '@/features/settings/api/useProfileQueries';
@@ -108,12 +109,19 @@ export const usePackages = () => {
 
     const unionRegions = useMemo(() => {
         const baseValues = REGIONS.map(r => r.value.toLowerCase());
-        const extra = existingRegions.filter(er => !baseValues.includes(er.toLowerCase()));
+        const customFromProfile: { value: string; label: string }[] = (profile.customRegions || [])
+            .filter(cr => !baseValues.includes(cr.toLowerCase()))
+            .map(cr => ({ value: cr.toLowerCase(), label: cr.charAt(0).toUpperCase() + cr.slice(1) }));
+        const extra = existingRegions.filter(er =>
+            !baseValues.includes(er.toLowerCase()) &&
+            !customFromProfile.some(c => c.value === er.toLowerCase())
+        );
         return [
             ...REGIONS.map(r => ({ value: r.value, label: r.label })),
+            ...customFromProfile,
             ...extra.map(er => ({ value: er, label: titleCase(er) })),
         ];
-    }, [existingRegions]);
+    }, [existingRegions, profile.customRegions]);
 
     const packagesByCategory = useMemo(() => {
         const grouped: Record<string, Package[]> = {};
@@ -193,14 +201,14 @@ export const usePackages = () => {
     const handleCoverImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files?.[0]) {
             const file = e.target.files[0];
-            if (file.size > 2 * 1024 * 1024) return alert('Ukuran file tidak boleh melebihi 2MB');
+            if (file.size > 10 * 1024 * 1024) return alert('Ukuran file tidak boleh melebihi 10MB');
             if (!file.type.match('image.*')) return alert('Hanya file gambar yang diperbolehkan');
             try {
-                const base64 = await toBase64(file);
-                setPackageFormData((prev: any) => ({ ...prev, coverImage: base64 }));
-            } catch (err) {
-                console.error('Error uploading image:', err);
-                alert('Gagal mengunggah gambar.');
+                const result = await uploadImage(file, 'package');
+                setPackageFormData((prev: any) => ({ ...prev, coverImage: result.url }));
+            } catch (err: any) {
+                console.error('Error uploading cover image:', err);
+                alert(`Gagal mengunggah gambar: ${err?.message || 'Coba lagi.'}`);
             }
         }
     };

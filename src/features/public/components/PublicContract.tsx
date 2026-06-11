@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Contract, Project, Profile } from '@/types';
 import ContractDocument from '@/features/contracts/components/ContractDocument';
 import { DownloadIcon } from '@/constants';
@@ -10,10 +10,12 @@ import Modal from '@/shared/ui/Modal';
 import SignaturePad from '@/shared/ui/SignaturePad';
 
 interface PublicContractProps {
-    contractId: string;
+    contractId?: string;
 }
 
-const PublicContract: React.FC<PublicContractProps> = ({ contractId }) => {
+const PublicContract: React.FC<PublicContractProps> = ({ contractId: propContractId }) => {
+    const { id } = useParams<{ id: string }>();
+    const contractId = propContractId || id;
     const navigate = useNavigate();
     const [contract, setContract] = useState<Contract | null>(null);
     const [project, setProject] = useState<Project | null>(null);
@@ -83,9 +85,10 @@ const PublicContract: React.FC<PublicContractProps> = ({ contractId }) => {
         if (!element) return;
 
         const opt = {
-            margin: 0,
+            margin: [15, 15, 20, 15] as [number, number, number, number],
             filename: `kontrak-${contract?.contractNumber || 'digital'}.pdf`,
             image: { type: 'jpeg' as const, quality: 0.98 },
+            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
             html2canvas: {
                 scale: 2,
                 useCORS: true,

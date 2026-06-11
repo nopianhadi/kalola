@@ -703,14 +703,14 @@ export const GlobeIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 // --- NAVIGATION ---
 export const NAV_ITEMS = [
-    { view: ViewType.DASHBOARD, label: 'Dashboard', icon: HomeIcon },
-    { view: ViewType["Calon Pengantin"], label: 'Calon Pengantin', icon: TargetIcon },
+    { view: ViewType["Calon Pengantin"], label: 'Leads', icon: TargetIcon },
     { view: ViewType.BOOKING, label: 'Booking Jadwal', icon: ClipboardListIcon },
-    { view: ViewType.CALENDAR, label: 'Jadwal Wedding', icon: CalendarIcon },
-    { view: ViewType.CLIENTS, label: 'Pengantin & Acara', icon: UsersIcon },
+    { view: ViewType.CALENDAR, label: 'Jadwal Acara', icon: CalendarIcon },
+    { view: ViewType.CLIENTS, label: 'Database Pengantin', icon: UsersIcon },
     { view: ViewType.TEAM, label: 'Tim / Vendor', icon: BriefcaseIcon },
     { view: ViewType.FINANCE, label: 'Keuangan', icon: DollarSignIcon },
-    { view: ViewType.PACKAGES, label: 'Layanan / Package', icon: PackageIcon },
+    { view: ViewType.PACKAGES, label: 'Paket & Add-on', icon: PackageIcon },
+    { view: ViewType.PORTFOLIO, label: 'Portfolio', icon: ImageIcon },
     { view: ViewType.CLIENT_REPORTS, label: 'Testimoni', icon: ChartPieIcon },
     { view: ViewType.SETTINGS, label: 'Pengaturan', icon: SettingsIcon },
 ];
@@ -733,31 +733,31 @@ export const TERMINOLOGY_CHANGES: TerminologyChange[] = [
         oldTerm: 'Klien Pengantin',
         newTerm: 'Data Pengantin',
         context: 'navigation',
-        files: ['constants.tsx', 'components/Clients.tsx']
+        files: ['constants.tsx', 'pages/clients/ClientsPage.tsx']
     },
     {
         oldTerm: 'Detail Proyek',
         newTerm: 'Detail Acara Pernikahan',
         context: 'page-title',
-        files: ['components/Projects.tsx', 'components/ClientPortal.tsx']
+        files: ['pages/projects/ProjectsPage.tsx', 'features/clients/components/ClientPortal.tsx']
     },
     {
         oldTerm: 'Proyek Terbaru',
         newTerm: 'Acara Pernikahan Terbaru',
         context: 'table-header',
-        files: ['components/Clients.tsx', 'components/Dashboard.tsx']
+        files: ['pages/clients/ClientsPage.tsx']
     },
     {
         oldTerm: 'Total Nilai Proyek',
         newTerm: 'Total Package',
         context: 'label',
-        files: ['components/Clients.tsx', 'components/ClientPortal.tsx', 'components/ClientKPI.tsx']
+        files: ['pages/clients/ClientsPage.tsx', 'features/clients/components/ClientPortal.tsx', 'features/clients/components/ClientKPI.tsx']
     },
     {
         oldTerm: 'Progres Sub-Status',
         newTerm: 'Progres Pengerjaan Pengantin',
         context: 'label',
-        files: ['components/Projects.tsx']
+        files: ['pages/projects/ProjectsPage.tsx']
     },
     {
         oldTerm: 'Pekerjaan Wedding',
@@ -774,8 +774,8 @@ export const DEFAULT_INCOME_CATEGORIES = ['DP Acara Pernikahan', 'Pelunasan', 'T
 export const DEFAULT_EXPENSE_CATEGORIES = ['Gaji Tim / Vendor', 'Operasional', 'Produksi Fisik', 'Transport', 'Perlengkapan', 'Lainnya'];
 /** Saran jenis proyek */
 export const DEFAULT_PROJECT_TYPES = ['Pernikahan', 'Lamaran / Engagement', 'Corporate / Event', 'Ulang Tahun', 'Wisuda', 'Lainnya'];
-/** Saran jenis Acara Pernikahan internal (kalender) */
-export const DEFAULT_EVENT_TYPES = ['Meeting Pengantin', 'Persiapan Acara Pernikahan', 'Pelaksanaan (Hari H)', 'Evaluasi', 'Lainnya'];
+/** Saran jenis event internal (kalender) */
+export const DEFAULT_EVENT_TYPES = ['Meeting Klien', 'Persiapan Acara', 'Pelaksanaan (Hari H)', 'Evaluasi', 'Lainnya'];
 /** Saran kategori Package */
 export const DEFAULT_PACKAGE_CATEGORIES = ['Pernikahan', 'Lamaran / Engagement', 'Corporate / Event', 'Ulang Tahun', 'Wisuda', 'Lainnya'];
 /** Saran status proyek beserta sub-status (id diisi di komponen) */
@@ -802,8 +802,8 @@ export const DEFAULT_PROJECT_STATUS_SUGGESTIONS: {
             description: 'Tahap persiapan teknis, vendor pendukung, dan koordinasi tim.',
             defaultProgress: 25,
             subStatuses: [
-                { name: 'Technical Meeting', note: 'Koordinasi akhir dengan pengantin dan vendor lain' },
-                { name: 'Persiapan Kebutuhan Acara Pernikahan', note: 'Cek kesiapan perlengkapan/material' }
+                { name: 'Technical Meeting', note: 'Koordinasi akhir dengan klien dan vendor lain' },
+                { name: 'Persiapan Kebutuhan Acara', note: 'Cek kesiapan perlengkapan/material' }
             ]
         },
         {
@@ -823,7 +823,7 @@ export const DEFAULT_PROJECT_STATUS_SUGGESTIONS: {
             defaultProgress: 75,
             subStatuses: [
                 { name: 'Review / Evaluasi Internal', note: 'Evaluasi hasil kerja hari H' },
-                { name: 'Follow-up Pengantin Pasca Acara Pernikahan', note: 'Memastikan kepuasan pengantin' }
+                { name: 'Follow-up Klien Pasca Acara', note: 'Memastikan kepuasan klien' }
             ]
         },
         {
@@ -842,24 +842,24 @@ export const DEFAULT_PROJECT_STATUS_SUGGESTIONS: {
             description: 'Mengurus pengarsipan dan penutupan dokumen Acara Pernikahan.',
             defaultProgress: 95,
             subStatuses: [
-                { name: 'Arsip Data Pengantin', note: 'Menyimpan riwayat Acara Pernikahan' },
-                { name: 'Pengiriman Laporan/Dokumen Akhir', note: 'Jika pengantin meminta laporan khusus' }
+                { name: 'Arsip Data Klien', note: 'Menyimpan riwayat acara' },
+                { name: 'Pengiriman Laporan/Dokumen Akhir', note: 'Jika klien meminta laporan khusus' }
             ]
         },
         {
             name: 'Selesai',
             color: '#10b981', // emerald-500
-            description: 'Semua pekerjaan selesai dan hasil telah diterima pengantin.',
+            description: 'Semua pekerjaan selesai dan hasil telah diterima klien.',
             defaultProgress: 100,
             subStatuses: [
-                { name: 'Pekerjaan Selesai', note: 'Hasil akhir/layanan sudah diterima pengantin' },
-                { name: 'Testimoni Diterima', note: 'Pengantin puas' }
+                { name: 'Pekerjaan Selesai', note: 'Hasil akhir/layanan sudah diterima klien' },
+                { name: 'Testimoni Diterima', note: 'Klien puas' }
             ]
         },
         {
             name: 'Dibatalkan',
             color: '#ef4444', // red-500
-            description: 'Pekerjaan dibatalkan oleh vendor atau pengantin.',
+            description: 'Pekerjaan dibatalkan oleh vendor atau klien.',
             defaultProgress: 0,
             subStatuses: [
                 { name: 'Refund Proses', note: 'Proses pengembalian dana jika ada' },
@@ -879,11 +879,11 @@ Berikut briefing untuk proyek ini. Mohon diperhatikan:
 Terima kasih!`;
 
 export const DEFAULT_TERMS_AND_CONDITIONS = `1. Pembayaran DP minimal 50% dari total biaya untuk mengunci jadwal.
-2. Pelunasan dilakukan sebelum atau pada hari H Acara Pernikahan.
+2. Pelunasan dilakukan sebelum atau pada hari H acara.
 3. Revisi hasil kerja maksimal 2x (minor). Revisi mayor dikenakan biaya tambahan.
-4. Hasil kerja/Layanan diselesaikan dalam format yang disepakati, maksimal 14 hari setelah Acara Pernikahan atau sesuai perjanjian.
-5. Pengantin bertanggung jawab atas kerugian atau kerusakan alat/data/aset setelah proses penyerahan selesai.
-6. Pembatalan: DP tidak dapat dikembalikan jika pembatalkan dilakukan kurang dari 7 hari sebelum Acara Pernikahan.`;
+4. Hasil kerja/Layanan diselesaikan dalam format yang disepakati, maksimal 14 hari setelah acara atau sesuai perjanjian.
+5. Klien bertanggung jawab atas kerugian atau kerusakan alat/data/aset setelah proses penyerahan selesai.
+6. Pembatalan: DP tidak dapat dikembalikan jika pembatalan dilakukan kurang dari 7 hari sebelum acara.`;
 
 export const DEFAULT_PACKAGE_SHARE_TEMPLATE = `Halo {leadName}! 👋
 
@@ -904,11 +904,11 @@ Kami akan segera memproses setelah formulir terisi. Terima kasih!`;
 // --- NEW SHARE TEMPLATES ---
 export const DEFAULT_INVOICE_SHARE_TEMPLATE = `Halo *{clientName}*! 👋
 
-Berikut kami kirimkan *Invoice* untuk Acara Pernikahan Anda bersama *{companyName}* 💍
+Berikut kami kirimkan *Invoice* untuk acara Anda bersama *{companyName}* 💍
 
 📋 *Detail Tagihan:*
 • Acara: {projectName}
-• Total Biaya: *{totalCost}*
+• Total Investasi: *{totalCost}*
 • Sudah Dibayar: {amountPaid}
 • Sisa Tagihan: *{sisaTagihan}*
 
@@ -921,7 +921,7 @@ Terima kasih atas kepercayaan Anda. Semoga acaranya berjalan lancar! 🙏`;
 
 export const DEFAULT_RECEIPT_SHARE_TEMPLATE = `Halo *{clientName}*! 👋
 
-Berikut kami kirimkan *Tanda Terima Pembayaran* untuk Acara Pernikahan Anda bersama *{companyName}* ✅
+Berikut kami kirimkan *Tanda Terima Pembayaran* untuk acara Anda bersama *{companyName}* ✅
 
 📋 *Detail Pembayaran:*
 • Acara: {projectName}
@@ -958,10 +958,10 @@ export const DEFAULT_PORTAL_SHARE_TEMPLATE = `Halo {clientName}! 👋
 
 Salam dari tim *{companyName}* 💍
 
-Kami dengan senang hati membagikan *Portal Pengantin* Anda, di mana Anda bisa memantau:
-✅ Progres persiapan acara pernikahan Anda
+Kami dengan senang hati membagikan *Portal Klien* Anda, di mana Anda bisa memantau:
+✅ Progres persiapan acara Anda
 💰 Detail pembayaran & invoice
-📋 Package & vendor yang dipilih
+📋 Paket & layanan yang dipilih
 
 🔗 *Akses Portal Anda di sini:*
 {portalLink}
@@ -970,7 +970,7 @@ Jika ada pertanyaan, jangan ragu menghubungi kami. Semoga membantu! 🙏`;
 
 export const DEFAULT_CONTRACT_SHARE_TEMPLATE = `Halo *{clientName}*! 👋
 
-Berikut kami kirimkan *Kontrak Kerja Digital* untuk Acara Pernikahan Anda bersama *{companyName}* 💍
+Berikut kami kirimkan *Kontrak Kerja Digital* untuk acara Anda bersama *{companyName}* 💍
 
 📄 *Lihat & Tandatangani Kontrak di sini:*
 {contractLink}
@@ -979,7 +979,7 @@ Mohon untuk segera meninjau dan melakukan tanda tangan digital melalui tautan di
 
 export const DEFAULT_BILLING_SHARE_TEMPLATE = `Halo *{clientName}*! 👋
 
-Kami ingin menginformasikan detail tagihan untuk Acara Pernikahan Anda bersama *{companyName}* 💍
+Kami ingin menginformasikan detail tagihan untuk acara Anda bersama *{companyName}* 💍
 
 📋 *Rincian Tagihan:*
 {projectDetails}
@@ -1000,42 +1000,62 @@ export const CHAT_TEMPLATES: ChatTemplate[] = [
     {
         id: 'welcome',
         title: 'Ucapan Selamat Datang',
-        template: 'Halo {clientName}, selamat! Booking Anda untuk Acara Pernikahan "{projectName}" telah kami konfirmasi. Kami sangat senang bisa bekerja sama dengan Anda! Tim kami akan segera menghubungi Anda untuk langkah selanjutnya. Terima kasih!'
+        template: 'Halo {clientName}, selamat! 🎉\n\nBooking Anda untuk "{projectName}" telah kami konfirmasi. Kami sangat senang bisa menjadi bagian dari hari istimewa Anda!\n\nTim kami akan segera menghubungi untuk koordinasi lebih lanjut.\n\nTerima kasih atas kepercayaannya! 🙏'
     },
     {
         id: 'next_steps',
         title: 'Langkah Selanjutnya',
-        template: 'Hai {clientName}, menindaklanjuti konfirmasi Acara Pernikahan "{projectName}", berikut langkah selanjutnya: [jadwal meeting, survey lokasi, dll]. Mohon informasikan waktu terbaik Anda. Terima kasih.'
+        template: 'Hai {clientName},\n\nTerima kasih sudah melakukan booking untuk "{projectName}".\n\nBerikut langkah selanjutnya yang perlu kita lakukan:\n• Meeting awal untuk pembahasan detail kebutuhan\n• Survey lokasi (jika diperlukan)\n• Finalisasi rundown dan timeline\n\nMohon informasikan waktu yang cocok untuk koordinasi ya. Terima kasih! 😊'
     },
     {
         id: 'progress_update',
-        title: 'Update Progres Pengerjaan',
-        template: 'Halo {clientName},\n\nKami ingin memberikan update progress Acara Pernikahan Anda:\n\nAcara Pernikahan: {projectName}\nTotal Biaya: {totalCost}\nTerbayar: {amountPaid}\nSisa Tagihan: {sisaTagihan}\n\nAnda dapat memantau progres detailnya melalui portal pengantin di sini:\n{portalLink}\n\nTerima kasih!'
+        title: 'Update Progres',
+        template: 'Halo {clientName},\n\nKami ingin memberikan update progress persiapan acara Anda:\n\n📋 Acara: *{projectName}*\n💰 Total Investasi: {totalCost}\n✅ Terbayar: {amountPaid}\n📌 Sisa: {sisaTagihan}\n\nAnda dapat memantau progres lengkap melalui portal di sini:\n{portalLink}\n\nJika ada pertanyaan, jangan ragu menghubungi kami ya! 🙏'
     },
     {
         id: 'schedule_confirmation',
         title: 'Konfirmasi Jadwal & Lokasi',
-        template: 'Halo {clientName},\n\nKami ingin mengkonfirmasi jadwal Acara Pernikahan Anda:\n\nAcara Pernikahan: {projectName}\nLokasi: {location}\n\nMohon konfirmasinya jika sudah sesuai. Terima kasih!'
+        template: 'Halo {clientName},\n\nKami ingin mengkonfirmasi detail acara Anda:\n\n📅 Acara: *{projectName}*\n📍 Lokasi: [Isi lokasi]\n⏰ Waktu: [Isi waktu]\n\nMohon konfirmasinya jika data di atas sudah sesuai, atau informasikan jika ada perubahan.\n\nTerima kasih! 🙏'
     },
     {
         id: 'payment_reminder',
         title: 'Pengingat Pelunasan',
-        template: 'Yth. {clientName},\n\nIni pengingat ramah untuk pembayaran pelunasan Acara Pernikahan "{projectName}" yang akan segera jatuh tempo.\n\nSisa Tagihan: {sisaTagihan}\n\nMohon konfirmasinya jika pembayaran telah dilakukan. Terima kasih.'
+        template: 'Yth. {clientName},\n\nIni pengingat ramah untuk pelunasan investasi "{projectName}" yang akan segera jatuh tempo.\n\n💰 Sisa Pembayaran: *{sisaTagihan}*\n\nMohon konfirmasinya jika pembayaran telah dilakukan. Kami tunggu kabar baiknya ya! 🙏\n\nTerima kasih.'
     },
     {
         id: 'detailed_bill',
-        title: 'Rekap Tagihan Detil',
-        template: 'Halo {clientName},\n\nSemoga sehat selalu. Kami ingin mengingatkan perihal sisa pembayaran untuk Acara Pernikahan Anda.\n\nBerikut rinciannya:\n- Acara Pernikahan: *{projectName}*\n- Paket: *{packageName}*\n\nSudah Terbayar: *{amountPaid}*\nSisa Tagihan: *{sisaTagihan}*\n\nTotal Sisa Tagihan: *{sisaTagihan}*\n\nAnda dapat melihat rincian invoice dan riwayat pembayaran melalui Portal Pengantin Anda di sini:\n{portalLink}\n\nMohon konfirmasinya jika pembayaran telah dilakukan. Terima kasih!\n\nSalam,\nTim {companyName}'
+        title: 'Rekap Tagihan Detail',
+        template: 'Halo {clientName},\n\nSemoga sehat selalu. Kami ingin mengingatkan perihal sisa pembayaran untuk acara Anda.\n\nBerikut rinciannya:\n📋 Acara: *{projectName}*\n📦 Paket: *{packageName}*\n\n💵 Sudah Terbayar: {amountPaid}\n💰 Sisa Tagihan: *{sisaTagihan}*\n\nDetail lengkap dapat dilihat di Portal Anda:\n{portalLink}\n\nMohon konfirmasinya jika pembayaran telah dilakukan.\n\nTerima kasih!\n\nSalam,\nTim {companyName}'
     },
     {
-        id: 'survey_reminder',
-        title: 'Pengingat Survey Lokasi',
-        template: 'Hai {clientName}, untuk Acara Pernikahan "{projectName}", kami ingin mengatur jadwal survey lokasi. Kapan waktu yang cocok untuk Anda? Terima kasih.'
+        id: 'site_visit',
+        title: 'Jadwal Survey/Site Visit',
+        template: 'Hai {clientName},\n\nUntuk memastikan semua persiapan "{projectName}" berjalan sempurna, kami perlu melakukan survey lokasi/venue.\n\nKapan waktu yang cocok untuk Anda? Kami siap menyesuaikan jadwal.\n\nTerima kasih! 😊'
     },
     {
-        id: 'delivery_ready',
-        title: 'Hasil Siap Diambil / Selesai',
-        template: 'Halo {clientName}, hasil kerja untuk "{projectName}" sudah siap! Silakan cek laporan/link yang kami kirim. Jika ada revisi atau tanggapan, beritahu kami dalam 7 hari. Terima kasih!'
+        id: 'final_confirmation',
+        title: 'Konfirmasi Final H-7',
+        template: 'Halo {clientName},\n\nAcara Anda tinggal seminggu lagi! 🎉\n\nKami ingin melakukan konfirmasi final untuk "{projectName}":\n\n✅ Semua persiapan sudah on track\n✅ Tim kami sudah standby\n✅ Perlengkapan sudah disiapkan\n\nJika ada perubahan atau hal yang perlu dibahas, segera informasikan ya.\n\nKami pastikan hari istimewa Anda berjalan sempurna! 💕'
+    },
+    {
+        id: 'day_before_reminder',
+        title: 'Pengingat H-1',
+        template: 'Halo {clientName},\n\nBesok adalah hari yang ditunggu-tunggu! 🎊\n\nTim kami sudah siap untuk "{projectName}". Kami akan tiba di lokasi sesuai jadwal yang telah disepakati.\n\n📍 Lokasi: [Isi lokasi]\n⏰ Waktu kedatangan: [Isi waktu]\n\nRelax dan nikmati hari istimewa Anda. Semua sudah kami urus! 💕\n\nSampai jumpa besok!'
+    },
+    {
+        id: 'post_event_thanks',
+        title: 'Ucapan Terima Kasih Pasca Acara',
+        template: 'Halo {clientName},\n\nTerima kasih sudah mempercayakan "{projectName}" kepada kami! 🙏\n\nSemoga acara kemarin berjalan sesuai harapan dan meninggalkan kenangan indah.\n\nKami akan segera menyelesaikan proses akhir. Jika ada feedback atau testimoni, kami sangat senang mendengarnya! 😊\n\nSalam hangat,\nTim {companyName}'
+    },
+    {
+        id: 'delivery_notification',
+        title: 'Pemberitahuan Serah Terima',
+        template: 'Halo {clientName},\n\nKabar gembira! Hasil pekerjaan untuk "{projectName}" sudah siap! 🎉\n\n[Sesuaikan: Hasil foto/video sudah bisa didownload / Barang sudah bisa diambil / Dokumen sudah dikirim]\n\nSilakan cek melalui portal Anda:\n{portalLink}\n\nJika ada pertanyaan atau kendala, segera hubungi kami ya.\n\nTerima kasih! 🙏'
+    },
+    {
+        id: 'revision_request',
+        title: 'Konfirmasi Revisi',
+        template: 'Halo {clientName},\n\nTerima kasih atas feedback Anda untuk "{projectName}".\n\nKami akan segera proses revisi sesuai permintaan:\n[List revisi yang diminta]\n\nEstimasi selesai: [Isi estimasi waktu]\n\nKami akan informasikan jika sudah selesai. Terima kasih atas kesabarannya! 🙏'
     }
 ];
 
@@ -1044,12 +1064,12 @@ export const DEFAULT_BILLING_TEMPLATES: ChatTemplate[] = [
     {
         id: 'billing_friendly_reminder',
         title: 'Pengingat Tagihan Ramah',
-        template: 'Halo {clientName},\n\nSemoga sehat selalu. Kami ingin mengingatkan perihal sisa pembayaran untuk Acara Pernikahan Anda.\n\nBerikut rinciannya:\n{projectDetails}\n\nTotal Sisa Tagihan: *{totalDue}*\n\nAnda dapat melihat rincian invoice dan riwayat pembayaran melalui Portal Pengantin Anda di sini:\n{portalLink}\n\nPembayaran dapat dilakukan ke rekening berikut:\n{bankAccount}\n\nMohon konfirmasinya jika pembayaran telah dilakukan. Terima kasih!\n\nSalam,\nTim {companyName}'
+        template: 'Halo {clientName},\n\nSemoga sehat selalu. Kami ingin mengingatkan perihal sisa pembayaran untuk acara Anda.\n\nBerikut rinciannya:\n{projectDetails}\n\nTotal Sisa Tagihan: *{totalDue}*\n\nAnda dapat melihat rincian invoice dan riwayat pembayaran melalui Portal Anda di sini:\n{portalLink}\n\nPembayaran dapat dilakukan ke rekening berikut:\n{bankAccount}\n\nMohon konfirmasinya jika pembayaran telah dilakukan. Terima kasih!\n\nSalam,\nTim {companyName}'
     },
     {
         id: 'billing_due_date_reminder',
         title: 'Pengingat Jatuh Tempo',
-        template: 'Yth. Bapak/Ibu {clientName},\n\nMenurut catatan kami, sisa pembayaran Acara Pernikahan Anda akan jatuh tempo. Berikut adalah rincian tagihan Anda:\n\n{projectDetails}\n\nTotal Sisa Tagihan: *{totalDue}*\n\nUntuk melihat detail invoice, silakan akses Portal Pengantin Anda di tautan berikut:\n{portalLink}\n\nKami mohon kesediaan Anda untuk menyelesaikan pembayaran sebelum tanggal jatuh tempo. Pembayaran dapat ditransfer ke:\n{bankAccount}\n\nTerima kasih atas kerja samanya.\n\nHormat kami,\nTim {companyName}'
+        template: 'Yth. Bapak/Ibu {clientName},\n\nMenurut catatan kami, sisa pembayaran untuk acara Anda akan jatuh tempo. Berikut adalah rincian tagihan:\n\n{projectDetails}\n\nTotal Sisa Tagihan: *{totalDue}*\n\nUntuk melihat detail invoice, silakan akses Portal Anda di tautan berikut:\n{portalLink}\n\nKami mohon kesediaan Anda untuk menyelesaikan pembayaran sebelum tanggal jatuh tempo. Pembayaran dapat ditransfer ke:\n{bankAccount}\n\nTerima kasih atas kerja samanya.\n\nHormat kami,\nTim {companyName}'
     }
 ];
 

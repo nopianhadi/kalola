@@ -33,6 +33,8 @@ interface TransactionListProps {
     onLoadMore?: () => void;
     monthlyBudgetPocket?: FinancialPocket;
     onCloseBudget: () => void;
+    onEdit?: (transaction: Transaction) => void;
+    onDelete?: (id: number) => void;
     // Pagination
     page?: number;
     setPage?: (page: number) => void;
@@ -54,9 +56,11 @@ export const TransactionList: React.FC<TransactionListProps> = ({
     onDownloadCSV,
     monthlyBudgetPocket,
     onCloseBudget,
+    onEdit,
+    onDelete,
     page = 1,
     setPage,
-    limit = 20,
+    limit = 10,
     totalItems = 0,
     isLoading = false
 }) => {
@@ -175,7 +179,8 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                     </div>
                 )}
 
-                    <div className="overflow-x-auto min-h-[400px] max-h-[600px] custom-scrollbar">
+                <div className="bg-brand-surface rounded-2xl shadow-lg border border-brand-border overflow-hidden">
+                    <div className="overflow-x-auto custom-scrollbar">
                         {isLoading ? (
                             <div className="p-12 flex justify-center items-center">
                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-accent"></div>
@@ -185,7 +190,9 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                                 transactions={filteredTransactions} 
                                 projects={projects} 
                                 cards={cards} 
-                                pockets={pockets} 
+                                pockets={pockets}
+                                onEdit={onEdit}
+                                onDelete={onDelete}
                             />
                         )}
                     </div>
@@ -234,5 +241,6 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                     )}
                 </div>
             </div>
+        </div>
     );
 };

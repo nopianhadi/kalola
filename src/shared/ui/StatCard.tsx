@@ -142,6 +142,7 @@ const StatCard: React.FC<StatCardProps> = React.memo(({
           <div className={`
             relative
             w-10 h-10 sm:w-12 sm:h-12
+            aspect-square
             rounded-xl sm:rounded-2xl
             flex items-center justify-center 
             flex-shrink-0 
@@ -159,7 +160,7 @@ const StatCard: React.FC<StatCardProps> = React.memo(({
             {image ? (
               <img src={image} alt="" className="w-full h-full object-cover" />
             ) : (
-              <div className="w-5 h-5 sm:w-6 sm:h-6">
+              <div className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center [&>svg]:w-full [&>svg]:h-full">
                 {icon}
               </div>
             )}

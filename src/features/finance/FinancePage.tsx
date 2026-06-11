@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
     FileTextIcon, ClipboardListIcon, CreditCardIcon,
     TrendingUpIcon, BarChart2Icon, DollarSignIcon
@@ -28,6 +29,7 @@ import { FinanceModals } from '@/features/finance/components/FinanceModals';
 import Modal from '@/shared/ui/Modal';
 
 export const FinancePage: React.FC = () => {
+    const location = useLocation();
     // Fetch local data (replaces god context props)
     const { data: profileData } = useProfile();
     const { data: projectsData } = useProjects({ limit: 100 });
@@ -78,10 +80,74 @@ export const FinancePage: React.FC = () => {
     });
 
     const actions = useFinanceActions();
+
+    useEffect(() => {
+        if (location.state?.onboarding && location.state?.focus === 'cards') {
+            setActiveTab('cards');
+            actions.handleOpenModal('card', 'add');
+        }
+    }, [location.state, actions]);
+
     const analytics = useFinanceAnalytics({
         transactions, pockets, cards, projects, profile,
         filteredTransactions, reportFilters, profitReportFilters
     });
+
+    const downloadCsv = (filename: string, rows: Array<Record<string, unknown>>) => {
+        if (rows.length === 0) return;
+
+        const headers = Object.keys(rows[0]);
+        const escapeCell = (value: unknown) => {
+            const text = String(value ?? '');
+            return `"${text.replace(/"/g, '""')}"`;
+        };
+        const csv = [
+            headers.join(','),
+            ...rows.map(row => headers.map(header => escapeCell(row[header])).join(','))
+        ].join('\n');
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        link.click();
+        URL.revokeObjectURL(url);
+    };
+
+    const downloadTransactionsCsv = () => {
+        downloadCsv('transaksi-keuangan.csv', filteredTransactions.map(tx => ({
+            tanggal: tx.date,
+            tipe: tx.type,
+            kategori: tx.category,
+            deskripsi: tx.description,
+            metode: tx.method,
+            jumlah: tx.amount,
+        })));
+    };
+
+    const downloadReportCsv = () => {
+        downloadCsv('laporan-keuangan.csv', analytics.reportTransactions.map(tx => ({
+            tanggal: tx.date,
+            tipe: tx.type,
+            kategori: tx.category,
+            deskripsi: tx.description,
+            metode: tx.method,
+            jumlah: tx.amount,
+        })));
+    };
+
+    const downloadProfitCsv = () => {
+        downloadCsv('laporan-laba-pengantin.csv', analytics.projectProfitabilityData.map(item => ({
+            pengantin: item.clientName,
+            package: item.totalPackageRevenue,
+            tambahan: item.totalCustomCosts,
+            transport: item.totalTransportCosts,
+            terbayar: item.totalIncome,
+            biaya_produksi: item.totalCost,
+            laba: item.profit,
+        })));
+    };
 
     const renderTabContent = () => {
         switch (activeTab) {
@@ -98,7 +164,9 @@ export const FinancePage: React.FC = () => {
                         categoryFilter={categoryFilter}
                         onCategoryFilterChange={setCategoryFilter}
                         categoryTotals={categoryTotals}
-                        onDownloadCSV={() => {/* Implement CSV download logic from original */ }}
+                        onDownloadCSV={downloadTransactionsCsv}
+                        onEdit={(t) => actions.handleOpenModal('transaction', 'edit', t)}
+                        onDelete={(id) => actions.handleDelete('transaction', id)}
                         // Pagination
                         page={page}
                         setPage={setPage}
@@ -156,7 +224,7 @@ export const FinancePage: React.FC = () => {
                         projects={projects}
                         cards={cards}
                         pockets={pockets}
-                        onDownloadCSV={() => { }} // Placeholder
+                        onDownloadCSV={downloadReportCsv}
                     />
                 );
             case 'laporanKartu':
@@ -170,7 +238,7 @@ export const FinancePage: React.FC = () => {
                         data={analytics.projectProfitabilityData}
                         profile={profile}
                         projects={projects}
-                        onDownloadCSV={() => { }} // Placeholder
+                        onDownloadCSV={downloadProfitCsv}
                     />
                 );
             default:

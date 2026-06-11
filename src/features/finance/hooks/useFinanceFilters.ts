@@ -14,7 +14,7 @@ export const useFinanceFilterState = () => {
     }>({ type: 'all', category: 'Semua' });
 
     const [page, setPage] = useState(1);
-    const [limit] = useState(20);
+    const [limit] = useState(10);
 
     const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFilters(prev => ({ ...prev, [e.target.name]: e.target.value }));

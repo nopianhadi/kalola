@@ -108,9 +108,9 @@ export const TableRow: React.FC<TableRowProps> = ({
   return (
     <tr
       className={`
-        ${hover ? 'hover:bg-brand-accent/5 transition-colors' : ''}
-        ${striped ? 'even:bg-brand-bg/50' : ''}
-        ${selected ? 'bg-brand-accent/10' : ''}
+        ${hover ? 'hover:bg-brand-accent/[0.03] hover:shadow-[inset_3px_0_0_0_var(--color-accent)] transition-all duration-300' : ''}
+        ${striped ? 'even:bg-brand-bg/[0.25]' : ''}
+        ${selected ? 'bg-brand-accent/[0.06] shadow-[inset_3px_0_0_0_var(--color-accent)]' : ''}
         ${className}
       `}
       {...props}

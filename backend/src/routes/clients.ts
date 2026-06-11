@@ -1,8 +1,9 @@
-import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
+﻿import { Router } from 'express';
+import prisma from '../prismaClient';
+import { sseManager } from '../sseManager';
+import { getVendorId } from '../middleware/auth';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 const prismaClientModel = (prisma as any).clients;
 const prismaProjectModel = (prisma as any).projects;
@@ -11,7 +12,7 @@ const prismaProjectModel = (prisma as any).projects;
 const ALLOWED_FIELDS = [
   'id', 'name', 'email', 'phone', 'whatsapp', 'since',
   'instagram', 'status', 'client_type', 'last_contact',
-  'portal_access_id', 'address',
+  'portal_access_id', 'address', 'avatar',
 ];
 
 function sanitizeClientData(body: any) {
@@ -26,11 +27,11 @@ function sanitizeClientData(body: any) {
     result.id = Number(body.id);
   }
 
-  // `since` adalah @db.Date — Prisma butuh Date object
+  // `since` adalah @db.Date â€” Prisma butuh Date object
   if (result.since && !(result.since instanceof Date)) {
     result.since = new Date(result.since);
   }
-  // `last_contact` adalah @db.Timestamp — Prisma butuh Date object
+  // `last_contact` adalah @db.Timestamp â€” Prisma butuh Date object
   if (result.last_contact && !(result.last_contact instanceof Date)) {
     result.last_contact = new Date(result.last_contact);
   }
@@ -39,16 +40,19 @@ function sanitizeClientData(body: any) {
 
 router.post('/:id/sync-status', async (req, res) => {
   try {
+    const vendorId = getVendorId(req);
     const { id } = req.params;
-    const client = await prismaClientModel.findUnique({ where: { id: Number(id) } });
+    const client = await prismaClientModel.findFirst({ where: { id: Number(id), vendor_id: vendorId } });
     if (!client) return res.status(404).json({ error: 'Client not found' });
 
-    if (client.status === 'Aktif' || client.status === 'Hilang') {
-      return res.json({ message: 'Status tidak perlu diubah', status: client.status });
+    // Don't sync if client status is manually set to 'Hilang' (Lost)
+    if (client.status === 'Hilang') {
+      return res.json({ message: 'Status tidak perlu diubah (client hilang)', status: client.status });
     }
 
     const activeProjects = await prismaProjectModel.findMany({
       where: {
+        vendor_id: vendorId,
         client_id: Number(id),
         NOT: { status: { in: ['Selesai', 'Dibatalkan'] } }
       }
@@ -68,13 +72,14 @@ router.post('/:id/sync-status', async (req, res) => {
 
 router.get('/paginated', async (req, res) => {
   try {
+    const vendorId = getVendorId(req);
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 20;
     const offset = (page - 1) * limit;
 
     const { search, status, clientType } = req.query;
 
-    const where: any = {};
+    const where: any = { vendor_id: vendorId };
     if (search) {
       const searchTerm = String(search);
       where.OR = [
@@ -100,8 +105,10 @@ router.get('/paginated', async (req, res) => {
 
 router.get('/', async (req, res) => {
   try {
+    const vendorId = getVendorId(req);
     const { limit = '50', offset = '0' } = req.query;
     const clients = await prismaClientModel.findMany({
+      where: { vendor_id: vendorId },
       skip: Number(offset), take: Math.min(100, Number(limit)), orderBy: { since: 'desc' }
     });
     res.json(clients);
@@ -113,7 +120,8 @@ router.get('/', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
   try {
-    const client = await prismaClientModel.findUnique({ where: { id: Number(req.params.id) } });
+    const vendorId = getVendorId(req);
+    const client = await prismaClientModel.findFirst({ where: { id: Number(req.params.id), vendor_id: vendorId } });
     if (!client) return res.status(404).json({ error: 'Client not found' });
     res.json(client);
   } catch (error: any) {
@@ -124,9 +132,12 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
+    const vendorId = getVendorId(req);
     const data = sanitizeClientData(req.body);
+    data.vendor_id = vendorId;
     console.log('[POST /clients] Payload:', data);
     const client = await prismaClientModel.create({ data });
+    sseManager.broadcast('clients', 'created', { id: client.id }, getVendorId(req));
     res.status(201).json(client);
   } catch (error: any) {
     console.error('[POST /clients] Error:', error?.message || error);
@@ -136,9 +147,15 @@ router.post('/', async (req, res) => {
 
 router.patch('/:id', async (req, res) => {
   try {
+    const vendorId = getVendorId(req);
+    // Verify ownership first
+    const existing = await prismaClientModel.findFirst({ where: { id: Number(req.params.id), vendor_id: vendorId } });
+    if (!existing) return res.status(404).json({ error: 'Client not found' });
+
     const data = sanitizeClientData(req.body);
     delete data.id;
     const client = await prismaClientModel.update({ where: { id: Number(req.params.id) }, data });
+    sseManager.broadcast('clients', 'updated', { id: Number(req.params.id) }, getVendorId(req));
     res.json(client);
   } catch (error: any) {
     console.error('[PATCH /clients/:id] Error:', error?.message || error);
@@ -148,7 +165,12 @@ router.patch('/:id', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
   try {
+    const vendorId = getVendorId(req);
+    const existing = await prismaClientModel.findFirst({ where: { id: Number(req.params.id), vendor_id: vendorId } });
+    if (!existing) return res.status(404).json({ error: 'Client not found' });
+
     await prismaClientModel.delete({ where: { id: Number(req.params.id) } });
+    sseManager.broadcast('clients', 'deleted', { id: Number(req.params.id) }, getVendorId(req));
     res.status(204).send();
   } catch (error: any) {
     console.error('[DELETE /clients/:id] Error:', error?.message || error);
@@ -157,3 +179,5 @@ router.delete('/:id', async (req, res) => {
 });
 
 export default router;
+
+

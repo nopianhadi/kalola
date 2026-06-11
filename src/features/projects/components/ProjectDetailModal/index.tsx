@@ -14,6 +14,7 @@ import {
 import ProjectDetailsTab from '@/features/projects/components/ProjectDetailModal/ProjectDetailsTab';
 import ProjectFilesTab from '@/features/projects/components/ProjectDetailModal/ProjectFilesTab';
 import { updateProject } from '@/services/projects';
+import { syncClientStatusFromProjects } from '@/services/clients';
 import { getProgressForStatus } from '@/features/projects/utils/project.utils';
 
 
@@ -64,6 +65,13 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                 activeSubStatuses: [] 
             });
             onProjectUpdate(updated);
+            
+            // Sync client status after project status update
+            try {
+                await syncClientStatusFromProjects(selectedProject.clientId);
+            } catch (syncErr) {
+                console.warn('Failed to sync client status:', syncErr);
+            }
         } catch (err) {
             console.error('Failed to update status:', err);
             showNotification('Gagal memperbarui status.');
@@ -166,8 +174,6 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                             handleOpenForm={handleOpenForm}
                             handleOpenBriefingModal={handleOpenBriefingModal}
                             onClose={onClose}
-                            handleSaveFinalLink={handleSaveFinalLink}
-                            handleSendFinalLink={handleSendFinalLink}
                         />
                     )}
                     {detailTab === 'files' && (

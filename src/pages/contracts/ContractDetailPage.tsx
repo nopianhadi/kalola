@@ -71,7 +71,7 @@ const ContractDetailPage: React.FC = () => {
 
     const project = projects.find(p => String(p.id) === String(contract.projectId));
     const client = clients.find(c => String(c.id) === String(contract.clientId));
-    const contractUrl = `https://vandel-pro.web.app/#/public/contract/${contract.id}`;
+    const contractUrl = `${window.location.origin}/#/public/contract/${contract.id}`;
 
 
     const handleSaveSignature = async (signatureDataUrl: string) => {

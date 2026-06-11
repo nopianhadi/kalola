@@ -5,7 +5,6 @@ import { ProtectedRoute } from "./ProtectedRoute";
 import { RedirectWithParams } from "./RedirectWithParams";
 import { useApp } from "@/app/AppContext";
 
-const Dashboard = lazy(() => import("@/pages/dashboard/DashboardPage"));
 const Booking = lazy(() => import("@/pages/booking/BookingPage"));
 const Clients = lazy(() => import("@/pages/clients/ClientsPage"));
 const ClientDetailPage = lazy(() => import("@/pages/clients/ClientDetailPage"));
@@ -25,8 +24,10 @@ const ContractDetailPage = lazy(() => import("@/pages/contracts/ContractDetailPa
 const Settings = lazy(() => import("@/pages/settings/SettingsPage"));
 const CalendarView = lazy(() => import("@/features/projects/components/CalendarView").then((m) => ({ default: m.CalendarView || m.default })));
 const ClientReports = lazy(() => import("@/features/clients/components/ClientKPI"));
-const PlaceholderPage = lazy(() => import("@/shared/ui/PlaceholderPage"));
+const LeadsPage = lazy(() => import("@/pages/leads/LeadsPage"));
 const GalleryUpload = lazy(() => import("@/features/public/components/GalleryUpload"));
+const PortfolioManager = lazy(() => import("@/features/public/components/PortfolioManager"));
+const PromoCodes = lazy(() => import("@/features/promo/PromoCodes"));
 
 const GalleryRouteWrapper = () => {
     const { currentUser, showNotification } = useApp();
@@ -34,12 +35,18 @@ const GalleryRouteWrapper = () => {
     return <GalleryUpload userProfile={currentUser as any} showNotification={showNotification} />;
 };
 
+const PortfolioRouteWrapper = () => {
+    const { currentUser, showNotification } = useApp();
+    // currentUser should always be non-null here because ProtectedRoute guards this,
+    // but if for some reason it's null, redirect to login instead of infinite spinner.
+    if (!currentUser) return <Navigate to="/login" replace />;
+    return <PortfolioManager userProfile={currentUser as any} showNotification={showNotification} />;
+};
+
 export const dashboardRoutes = (
     <>
-        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-
-        {/* Calon Pengantin (Leads) — redirect ke clients sementara sampai ada halaman leads */}
-        <Route path="/prospek" element={<Navigate to="/clients" replace />} />
+        {/* Calon Pengantin (Leads) */}
+        <Route path="/prospek" element={<ProtectedRoute requiredPermissions={[ViewType["Calon Pengantin"]]}><LeadsPage /></ProtectedRoute>} />
 
         {/* Booking */}
         <Route path="/booking" element={<ProtectedRoute requiredPermissions={[ViewType.BOOKING]}><Booking /></ProtectedRoute>} />
@@ -103,9 +110,10 @@ export const dashboardRoutes = (
         <Route path="/calendar" element={<ProtectedRoute requiredPermissions={[ViewType.CALENDAR]}><CalendarView /></ProtectedRoute>} />
         <Route path="/client-reports" element={<ProtectedRoute requiredPermissions={[ViewType.CLIENT_REPORTS]}><ClientReports /></ProtectedRoute>} />
         
-        {/* Promo Codes & Gallery — placeholder sementara */}
-        <Route path="/promo-codes" element={<ProtectedRoute requiredPermissions={[ViewType.PROMO_CODES]}><PlaceholderPage title="Kode Promo" description="Fitur manajemen kode promo sedang dalam pengembangan." /></ProtectedRoute>} />
+        {/* Promo Codes & Gallery */}
+        <Route path="/promo-codes" element={<ProtectedRoute requiredPermissions={[ViewType.PROMO_CODES]}><PromoCodes /></ProtectedRoute>} />
         <Route path="/promo-code" element={<Navigate to="/promo-codes" replace />} />
         <Route path="/gallery" element={<ProtectedRoute requiredPermissions={[ViewType.GALLERY]}><GalleryRouteWrapper /></ProtectedRoute>} />
+        <Route path="/admin-portfolio" element={<ProtectedRoute requiredPermissions={[ViewType.PORTFOLIO]}><PortfolioRouteWrapper /></ProtectedRoute>} />
     </>
 );

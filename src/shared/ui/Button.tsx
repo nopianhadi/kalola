@@ -38,52 +38,52 @@ type ButtonProps = ButtonAsButton | ButtonAsLink | ButtonAsAnchor;
 const variantStyles: Record<ButtonVariant, string> = {
   primary: `
     bg-brand-accent text-white 
-    hover:bg-brand-accent/90 
-    active:bg-brand-accent/80 
-    focus:ring-2 focus:ring-brand-accent/30 
+    hover:bg-brand-accent-hover 
+    active:bg-blue-700 
+    focus:ring-2 focus:ring-brand-accent 
     shadow-sm hover:shadow-md
   `,
   secondary: `
-    bg-brand-surface text-brand-text-primary 
+    bg-slate-100 text-slate-800 
     border border-brand-border 
-    hover:bg-brand-bg hover:border-brand-accent/30 
-    active:bg-brand-bg/80 
-    focus:ring-2 focus:ring-brand-accent/20 
+    hover:bg-slate-200 hover:border-slate-300 
+    active:bg-slate-300 
+    focus:ring-2 focus:ring-slate-400 
     shadow-sm
   `,
   ghost: `
-    bg-transparent text-brand-text-secondary 
-    hover:bg-brand-surface hover:text-brand-text-primary 
-    active:bg-brand-border/50 
-    focus:ring-2 focus:ring-brand-accent/20
+    bg-slate-100 text-slate-700 
+    hover:bg-slate-200 hover:text-slate-900 
+    active:bg-slate-300 
+    focus:ring-2 focus:ring-slate-400
   `,
   danger: `
     bg-red-600 text-white 
     hover:bg-red-700 
     active:bg-red-800 
-    focus:ring-2 focus:ring-red-500/30 
+    focus:ring-2 focus:ring-red-500 
     shadow-sm hover:shadow-md
   `,
   success: `
     bg-green-600 text-white 
     hover:bg-green-700 
     active:bg-green-800 
-    focus:ring-2 focus:ring-green-500/30 
+    focus:ring-2 focus:ring-green-500 
     shadow-sm hover:shadow-md
   `,
   warning: `
     bg-amber-500 text-white 
     hover:bg-amber-600 
     active:bg-amber-700 
-    focus:ring-2 focus:ring-amber-500/30 
+    focus:ring-2 focus:ring-amber-500 
     shadow-sm hover:shadow-md
   `,
   outline: `
-    bg-transparent text-brand-accent 
+    bg-white text-brand-accent 
     border border-brand-accent 
-    hover:bg-brand-accent/5 
-    active:bg-brand-accent/10 
-    focus:ring-2 focus:ring-brand-accent/20
+    hover:bg-blue-50 
+    active:bg-blue-100 
+    focus:ring-2 focus:ring-brand-accent
   `,
 };
 

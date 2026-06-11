@@ -37,7 +37,7 @@ const Booking: React.FC<BookingProps> = (props) => {
 
     const handleNavigation = useCallback((view: ViewType, action?: NavigationAction) => {
         if (action?.type === 'VIEW_CLIENT_DETAILS' && action.id) {
-            navigate(`/clients/${action.id}`);
+            navigate(`/client/${action.id}`);
             return;
         }
         
@@ -72,12 +72,13 @@ const Booking: React.FC<BookingProps> = (props) => {
     const leads: any[] = [];
 
     const setProjects = (updater: React.SetStateAction<Project[]>) => {
-        // useProjects() uses projectKeys.list('{}') by default
-        const listKey = ['projects', 'list', '{}'];
+        // Invalidate all project queries so every cached list refreshes correctly
+        queryClient.invalidateQueries({ queryKey: ['projects'] });
+        // Also apply an optimistic update to the default list key if needed
+        const listKey = ['projects', 'list', JSON.stringify({})];
         const current = queryClient.getQueryData<Project[]>(listKey) || [];
         const next = typeof updater === 'function' ? updater(current) : updater;
         queryClient.setQueryData(listKey, next);
-        queryClient.invalidateQueries({ queryKey: ['projects'] });
     };
 
     const {

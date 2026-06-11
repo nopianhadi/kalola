@@ -1,10 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ClientStatus, ContactChannel, ClientFeedback, SatisfactionLevel } from '@/types';
 import PageHeader from '@/layouts/PageHeader';
 import Modal from '@/shared/ui/Modal';
 import StatCard from '@/shared/ui/StatCard';
 import DonutChart from '@/shared/ui/DonutChart';
-import { UsersIcon, TargetIcon, TrendingUpIcon, DollarSignIcon, PlusIcon, Share2Icon, StarIcon, SmileIcon, ThumbsUpIcon, MehIcon, FrownIcon, CalendarIcon } from '@/constants';
+import { UsersIcon, TargetIcon, TrendingUpIcon, DollarSignIcon, PlusIcon, Share2Icon, StarIcon, SmileIcon, ThumbsUpIcon, MehIcon, FrownIcon, CalendarIcon, MapPinIcon } from '@/constants';
 
 const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
@@ -22,6 +22,8 @@ const emptyFeedbackForm = { clientName: '', rating: 5, feedback: '' };
 
 import { useProjects } from '@/features/projects/api/useProjects';
 import { useClients } from '@/features/clients/api/useClients';
+import { useLeads } from '@/features/leads/api/useLeads';
+import { listClientFeedback } from '@/services/clientFeedback';
 
 import { useApp } from "@/app/AppContext";
 
@@ -37,13 +39,29 @@ const ClientReports: React.FC<ClientReportsProps> = (props) => {
     const projects = qProjects || [];
     const { data: qClients } = useClients();
     const clients = qClients || [];
-    const leads: any[] = [];
+    const { data: qLeads } = useLeads({ limit: 500 });
+    const leads = useMemo(() => (qLeads || []).map(l => ({
+        date: l.createdAt,
+        contactChannel: l.source,
+    })), [qLeads]);
     
     const [feedback, setFeedback] = useState<ClientFeedback[]>([]);
     const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
     const [manualFeedbackForm, setManualFeedbackForm] = useState(emptyFeedbackForm);
-    const [activeStatModal, setActiveStatModal] = useState<'total' | 'active' | 'very-satisfied' | 'satisfied' | 'neutral' | 'unsatisfied' | null>(null);
+
+    // Fetch existing feedback from backend on mount
+    useEffect(() => {
+        listClientFeedback()
+            .then(data => setFeedback(prev => {
+                // Merge: keep local entries that aren't in backend, add all backend entries
+                const backendIds = new Set(data.map(f => f.id));
+                const localOnly = prev.filter(f => !backendIds.has(f.id));
+                return [...data, ...localOnly].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            }))
+            .catch(err => console.error('Failed to load feedback:', err));
+    }, []);
+    const [activeStatModal, setActiveStatModal] = useState<'total' | 'active' | 'very-satisfied' | 'satisfied' | 'neutral' | 'unsatisfied' | 'city' | null>(null);
     const [dateFrom, setDateFrom] = useState('');
     const [dateTo, setDateTo] = useState('');
 
@@ -127,14 +145,32 @@ const ClientReports: React.FC<ClientReportsProps> = (props) => {
                 color: sourceColors[label as ContactChannel] || '#64748b',
             }));
 
+        // City/daerah distribution from leads
+        const cityDistribution = (qLeads || []).reduce((acc, lead) => {
+            const city = lead.city?.trim();
+            if (city) {
+                acc[city] = (acc[city] || 0) + 1;
+            }
+            return acc;
+        }, {} as Record<string, number>);
+
+        const cityRanked = Object.entries(cityDistribution)
+            .sort(([, a], [, b]) => b - a);
+
+        const topCity = cityRanked[0]?.[0] ?? '—';
+        const topCityCount = cityRanked[0]?.[1] ?? 0;
+
         return {
             totalClients: filteredClients.length,
             activeClients: filteredClients.filter(c => c.status === ClientStatus.ACTIVE).length,
             conversionRate: conversionRate.toFixed(1) + '%',
             avgRevenuePerClient: formatCurrency(avgRevenuePerClient),
             leadSourceDonutData,
+            cityRanked,
+            topCity,
+            topCityCount,
         };
-    }, [filteredClients, filteredLeads, filteredProjects]);
+    }, [filteredClients, filteredLeads, filteredProjects, qLeads]);
 
     const feedbackBySatisfaction = useMemo(() => {
         return filteredFeedback.reduce((acc, item) => {
@@ -239,6 +275,7 @@ const ClientReports: React.FC<ClientReportsProps> = (props) => {
     const modalTitles: { [key: string]: string } = {
         total: 'Daftar Semua Pengantin',
         active: 'Daftar Pengantin Aktif',
+        city: 'Distribusi Daerah Calon Pengantin',
         'very-satisfied': 'Masukan: Sangat Puas',
         'satisfied': 'Masukan: Puas',
         'neutral': 'Masukan: Biasa Saja',
@@ -247,7 +284,34 @@ const ClientReports: React.FC<ClientReportsProps> = (props) => {
 
     let modalContent;
     if (activeStatModal) {
-        if (activeStatModal === 'total' || activeStatModal === 'active') {
+        if (activeStatModal === 'city') {
+            const totalWithCity = kpiData.cityRanked.reduce((sum, [, count]) => sum + count, 0);
+            modalContent = (
+                <div className="space-y-3">
+                    {kpiData.cityRanked.length > 0 ? kpiData.cityRanked.map(([city, count], idx) => {
+                        const pct = totalWithCity > 0 ? Math.round((count / totalWithCity) * 100) : 0;
+                        return (
+                            <div key={city} className="p-3 bg-brand-bg rounded-lg">
+                                <div className="flex items-center justify-between mb-1">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs font-bold text-brand-text-secondary w-5">{idx + 1}.</span>
+                                        <MapPinIcon className="w-4 h-4 text-rose-400 flex-shrink-0" />
+                                        <span className="font-semibold text-brand-text-light text-sm">{city}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs text-brand-text-secondary">{count} leads</span>
+                                        <span className="text-xs font-bold text-rose-400">{pct}%</span>
+                                    </div>
+                                </div>
+                                <div className="w-full bg-brand-border rounded-full h-1.5 mt-2">
+                                    <div className="bg-rose-500 h-1.5 rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+                                </div>
+                            </div>
+                        );
+                    }) : <p className="text-center text-brand-text-secondary py-8">Belum ada data daerah dari calon pengantin.</p>}
+                </div>
+            );
+        } else if (activeStatModal === 'total' || activeStatModal === 'active') {
             const clientList = activeStatModal === 'total' ? filteredClients : activeClientsList;
             modalContent = (
                 <div className="space-y-3">
@@ -338,7 +402,7 @@ const ClientReports: React.FC<ClientReportsProps> = (props) => {
                 </div>
             </PageHeader>
 
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-6">
                 <div className="widget-animate cursor-pointer transition-transform duration-200 hover:scale-105" style={{ animationDelay: '100ms' }} onClick={() => setActiveStatModal('total')}>
                     <StatCard icon={<UsersIcon className="w-6 h-6" />} title="Total Pengantin" value={kpiData.totalClients.toString()} iconBgColor="bg-blue-500/20" iconColor="text-blue-400" />
                 </div>
@@ -350,6 +414,9 @@ const ClientReports: React.FC<ClientReportsProps> = (props) => {
                 </div>
                 <div className="widget-animate" style={{ animationDelay: '400ms' }}>
                     <StatCard icon={<DollarSignIcon className="w-6 h-6" />} title="Rata-rata Nilai per Pengantin" value={kpiData.avgRevenuePerClient} iconBgColor="bg-indigo-500/20" iconColor="text-indigo-400" />
+                </div>
+                <div className="widget-animate cursor-pointer transition-transform duration-200 hover:scale-105" style={{ animationDelay: '500ms' }} onClick={() => setActiveStatModal('city')}>
+                    <StatCard icon={<MapPinIcon className="w-6 h-6" />} title="Daerah Terbanyak" value={kpiData.topCity} subtitle={kpiData.topCityCount > 0 ? `${kpiData.topCityCount} calon pengantin` : undefined} iconBgColor="bg-rose-500/20" iconColor="text-rose-400" />
                 </div>
             </div>
 
@@ -381,21 +448,21 @@ const ClientReports: React.FC<ClientReportsProps> = (props) => {
                     {/* Desktop table */}
                     <div className="hidden md:block overflow-x-auto max-h-96">
                         <table className="w-full text-sm">
-                            <thead className="bg-brand-input">
+                            <thead className="bg-slate-100 sticky top-0">
                                 <tr>
-                                    <th className="p-3 text-left font-semibold text-brand-text-secondary">Pengantin</th>
-                                    <th className="p-3 text-left font-semibold text-brand-text-secondary">Bergabung Sejak</th>
-                                    <th className="p-3 text-left font-semibold text-brand-text-secondary">Total Package</th>
+                                    <th className="p-3 text-left font-semibold text-slate-700 border-r border-slate-300">Pengantin</th>
+                                    <th className="p-3 text-left font-semibold text-slate-700 border-r border-slate-300">Bergabung Sejak</th>
+                                    <th className="p-3 text-left font-semibold text-slate-700">Total Package</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-brand-border">
+                            <tbody className="bg-white/40 divide-y divide-slate-300">
                                 {filteredClients.slice(0, 10).map(client => {
                                     const clientProjects = projects.filter(p => String(p.clientId) === String(client.id));
                                     const totalValue = clientProjects.reduce((sum, p) => sum + p.totalCost, 0);
                                     return (
                                         <tr key={client.id}>
-                                            <td className="p-3 font-medium text-brand-text-primary">{client.name}</td>
-                                            <td className="p-3 text-brand-text-secondary">{new Date(client.since).toLocaleDateString('id-ID')}</td>
+                                            <td className="p-3 font-medium text-brand-text-primary border-r border-slate-300">{client.name}</td>
+                                            <td className="p-3 text-brand-text-secondary border-r border-slate-300">{new Date(client.since).toLocaleDateString('id-ID')}</td>
                                             <td className="p-3 font-semibold text-brand-text-primary">{formatCurrency(totalValue)}</td>
                                         </tr>
                                     )
@@ -404,6 +471,47 @@ const ClientReports: React.FC<ClientReportsProps> = (props) => {
                         </table>
                     </div>
                 </div>
+            </div>
+
+            {/* Distribusi Daerah Section */}
+            <div className="bg-brand-surface p-4 md:p-6 rounded-2xl shadow-lg border border-brand-border widget-animate" style={{ animationDelay: '560ms' }}>
+                <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-base md:text-lg font-bold text-gradient flex items-center gap-2">
+                        <MapPinIcon className="w-5 h-5 text-rose-400" />
+                        Distribusi Daerah Calon Pengantin
+                    </h4>
+                    <span className="text-xs text-brand-text-secondary">{kpiData.cityRanked.length} daerah tercatat</span>
+                </div>
+                {kpiData.cityRanked.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {(() => {
+                            const totalWithCity = kpiData.cityRanked.reduce((sum, [, c]) => sum + c, 0);
+                            return kpiData.cityRanked.map(([city, count], idx) => {
+                                const pct = totalWithCity > 0 ? Math.round((count / totalWithCity) * 100) : 0;
+                                const isTop = idx === 0;
+                                return (
+                                    <div key={city} className={`p-3 rounded-xl border ${isTop ? 'border-rose-500/40 bg-rose-500/10' : 'border-brand-border bg-brand-bg'}`}>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <span className={`text-xs font-bold flex-shrink-0 ${isTop ? 'text-rose-400' : 'text-brand-text-secondary'}`}>#{idx + 1}</span>
+                                                <MapPinIcon className={`w-3.5 h-3.5 flex-shrink-0 ${isTop ? 'text-rose-400' : 'text-brand-text-secondary'}`} />
+                                                <span className={`font-semibold text-sm truncate ${isTop ? 'text-rose-300' : 'text-brand-text-light'}`}>{city}</span>
+                                                {isTop && <span className="text-[10px] bg-rose-500/20 text-rose-400 px-1.5 py-0.5 rounded-full font-bold flex-shrink-0">Terbanyak</span>}
+                                            </div>
+                                            <span className={`text-xs font-bold flex-shrink-0 ml-2 ${isTop ? 'text-rose-400' : 'text-brand-text-primary'}`}>{pct}%</span>
+                                        </div>
+                                        <div className="w-full bg-brand-border rounded-full h-1.5">
+                                            <div className={`h-1.5 rounded-full transition-all duration-500 ${isTop ? 'bg-rose-500' : 'bg-brand-accent/60'}`} style={{ width: `${pct}%` }} />
+                                        </div>
+                                        <p className="text-[10px] text-brand-text-secondary mt-1">{count} calon pengantin</p>
+                                    </div>
+                                );
+                            });
+                        })()}
+                    </div>
+                ) : (
+                    <p className="text-center text-brand-text-secondary text-sm py-8">Belum ada data daerah dari calon pengantin.<br /><span className="text-xs">Tambahkan kota/daerah saat mengisi data Calon Pengantin.</span></p>
+                )}
             </div>
 
             <div className="bg-brand-surface p-4 md:p-6 rounded-2xl shadow-lg border border-brand-border widget-animate" style={{ animationDelay: '600ms' }}>

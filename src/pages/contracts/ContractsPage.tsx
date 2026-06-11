@@ -1,5 +1,5 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import PageHeader from '@/layouts/PageHeader';
 import { PlusIcon, FileTextIcon, SearchIcon } from '@/constants';
 import { useContractsPage } from '@/features/contracts/hooks/useContractsPage';
@@ -14,6 +14,7 @@ import { useApp } from '@/app/AppContext';
 
 const Contracts: React.FC = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { showNotification } = useApp();
 
     const {
@@ -54,6 +55,24 @@ const Contracts: React.FC = () => {
     } = useContractsPage({
         showNotification
     });
+
+    // Handle deep-link from ClientDetailPage: /kontrak?newFor=<projectId>&clientId=<clientId>
+    // This automatically opens the create contract modal with the project pre-selected.
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const newForProjectId = params.get('newFor');
+        const deepLinkClientId = params.get('clientId');
+
+        if (newForProjectId && projects.length > 0 && clients.length > 0) {
+            // Open modal with project and client pre-selected
+            handleOpenModal('add');
+            if (deepLinkClientId) setSelectedClientId(deepLinkClientId);
+            setSelectedProjectId(newForProjectId);
+            // Clean up URL so refreshing doesn't re-open modal
+            navigate(location.pathname, { replace: true });
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [location.search, projects.length, clients.length]);
 
     const totalPages = Math.ceil(totalContracts / limit);
 

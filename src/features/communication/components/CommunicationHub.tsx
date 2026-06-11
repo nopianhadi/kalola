@@ -39,9 +39,9 @@ const MESSAGE_TEMPLATES: MessageTemplate[] = [
         category: 'reminder',
         template: `Halo {clientName},
 
-Semoga sehat selalu. Kami ingin mengingatkan perihal sisa pembayaran untuk Acara Pernikahan Anda.
+Semoga sehat selalu. Kami ingin mengingatkan perihal sisa pembayaran untuk acara Anda.
 
-Acara Pernikahan: {projectName}
+Acara: {projectName}
 Sisa Tagihan: {remainingAmount}
 Jatuh Tempo: {dueDate}
 
@@ -60,9 +60,9 @@ Salam,
         category: 'update',
         template: `Halo {clientName},
 
-Kami ingin memberikan update progress Acara Pernikahan Anda:
+Kami ingin memberikan update progress acara Anda:
 
-Acara Pernikahan: {projectName}
+Acara: {projectName}
 Status: {currentStatus}
 Progress: {progressPercentage}%
 
@@ -80,9 +80,9 @@ Terima kasih,
         category: 'confirmation',
         template: `Halo {clientName},
 
-Kami ingin mengkonfirmasi jadwal Acara Pernikahan Anda:
+Kami ingin mengkonfirmasi jadwal acara Anda:
 
-Acara Pernikahan: {projectName}
+Acara: {projectName}
 Tanggal: {eventDate}
 Waktu: {eventTime}
 Lokasi: {eventLocation}
@@ -115,9 +115,9 @@ Salam hangat,
         category: 'update',
         template: `Halo {clientName},
 
-Hasil Acara Pernikahan Anda sudah siap!
+Hasil pekerjaan untuk acara Anda sudah siap!
 
-Acara Pernikahan: {projectName}
+Acara: {projectName}
 Link Download: {downloadLink}
 
 Silakan cek dan berikan feedback Anda. Jika ada revisi, kami siap membantu.
@@ -132,26 +132,24 @@ Terima kasih,
         category: 'reminder',
         template: `Halo {clientName},
 
-Semoga sehat selalu. Kami ingin mengingatkan perihal sisa pembayaran untuk Acara Pernikahan Anda.
+Semoga sehat selalu. Kami ingin mengingatkan perihal sisa pembayaran untuk acara Anda.
 
 Berikut rinciannya:
-- Acara Pernikahan: *{projectName}*
+- Acara: *{projectName}*
 - Paket: *{packageName}*
 
 Sisa Tagihan: *{remainingAmount}*
 
-Total Sisa Tagihan: *{remainingAmount}*
-
-Anda dapat melihat rincian invoice dan riwayat pembayaran melalui Portal Pengantin Anda di sini:
+Anda dapat melihat rincian invoice dan riwayat pembayaran melalui Portal Anda di sini:
 {portalLink}
 
 Pembayaran dapat dilakukan ke rekening berikut:
-BCA 45346346
+{bankAccount}
 
 Mohon konfirmasinya jika pembayaran telah dilakukan. Terima kasih!
 
 Salam,
-Tim Dreamy Wedding Planner`,
+{companyName}`,
         variables: ['clientName', 'projectName', 'remainingAmount', 'portalLink']
     }
 ];
@@ -277,7 +275,7 @@ export const CommunicationHub: React.FC<CommunicationHubProps> = ({
             id: '2',
             date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
             channel: 'email' as const,
-            message: 'Update progress Acara Pernikahan',
+            message: 'Update progress acara',
             status: 'sent'
         },
     ];
@@ -313,7 +311,7 @@ export const CommunicationHub: React.FC<CommunicationHubProps> = ({
                     {clientProjects.length > 1 && (
                         <div className="space-y-2">
                             <label className="text-sm font-semibold text-brand-text-secondary">
-                                Pilih Acara Pernikahan
+                                Pilih Acara
                             </label>
                             <select
                                 value={selectedProject}
@@ -344,7 +342,7 @@ export const CommunicationHub: React.FC<CommunicationHubProps> = ({
                                 <button
                                     key={template.id}
                                     onClick={() => {
-                                        setSelectedTemplate(template.id);
+                                        setSelectedTemplate(String(template.id));
                                         handleTemplateSelect(template.template);
                                     }}
                                     className={`p-3 rounded-lg text-left transition-all ${String(selectedTemplate) === String(template.id)

@@ -58,7 +58,7 @@ export function normalizeProject(row: Record<string, unknown>): Project {
     projectType: String(row.project_type || row.projectType || ''),
     packageName: String(row.package_name || row.packageName || ''),
     packageId: Number(row.package_id || 0),
-    addOns: (row.addOns as any[]) || [],
+    addOns: ((row.addOns as any[]) || []).filter(Boolean),
     date: String(row.date),
     deadlineDate: row.deadline_date ? String(row.deadline_date) : undefined,
     location: row.location ? String(row.location) : '',

@@ -1,16 +1,18 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-
+import { useApp } from '@/app/AppContext';
 import { listNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '../services/notifications';
 
 
 
 export function useNotifications() {
     const queryClient = useQueryClient();
+    const { isAuthenticated } = useApp();
 
     const { data: notifications = [], isLoading } = useQuery({
         queryKey: ['notifications'],
         queryFn: listNotifications,
         staleTime: 5 * 60 * 1000,
+        enabled: isAuthenticated,
     });
 
 

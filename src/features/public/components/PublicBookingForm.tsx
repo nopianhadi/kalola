@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate, Link, useParams } from 'react-router-dom';
 import { REGIONS, Package, AddOn, Profile, Card, PromoCode, ClientStatus, PaymentStatus, TransactionType, ClientType, BookingStatus } from '@/types';
 import { useApp } from "@/app/AppContext";
@@ -19,6 +19,81 @@ const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
 }
 const titleCase = (s: string) => s.replace(/\b\w/g, c => c.toUpperCase());
+
+// ─── Skeleton component ────────────────────────────────────────────────────────
+const SkeletonBlock: React.FC<{ className?: string }> = ({ className = '' }) => (
+    <div className={`animate-pulse bg-slate-200 rounded-xl ${className}`} />
+);
+
+const BookingFormSkeleton: React.FC = () => (
+    <div className="min-h-screen flex items-center justify-center p-4 bg-public-bg">
+        <div className="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
+                {/* Header skeleton */}
+                <div className="p-6 md:p-8 border-b border-slate-100 space-y-4">
+                    <SkeletonBlock className="h-7 w-48" />
+                    <SkeletonBlock className="h-4 w-72" />
+                    {/* Step dots */}
+                    <div className="flex items-center justify-between mt-6 relative">
+                        <div className="absolute inset-x-0 top-4 h-1 bg-slate-100 rounded-full" />
+                        {[1, 2, 3].map(i => (
+                            <div key={i} className="flex flex-col items-center gap-2 z-10">
+                                <SkeletonBlock className="w-8 h-8 rounded-full" />
+                                <SkeletonBlock className="h-3 w-14" />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+                {/* Fields skeleton */}
+                <div className="p-6 md:p-8 space-y-5">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2"><SkeletonBlock className="h-3 w-24" /><SkeletonBlock className="h-12" /></div>
+                        <div className="space-y-2"><SkeletonBlock className="h-3 w-24" /><SkeletonBlock className="h-12" /></div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2"><SkeletonBlock className="h-3 w-24" /><SkeletonBlock className="h-12" /></div>
+                        <div className="space-y-2"><SkeletonBlock className="h-3 w-24" /><SkeletonBlock className="h-12" /></div>
+                    </div>
+                    <div className="space-y-2"><SkeletonBlock className="h-3 w-24" /><SkeletonBlock className="h-12" /></div>
+                    <div className="space-y-2"><SkeletonBlock className="h-3 w-24" /><SkeletonBlock className="h-20" /></div>
+                    <div className="flex justify-end"><SkeletonBlock className="h-12 w-36" /></div>
+                </div>
+            </div>
+            {/* Sidebar skeleton */}
+            <div className="hidden lg:block">
+                <div className="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
+                    <div className="p-6 border-b border-slate-100"><SkeletonBlock className="h-6 w-36" /></div>
+                    <div className="p-6 space-y-4">
+                        {[1, 2, 3, 4].map(i => (
+                            <div key={i} className="flex justify-between">
+                                <SkeletonBlock className="h-4 w-20" />
+                                <SkeletonBlock className="h-4 w-24" />
+                            </div>
+                        ))}
+                        <div className="pt-4 border-t border-slate-100">
+                            <SkeletonBlock className="h-8 w-full" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+);
+
+// ─── Inline error banner ───────────────────────────────────────────────────────
+const InlineError: React.FC<{ message: string; onDismiss: () => void }> = ({ message, onDismiss }) => (
+    <div className="flex items-start gap-3 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm animate-in fade-in slide-in-from-top-2 duration-300">
+        <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+        </svg>
+        <span className="flex-1">{message}</span>
+        <button onClick={onDismiss} className="text-red-400 hover:text-red-600 transition-colors flex-shrink-0">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+    </div>
+);
 
 const initialFormState = {
     clientName: '',
@@ -73,16 +148,20 @@ const PublicBookingForm: React.FC<PublicBookingProps> = (props) => {
                 const [pkgs, ads, crds, promos, profileData] = await Promise.all([
                     listPackages(),
                     listAddOns(),
-                    listCards(),
-                    listPromoCodes(),
+                    listCards().catch((): never[] => []),
+                    listPromoCodes().catch((): never[] => []),
                     !props.userProfile ? getProfile(vendorId ? Number(vendorId) : undefined) : Promise.resolve(props.userProfile)
                 ]);
                 setPackages(pkgs);
                 setAddOns(ads);
                 setCards(crds as any);
                 setPromoCodes(promos as any || []);
-                if (profileData) setUserProfile(profileData);
-                setError(null);
+                if (profileData) {
+                    setUserProfile(profileData);
+                    setError(null);
+                } else {
+                    setError('Halaman booking ini tidak ditemukan atau tidak aktif.');
+                }
             } catch (err) {
                 console.error('Error loading data:', err);
                 setError('Gagal memuat data. Silakan coba lagi nanti.');
@@ -91,22 +170,19 @@ const PublicBookingForm: React.FC<PublicBookingProps> = (props) => {
             }
         };
         loadData();
-    }, [props.userProfile]);
+    }, [props.userProfile, vendorId]);
 
     const [formData, setFormData] = useState({ ...initialFormState, projectType: '' });
 
-    // Update projectType once userProfile is loaded
-    useEffect(() => {
-        if (userProfile?.projectTypes?.length && !formData.projectType) {
-            setFormData(prev => ({ ...prev, projectType: userProfile?.projectTypes?.[0] || '' }));
-        }
-    }, [userProfile, formData.projectType]);
+    // ── Semua state declarations (harus sebelum effects yang menggunakannya) ──
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [promoFeedback, setPromoFeedback] = useState({ type: '', message: '' });
     const [paymentProof, setPaymentProof] = useState<File | null>(null);
     const [paymentProofPreview, setPaymentProofPreview] = useState<string | null>(null);
     const [currentStep, setCurrentStep] = useState(1);
+    // Inline error (replaces alert())
+    const [inlineError, setInlineError] = useState<string | null>(null);
 
     const promoParam = searchParams.get('promo') || searchParams.get('promoCode');
     useEffect(() => {
@@ -126,7 +202,10 @@ const PublicBookingForm: React.FC<PublicBookingProps> = (props) => {
     const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
     const formRef = useRef<HTMLDivElement>(null);
     const [selectedRegion, setSelectedRegion] = useState<string | null>(initialRegion);
-    const [isPackagesLoading, setIsPackagesLoading] = useState(true);
+    // Start as false — isInitialLoading already covers the initial skeleton.
+    // We only use isPackagesLoading to show a spinner inside the package selector
+    // after a region is chosen and we're waiting for filteredPackages to settle.
+    const [isPackagesLoading, setIsPackagesLoading] = useState(false);
 
     // CSRF Protection: Honeypot field (invisible to humans, visible to bots)
     const [honeypot, setHoneypot] = useState('');
@@ -438,19 +517,20 @@ const PublicBookingForm: React.FC<PublicBookingProps> = (props) => {
 
         setLastSubmitTime(now);
         setIsSubmitting(true);
+        setInlineError(null);
         try {
 
             const dpAmount = Number(formData.dp) || 0;
             const selectedPackage = filteredPackages.find(p => String(p.id) === String(formData.packageId));
             if (!selectedPackage) {
-                alert('Silakan pilih Package.');
+                setInlineError('Silakan pilih Paket Layanan terlebih dahulu.');
                 setIsSubmitting(false);
                 return;
             }
 
             const destinationCard = cards.find(c => String(c.id) !== 'CARD_CASH') || cards[0];
             if (!destinationCard) {
-                alert('Sistem pembayaran tidak dikonfigurasi. Hubungi vendor.');
+                setInlineError('Sistem pembayaran belum dikonfigurasi. Silakan hubungi vendor secara langsung.');
                 setIsSubmitting(false);
                 return;
             }
@@ -468,7 +548,7 @@ const PublicBookingForm: React.FC<PublicBookingProps> = (props) => {
                     dpProofUrl = await uploadDpProof(paymentProof);
                 } catch (err: any) {
                     console.error('[Storage] error:', err);
-                    alert(`Gagal menyimpan bukti pembayaran. ${err?.message || 'Coba lagi.'}`);
+                    setInlineError(`Gagal menyimpan bukti pembayaran. ${err?.message || 'Silakan coba lagi.'}`);
                     setIsSubmitting(false);
                     return;
                 }
@@ -547,12 +627,8 @@ const PublicBookingForm: React.FC<PublicBookingProps> = (props) => {
     };
 
 
-    if (isInitialLoading || !userProfile) {
-        return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            </div>
-        );
+    if (isInitialLoading) {
+        return <BookingFormSkeleton />;
     }
 
     if (error) {
@@ -567,26 +643,64 @@ const PublicBookingForm: React.FC<PublicBookingProps> = (props) => {
         );
     }
 
+    if (!userProfile) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="text-center p-8 bg-public-surface rounded-2xl shadow-lg border border-public-border">
+                    <h2 className="text-xl font-bold text-red-600 mb-4">Halaman Tidak Ditemukan</h2>
+                    <p className="text-public-text-secondary mb-6">Halaman booking ini tidak tersedia atau sudah tidak aktif.</p>
+                    <button onClick={() => navigate(0)} className="button-primary">Coba Lagi</button>
+                </div>
+            </div>
+        );
+    }
     if (isSubmitted) {
 
         return (
-            <div className="flex items-center justify-center min-h-screen p-3 md:p-4">
-                <div className="w-full max-w-2xl p-6 md:p-8 text-center bg-public-surface rounded-2xl shadow-lg border border-public-border">
-                    <h1 className="text-xl md:text-2xl font-bold text-gradient">Terima Kasih!</h1>
-                    <p className="mt-4 text-sm md:text-base text-public-text-primary mb-6">Formulir pemesanan Anda telah berhasil kami terima. Tim kami akan segera menghubungi Anda untuk konfirmasi lebih lanjut.</p>
-                    <button
-                        type="button"
-                        onClick={() => {
-                            setIsSubmitted(false);
-                            setFormData({ ...initialFormState, projectType: userProfile?.projectTypes?.[0] || '' });
-                            setPaymentProof(null);
-                            setPromoFeedback({ type: '', message: '' });
-                            setHoneypot('');
-                        }}
-                        className="px-6 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-all shadow-md hover:shadow-lg"
-                    >
-                        Buat Booking Baru
-                    </button>
+            <div className="flex items-center justify-center min-h-screen p-3 md:p-4 bg-public-bg">
+                <div className="w-full max-w-2xl p-8 md:p-12 text-center bg-public-surface rounded-2xl shadow-xl border border-public-border">
+                    {/* Success icon */}
+                    <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
+                        <svg className="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                    </div>
+                    <h1 className="text-2xl md:text-3xl font-bold text-public-text-primary">Booking Berhasil Dikirim!</h1>
+                    <p className="mt-3 text-sm md:text-base text-public-text-secondary max-w-md mx-auto">
+                        Formulir pemesanan Anda telah kami terima. Tim kami akan menghubungi Anda melalui WhatsApp dalam waktu 1×24 jam untuk konfirmasi.
+                    </p>
+                    {userProfile?.phone && (
+                        <a
+                            href={`https://wa.me/${userProfile.phone.replace(/\D/g, '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-6 inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-green-500 text-white font-semibold hover:bg-green-600 transition-all shadow-md hover:shadow-lg"
+                        >
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+                                <path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.554 4.118 1.528 5.845L0 24l6.335-1.508A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.006-1.374l-.36-.213-3.727.977.994-3.634-.234-.374A9.818 9.818 0 1112 21.818z"/>
+                            </svg>
+                            Hubungi Kami via WhatsApp
+                        </a>
+                    )}
+                    <div className="mt-4">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setIsSubmitted(false);
+                                setFormData({ ...initialFormState, projectType: userProfile?.projectTypes?.[0] || '' });
+                                setPaymentProof(null);
+                                setPaymentProofPreview(null);
+                                setPromoFeedback({ type: '', message: '' });
+                                setHoneypot('');
+                                setCurrentStep(1);
+                                setInlineError(null);
+                            }}
+                            className="px-6 py-3 rounded-xl text-public-text-secondary hover:bg-white/10 font-medium transition-colors text-sm"
+                        >
+                            Buat Booking Baru
+                        </button>
+                    </div>
                 </div>
             </div>
         );
@@ -594,20 +708,78 @@ const PublicBookingForm: React.FC<PublicBookingProps> = (props) => {
     // Region gate: do not show all regions. Ask user to choose a region link first.
     if (!selectedRegion) {
         return (
-            <div className="flex items-center justify-center min-h-screen p-3 md:p-4">
-                <div className="w-full max-w-lg p-6 md:p-8 text-center bg-public-surface rounded-2xl shadow-lg border border-public-border">
-                    <h4 className="text-xl font-bold text-gradient mb-6">Informasi Pengantin & Acara Pernikahan</h4>
-                    <p className="mt-3 text-public-text-secondary text-xs md:text-sm">Untuk meminimalisir kesalahan, silakan pilih wilayah terlebih dahulu.</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5">
-                        {unionRegions.map(r => (
-                            <Link 
-                                key={r.value} 
-                                className="button-primary text-center" 
-                                to={`/public-booking?region=${r.value}`}
-                            >
-                                {r.label}
-                            </Link>
-                        ))}
+            <div className="min-h-screen bg-public-bg flex flex-col">
+                {/* Hero branding section */}
+                <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-8">
+                    {/* Vendor branding card */}
+                    <div className="w-full max-w-2xl mb-8 text-center">
+                        {userProfile?.logoBase64 ? (
+                            <img
+                                src={userProfile.logoBase64}
+                                alt={userProfile.companyName || 'Logo Vendor'}
+                                className="h-16 md:h-20 object-contain mx-auto mb-4"
+                            />
+                        ) : (
+                            <div className="w-16 h-16 rounded-2xl bg-public-accent/10 flex items-center justify-center mx-auto mb-4">
+                                <svg className="w-8 h-8 text-public-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                            </div>
+                        )}
+                        <h1 className="text-2xl md:text-3xl font-bold text-public-text-primary">
+                            {userProfile?.companyName || 'Formulir Booking'}
+                        </h1>
+                        {userProfile?.bio && (
+                            <p className="mt-2 text-sm md:text-base text-public-text-secondary max-w-md mx-auto leading-relaxed">
+                                {userProfile.bio}
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Region selector card */}
+                    <div className="w-full max-w-lg bg-public-surface rounded-2xl shadow-xl border border-public-border p-6 md:p-8">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="w-8 h-8 rounded-lg bg-public-accent/10 flex items-center justify-center flex-shrink-0">
+                                <svg className="w-4 h-4 text-public-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h2 className="text-base font-bold text-public-text-primary">Pilih Wilayah Anda</h2>
+                                <p className="text-xs text-public-text-secondary">Paket dan harga berbeda per wilayah</p>
+                            </div>
+                        </div>
+
+                        <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {unionRegions.map(r => (
+                                <Link
+                                    key={r.value}
+                                    to={`/public-booking?region=${r.value}`}
+                                    className="flex items-center justify-between px-4 py-3 rounded-xl border border-public-border bg-public-bg hover:border-public-accent hover:bg-public-accent/5 text-public-text-primary font-medium text-sm transition-all group"
+                                >
+                                    <span>{r.label}</span>
+                                    <svg className="w-4 h-4 text-public-text-secondary group-hover:text-public-accent transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </Link>
+                            ))}
+                        </div>
+
+                        {userProfile?.phone && (
+                            <p className="mt-6 text-center text-xs text-public-text-secondary">
+                                Ada pertanyaan?{' '}
+                                <a
+                                    href={`https://wa.me/${userProfile.phone.replace(/\D/g, '')}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-public-accent hover:underline font-medium"
+                                >
+                                    Hubungi kami via WhatsApp
+                                </a>
+                            </p>
+                        )}
                     </div>
                 </div>
             </div>
@@ -663,15 +835,32 @@ const PublicBookingForm: React.FC<PublicBookingProps> = (props) => {
                                 {/* Progress Steps */}
                                 <div className="flex items-center justify-between mt-8 relative">
                                     <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-public-border rounded-full -z-10"></div>
-                                    <div className={`absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-public-accent transition-all duration-300 -z-10`} style={{ width: currentStep === 1 ? '0%' : currentStep === 2 ? '50%' : '100%' }}></div>
+                                    <div
+                                        className="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-public-accent transition-all duration-500 ease-out -z-10 rounded-full"
+                                        style={{ width: currentStep === 1 ? '0%' : currentStep === 2 ? '50%' : '100%' }}
+                                    ></div>
                                     
-                                    {[1, 2, 3].map((stepNumber) => (
-                                        <div key={stepNumber} className="flex flex-col items-center">
-                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-colors ${currentStep >= stepNumber ? 'bg-public-accent text-white' : 'bg-public-surface border-2 border-public-border text-public-text-secondary'}`}>
-                                                {stepNumber}
+                                    {[
+                                        { num: 1, label: 'Info Acara' },
+                                        { num: 2, label: 'Paket' },
+                                        { num: 3, label: 'Pembayaran' },
+                                    ].map(({ num, label }) => (
+                                        <div key={num} className="flex flex-col items-center z-10">
+                                            <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300 shadow-sm ${
+                                                currentStep > num
+                                                    ? 'bg-public-accent text-white'
+                                                    : currentStep === num
+                                                    ? 'bg-public-accent text-white ring-4 ring-public-accent/20'
+                                                    : 'bg-public-surface border-2 border-public-border text-public-text-secondary'
+                                            }`}>
+                                                {currentStep > num ? (
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                ) : num}
                                             </div>
-                                            <span className={`text-xs mt-2 font-medium ${currentStep >= stepNumber ? 'text-public-accent' : 'text-public-text-secondary'}`}>
-                                                {stepNumber === 1 ? 'Info Acara' : stepNumber === 2 ? 'Paket' : 'Pembayaran'}
+                                            <span className={`text-xs mt-2 font-semibold transition-colors ${currentStep >= num ? 'text-public-accent' : 'text-public-text-secondary'}`}>
+                                                {label}
                                             </span>
                                         </div>
                                     ))}
@@ -681,6 +870,11 @@ const PublicBookingForm: React.FC<PublicBookingProps> = (props) => {
                             <form className="p-6 md:p-8 space-y-8" onSubmit={handleSubmit}>
                                 {/* Honeypot */}
                                 <input type="text" name="website" value={honeypot} onChange={(e) => setHoneypot(e.target.value)} style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px' }} tabIndex={-1} autoComplete="off" aria-hidden="true" />
+
+                                {/* Inline error banner */}
+                                {inlineError && (
+                                    <InlineError message={inlineError} onDismiss={() => setInlineError(null)} />
+                                )}
                                 
                                 {/* STEP 1 */}
                                 {currentStep === 1 && (
@@ -725,7 +919,10 @@ const PublicBookingForm: React.FC<PublicBookingProps> = (props) => {
                                         
                                         <div className="pt-4 flex justify-end">
                                             <button type="button" onClick={() => validateStep1() && setCurrentStep(2)} className="button-primary flex items-center gap-2">
-                                                Selanjutnya <span className="text-lg">→</span>
+                                                Selanjutnya
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                </svg>
                                             </button>
                                         </div>
                                     </div>
@@ -859,7 +1056,10 @@ const PublicBookingForm: React.FC<PublicBookingProps> = (props) => {
                                                 ← Kembali
                                             </button>
                                             <button type="button" onClick={() => validateStep2() && setCurrentStep(3)} className="button-primary flex items-center gap-2">
-                                                Selanjutnya <span className="text-lg">→</span>
+                                                Selanjutnya
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                </svg>
                                             </button>
                                         </div>
                                     </div>
@@ -888,9 +1088,17 @@ const PublicBookingForm: React.FC<PublicBookingProps> = (props) => {
                                                             <div className="font-bold text-sm">{c.bankName}</div>
                                                             <div className="text-xs text-public-text-secondary">a.n. {c.cardHolderName}</div>
                                                         </div>
-                                                        <div className="font-mono text-sm bg-public-surface px-3 py-1 rounded-md cursor-pointer hover:text-public-accent" onClick={() => { navigator.clipboard.writeText(c.lastFourDigits); showNotification && showNotification('Nomor rekening disalin'); }}>
-                                                            {c.lastFourDigits} 📋
-                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => { navigator.clipboard.writeText(c.lastFourDigits); showNotification && showNotification('Nomor rekening disalin'); }}
+                                                            className="flex items-center gap-1.5 font-mono text-sm bg-public-surface px-3 py-1.5 rounded-lg cursor-pointer hover:text-public-accent hover:bg-public-accent/5 transition-all border border-public-border"
+                                                            title="Salin nomor rekening"
+                                                        >
+                                                            {c.lastFourDigits}
+                                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                                            </svg>
+                                                        </button>
                                                     </div>
                                                 ))}
                                             </div>
@@ -922,8 +1130,23 @@ const PublicBookingForm: React.FC<PublicBookingProps> = (props) => {
                                             <button type="button" onClick={() => setCurrentStep(2)} className="px-6 py-3 rounded-xl font-medium text-public-text-secondary hover:bg-white/10 transition-colors">
                                                 ← Kembali
                                             </button>
-                                            <button type="submit" disabled={isSubmitting} className="button-primary flex items-center gap-2">
-                                                {isSubmitting ? 'Memproses...' : 'Kirim Booking'} <span className="text-lg">✓</span>
+                                            <button type="submit" disabled={isSubmitting} className="button-primary flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
+                                                {isSubmitting ? (
+                                                    <>
+                                                        <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                                        </svg>
+                                                        Memproses...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        Kirim Booking
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                    </>
+                                                )}
                                             </button>
                                         </div>
                                     </div>
@@ -976,9 +1199,9 @@ const PublicBookingForm: React.FC<PublicBookingProps> = (props) => {
                                     <span className="font-bold text-lg text-public-accent">Rp {totalProject.toLocaleString('id-ID')}</span>
                                 </div>
                                 
-                                <div className="mt-4 p-3 bg-blue-500/10 rounded-xl border border-blue-500/20">
-                                    <span className="block text-xs text-blue-500 mb-1">Saran DP (30%):</span>
-                                    <span className="font-bold text-blue-600 text-sm">Rp {suggestedDp.toLocaleString('id-ID')}</span>
+                                <div className="mt-4 p-3 bg-slate-900/10 rounded-xl border border-slate-900/20">
+                                    <span className="block text-xs text-slate-700 mb-1">Saran DP (30%):</span>
+                                    <span className="font-bold text-slate-900 text-sm">Rp {suggestedDp.toLocaleString('id-ID')}</span>
                                 </div>
                             </div>
                         </div>

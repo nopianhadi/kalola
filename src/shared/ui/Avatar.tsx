@@ -131,7 +131,7 @@ export const Avatar: React.FC<AvatarProps> = ({
             rounded-full
             border-2
             border-white
-            ${size === 'xs' || size === 'sm' ? '-bottom-0.5 -right-0.5' : '-bottom-0.5 -right-0.5'}
+            ${size === 'xs' || size === 'sm' ? '-bottom-0 -right-0' : 'bottom-0 right-0'}
           `}
         />
       )}

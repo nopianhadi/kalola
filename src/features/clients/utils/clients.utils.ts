@@ -27,12 +27,12 @@ export const cleanProjectName = (name: string): string => {
 };
 
 export const getPaymentStatusClass = (status: PaymentStatus | null) => {
-    if (!status) return 'bg-gray-500/20 text-gray-400';
+    if (!status) return 'bg-slate-600 text-white border border-slate-600';
     switch (status) {
-        case PaymentStatus.LUNAS: return 'bg-green-500/20 text-green-400';
-        case PaymentStatus.DP_TERBAYAR: return 'bg-blue-500/20 text-blue-400';
-        case PaymentStatus.BELUM_BAYAR: return 'bg-yellow-500/20 text-yellow-400';
-        default: return 'bg-gray-500/20 text-gray-400';
+        case PaymentStatus.LUNAS: return 'bg-green-600 text-white border border-green-600';
+        case PaymentStatus.DP_TERBAYAR: return 'bg-blue-600 text-white border border-blue-600';
+        case PaymentStatus.BELUM_BAYAR: return 'bg-amber-500 text-white border border-amber-500';
+        default: return 'bg-slate-600 text-white border border-slate-600';
     }
 };
 

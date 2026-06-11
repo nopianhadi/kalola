@@ -63,17 +63,6 @@ export async function loadDataForView(viewType: string) {
         clients: await loadClientsLazy(30)
       };
     
-    case 'dashboard':
-      // Dashboard needs summary data only
-      const [recentProjects, recentClients] = await Promise.all([
-        loadProjectsLazy(5),  // Only 5 recent projects
-        loadClientsLazy(5)    // Only 5 recent clients
-      ]);
-      return {
-        recentProjects,
-        recentClients
-      };
-    
     default:
       return {};
   }

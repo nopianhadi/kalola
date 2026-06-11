@@ -1,7 +1,7 @@
 import React from 'react';
 import { Profile, TimelineStep } from '@/types';
 import { LayoutGridIcon, PlusIcon, TrashIcon, CheckCircleIcon } from '@/constants';
-import CollapsibleSection from '@/shared/ui/CollapsibleSection';
+import { FormSection, FieldLabel, inputCls } from '@/shared/ui/FormSection';
 
 interface PublicPageSettingsTabProps {
     profile: Profile;
@@ -76,80 +76,58 @@ export const PublicPageSettingsTab: React.FC<PublicPageSettingsTabProps> = ({
 
     return (
         <form onSubmit={handleProfileSubmit} className="space-y-6 max-w-4xl mx-auto">
-            <CollapsibleSection 
-                title="Halaman Publik & Portfolio" 
-                defaultExpanded={true} 
-                variant="filled" 
-                icon={<LayoutGridIcon className="w-5 h-5" />}
-            >
-                <div className="space-y-8 p-2">
-                    <div className="space-y-2">
-                        <label className="text-[10px] uppercase font-bold tracking-widest text-brand-text-secondary">Pesan Pengantar (Introduction)</label>
-                        <textarea 
-                            value={profile.publicPageConfig?.introduction || ''} 
-                            onChange={handleIntroChange}
-                            className="w-full px-4 py-3 rounded-2xl border border-brand-border bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all h-24 resize-none"
-                            placeholder="Tulis pesan pengantar singkat untuk calon pengantin..."
-                        />
+            <FormSection icon={<LayoutGridIcon className="w-4 h-4" />} title="Halaman Publik & Portfolio">
+                <div>
+                    <FieldLabel optional>Pesan Pengantar (Introduction)</FieldLabel>
+                    <textarea
+                        value={profile.publicPageConfig?.introduction || ''}
+                        onChange={handleIntroChange}
+                        className={inputCls + ' h-20 resize-none'}
+                        placeholder="Tulis pesan pengantar singkat untuk calon pengantin..."
+                    />
+                </div>
+
+                <div>
+                    <div className="flex justify-between items-center mb-3">
+                        <FieldLabel>Timeline & Workflow</FieldLabel>
+                        <button type="button" onClick={addStep} className="flex items-center gap-1.5 text-xs font-semibold text-brand-accent hover:text-brand-accent/80 transition">
+                            <PlusIcon className="w-3.5 h-3.5" /> Tambah Langkah
+                        </button>
                     </div>
-
-                    <div className="space-y-4">
-                        <div className="flex justify-between items-center">
-                            <label className="text-[10px] uppercase font-bold tracking-widest text-brand-text-secondary">Timeline & Workflow</label>
-                            <button 
-                                type="button" 
-                                onClick={addStep}
-                                className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-blue-500 hover:text-blue-600 transition-colors"
-                            >
-                                <PlusIcon className="w-3 h-3" />
-                                Tambah Langkah
-                            </button>
-                        </div>
-
-                        <div className="space-y-4">
-                            {timeline.map((step, index) => (
-                                <div key={step.id || index} className="group relative bg-brand-bg-light/50 border border-brand-border rounded-2xl p-6 transition-all hover:bg-white hover:shadow-xl hover:shadow-black/5">
-                                    <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-brand-accent text-white flex items-center justify-center text-[10px] font-black shadow-lg">
-                                        {index + 1}
-                                    </div>
-                                    
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                        <div className="md:col-span-1 space-y-2">
-                                            <input 
-                                                value={step.t} 
-                                                onChange={(e) => handleTimelineChange(index, 't', e.target.value)}
-                                                className="w-full px-4 py-2 bg-white border border-brand-border rounded-xl focus:ring-2 focus:ring-brand-accent outline-none font-bold text-sm"
-                                                placeholder="Judul (Contoh: H-90 • Konsep)"
-                                            />
-                                        </div>
-                                        <div className="md:col-span-2 flex gap-4 items-start">
-                                            <textarea 
-                                                value={step.d} 
-                                                onChange={(e) => handleTimelineChange(index, 'd', e.target.value)}
-                                                className="w-full px-4 py-2 bg-white border border-brand-border rounded-xl focus:ring-2 focus:ring-brand-accent outline-none text-sm h-20 md:h-12 resize-none"
-                                                placeholder="Deskripsi singkat proses..."
-                                            />
-                                            <button 
-                                                type="button" 
-                                                onClick={() => removeStep(index)}
-                                                className="p-2 text-red-400 hover:bg-red-50 rounded-xl transition-colors shrink-0"
-                                            >
-                                                <TrashIcon className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    </div>
+                    <div className="space-y-3">
+                        {timeline.map((step, index) => (
+                            <div key={step.id || index} className="relative flex items-start gap-4 bg-brand-bg border border-brand-border rounded-xl p-4">
+                                <div className="w-6 h-6 rounded-full bg-brand-accent text-white flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
+                                    {index + 1}
                                 </div>
-                            ))}
-                        </div>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 flex-1">
+                                    <input
+                                        value={step.t}
+                                        onChange={(e) => handleTimelineChange(index, 't', e.target.value)}
+                                        className={inputCls + ' font-semibold'}
+                                        placeholder="Judul langkah..."
+                                    />
+                                    <textarea
+                                        value={step.d}
+                                        onChange={(e) => handleTimelineChange(index, 'd', e.target.value)}
+                                        className={inputCls + ' md:col-span-2 h-10 resize-none text-xs'}
+                                        placeholder="Deskripsi singkat..."
+                                    />
+                                </div>
+                                <button type="button" onClick={() => removeStep(index)} className="p-1.5 text-red-400 hover:bg-red-50 hover:text-red-600 rounded-lg transition flex-shrink-0">
+                                    <TrashIcon className="w-4 h-4" />
+                                </button>
+                            </div>
+                        ))}
                     </div>
                 </div>
-            </CollapsibleSection>
+            </FormSection>
 
-            {saveError && <div className="p-4 rounded-2xl bg-red-400/10 border border-red-400/20 text-red-400 text-sm font-bold text-center">{saveError}</div>}
-            {showSuccess && <div className="p-4 rounded-2xl bg-green-400/10 border border-green-400/20 text-green-400 text-sm font-bold text-center flex items-center justify-center gap-2"><CheckCircleIcon className="w-5 h-5" /> Perubahan berhasil disimpan!</div>}
+            {saveError && <div className="p-3 rounded-xl bg-red-400/10 border border-red-400/20 text-red-400 text-sm font-bold text-center">{saveError}</div>}
+            {showSuccess && <div className="p-3 rounded-xl bg-green-400/10 border border-green-400/20 text-green-400 text-sm font-bold text-center flex items-center justify-center gap-2"><CheckCircleIcon className="w-4 h-4" /> Perubahan berhasil disimpan!</div>}
 
-            <div className="flex justify-center pt-8 sticky bottom-4 z-10">
-                <button type="submit" disabled={isSaving} className="button-primary py-5 px-16 rounded-3xl font-black text-lg uppercase tracking-widest shadow-2xl shadow-blue-500/40 hover:scale-105 active:scale-95 transition-all w-full md:w-auto">
+            <div className="flex justify-end pt-4 border-t border-brand-border">
+                <button type="submit" disabled={isSaving} className="px-10 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 shadow-lg shadow-blue-500/20 transition active:scale-95 disabled:opacity-60">
                     {isSaving ? 'Menyimpan...' : 'Simpan Perubahan'}
                 </button>
             </div>

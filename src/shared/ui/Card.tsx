@@ -16,11 +16,11 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const variantStyles: Record<CardVariant, string> = {
-  default: 'bg-brand-surface border border-brand-border/50',
-  elevated: 'bg-brand-surface border border-brand-border/30 shadow-lg shadow-brand-border/10',
-  outlined: 'bg-transparent border-2 border-brand-border',
-  ghost: 'bg-transparent border border-transparent hover:border-brand-border/30',
-  primary: 'bg-brand-accent/5 border border-brand-accent/20',
+  default: 'bg-brand-surface/90 backdrop-blur-sm border border-brand-border/60 shadow-sm shadow-black/[0.01]',
+  elevated: 'bg-brand-surface/95 backdrop-blur-sm border border-brand-border/40 shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:shadow-slate-200/60 transition-all duration-300',
+  outlined: 'bg-transparent border-2 border-brand-border/80',
+  ghost: 'bg-transparent border border-transparent hover:bg-slate-50/50 hover:border-brand-border/40',
+  primary: 'bg-brand-accent/[0.03] backdrop-blur-sm border border-brand-accent/20 shadow-sm',
 };
 
 const paddingStyles: Record<CardPadding, string> = {
@@ -56,8 +56,8 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
       ${variantStyles[variant]}
       ${paddingStyles[padding]}
       ${radiusStyles[radius]}
-      ${hover ? 'hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300' : ''}
-      ${interactive ? 'cursor-pointer hover:border-brand-accent/30 active:scale-[0.99] transition-all duration-200' : ''}
+      ${hover ? 'hover:shadow-xl hover:-translate-y-1.5 hover:border-brand-accent/30 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]' : ''}
+      ${interactive ? 'cursor-pointer hover:border-brand-accent/40 hover:shadow-md hover:-translate-y-0.5 active:scale-[0.99] active:-translate-y-0 transition-all duration-300' : ''}
       ${fullWidth ? 'w-full' : ''}
       ${className}
     `.trim();
@@ -94,7 +94,7 @@ export const CardHeader: React.FC<CardHeaderProps> = ({
     <div className={`flex items-start justify-between gap-4 ${className}`} {...props}>
       <div className="flex items-center gap-3 min-w-0 flex-1">
         {icon && (
-          <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-brand-accent/10 flex items-center justify-center text-brand-accent">
+          <div className="flex-shrink-0 w-10 h-10 aspect-square rounded-xl bg-brand-accent/10 flex items-center justify-center text-brand-accent [&>svg]:w-5 [&>svg]:h-5">
             {icon}
           </div>
         )}

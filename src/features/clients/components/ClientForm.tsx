@@ -2,9 +2,9 @@ import React, { useState, useMemo } from 'react';
 import RupiahInput from '@/shared/form/RupiahInput';
 import { ClientType } from '@/types';
 import { formatCurrency } from '@/features/clients/utils/clients.utils';
-import CollapsibleSection from '@/shared/ui/CollapsibleSection';
-
+import { FormSection, FieldLabel, inputCls, selectCls } from '@/shared/ui/FormSection';
 import { ClientFormProps } from '@/features/clients/types';
+import { AvatarDisplay } from '@/shared/ui/AvatarUpload';
 
 const ClientForm: React.FC<ClientFormProps> = ({ 
     isOpen,
@@ -82,100 +82,94 @@ const ClientForm: React.FC<ClientFormProps> = ({
         <div className={`${!inline ? 'flex-1 overflow-y-auto p-6 md:p-8 space-y-6 scrollbar-none' : ''}`}>
             <form onSubmit={onSubmit} className="space-y-6">
                 {/* Section 1: Client Info */}
-                <CollapsibleSection
-                    title="Informasi Pengantin"
-                    defaultExpanded={true}
-                    variant="filled"
+                <FormSection title="Informasi Pengantin"
                     status={formData.clientName && formData.phone ? 'valid' : undefined}
                 >
                     <div className="space-y-5">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                            <div className="space-y-2">
-                                <label className="text-[10px] uppercase font-bold tracking-widest text-brand-text-secondary">Nama Pengantin</label>
-                                <input type="text" name="clientName" value={formData.clientName} onChange={onChange} className="w-full px-4 py-3 rounded-2xl border border-brand-border bg-white/5 text-brand-text-primary focus:ring-2 focus:ring-blue-500 outline-none transition-all font-semibold" placeholder="Nama Lengkap" required />
+                            <div>
+                                <FieldLabel>Nama Pengantin</FieldLabel>
+                                <input type="text" name="clientName" value={formData.clientName} onChange={onChange} className={inputCls + ' font-semibold'} placeholder="Nama Lengkap" required />
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] uppercase font-bold tracking-widest text-brand-text-secondary">Jenis Pengantin</label>
-                                <select name="clientType" value={formData.clientType} onChange={onChange} className="w-full px-4 py-3 rounded-2xl border border-brand-border bg-white/5 text-brand-text-primary focus:ring-2 focus:ring-blue-500 outline-none transition-all font-semibold" required>
+                            <div>
+                                <FieldLabel>Jenis Pengantin</FieldLabel>
+                                <select name="clientType" value={formData.clientType} onChange={onChange} className={selectCls + ' font-semibold'} required>
                                     {Object.values(ClientType).map(ct => <option key={ct} value={ct}>{ct}</option>)}
                                 </select>
                             </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                            <div className="space-y-2">
-                                <label className="text-[10px] uppercase font-bold tracking-widest text-brand-text-secondary">Nomor Telepon</label>
-                                <input type="tel" name="phone" value={formData.phone} onChange={onChange} className="w-full px-4 py-3 rounded-2xl border border-brand-border bg-white/5 text-brand-text-primary focus:ring-2 focus:ring-blue-500 outline-none transition-all font-mono" placeholder="08xxxxxxxx" required />
+                            <div>
+                                <FieldLabel>Nomor Telepon</FieldLabel>
+                                <input type="tel" name="phone" value={formData.phone} onChange={onChange} className={inputCls + ' font-mono'} placeholder="08xxxxxxxx" required />
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] uppercase font-bold tracking-widest text-brand-text-secondary">No. WhatsApp</label>
-                                <input type="tel" name="whatsapp" value={formData.whatsapp || ''} onChange={onChange} className="w-full px-4 py-3 rounded-2xl border border-brand-border bg-white/5 text-brand-text-primary focus:ring-2 focus:ring-blue-500 outline-none transition-all font-mono" placeholder="Nama Kontak WA" />
+                            <div>
+                                <FieldLabel optional>No. WhatsApp</FieldLabel>
+                                <input type="tel" name="whatsapp" value={formData.whatsapp || ''} onChange={onChange} className={inputCls + ' font-mono'} placeholder="Nama Kontak WA" />
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] uppercase font-bold tracking-widest text-brand-text-secondary">Instagram</label>
-                                <input type="text" name="instagram" value={formData.instagram || ''} onChange={onChange} className="w-full px-4 py-3 rounded-2xl border border-brand-border bg-white/5 text-brand-text-primary focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="@username" />
+                            <div>
+                                <FieldLabel optional>Instagram</FieldLabel>
+                                <input type="text" name="instagram" value={formData.instagram || ''} onChange={onChange} className={inputCls} placeholder="@username" />
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="text-[10px] uppercase font-bold tracking-widest text-brand-text-secondary">Email</label>
-                            <input type="email" name="email" value={formData.email} onChange={onChange} className="w-full px-4 py-3 rounded-2xl border border-brand-border bg-white/5 text-brand-text-primary focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="email@contoh.com" required />
+                        <div>
+                            <FieldLabel>Email</FieldLabel>
+                            <input type="email" name="email" value={formData.email} onChange={onChange} className={inputCls} placeholder="email@contoh.com" required />
                         </div>
                     </div>
-                </CollapsibleSection>
+                </FormSection>
 
                 {/* Section 2: Project Info */}
-                <CollapsibleSection
-                    title="Informasi Acara Pernikahan"
-                    defaultExpanded={true}
-                    variant="filled"
+                <FormSection title="Informasi Acara Pernikahan"
                     status={formData.projectName && formData.date ? 'valid' : undefined}
                 >
                     <div className="space-y-5">
-                        <div className="space-y-2">
-                            <label className="text-[10px] uppercase font-bold tracking-widest text-brand-text-secondary">Nama Acara Pernikahan</label>
-                            <input type="text" name="projectName" value={formData.projectName} onChange={onChange} className="w-full px-4 py-3 rounded-2xl border border-brand-border bg-white/5 text-brand-text-primary focus:ring-2 focus:ring-blue-500 outline-none transition-all font-semibold" placeholder="Contoh: Wedding Budi & Siti" required />
+                        <div>
+                            <FieldLabel>Nama Acara Pernikahan</FieldLabel>
+                            <input type="text" name="projectName" value={formData.projectName} onChange={onChange} className={inputCls + ' font-semibold'} placeholder="Contoh: Wedding Budi & Siti" required />
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                            <div className="space-y-2">
-                                <label className="text-[10px] uppercase font-bold tracking-widest text-brand-text-secondary">Jenis Acara</label>
-                                <select name="projectType" value={formData.projectType || ''} onChange={onChange} className="w-full px-4 py-3 rounded-2xl border border-brand-border bg-white/5 text-brand-text-primary focus:ring-2 focus:ring-blue-500 outline-none transition-all font-semibold" required>
+                            <div>
+                                <FieldLabel>Jenis Acara</FieldLabel>
+                                <select name="projectType" value={formData.projectType || ''} onChange={onChange} className={selectCls + ' font-semibold'} required>
                                     <option value="" disabled>Pilih Jenis...</option>
                                     {userProfile.projectTypes?.map(pt => <option key={pt} value={pt}>{pt}</option>)}
                                 </select>
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] uppercase font-bold tracking-widest text-brand-text-secondary">Tanggal Acara</label>
-                                <input type="date" name="date" value={formData.date} onChange={onChange} className="w-full px-4 py-3 rounded-2xl border border-brand-border bg-white/5 text-brand-text-primary focus:ring-2 focus:ring-blue-500 outline-none transition-all font-mono" required />
+                            <div>
+                                <FieldLabel>Tanggal Acara</FieldLabel>
+                                <input type="date" name="date" value={formData.date} onChange={onChange} className={inputCls + ' font-mono'} required />
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="text-[10px] uppercase font-bold tracking-widest text-brand-text-secondary">Lokasi / Venue</label>
-                            <input type="text" name="location" value={formData.location} onChange={onChange} className="w-full px-4 py-3 rounded-2xl border border-brand-border bg-white/5 text-brand-text-primary focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="Nama Gedung / Kota" />
+                        <div>
+                            <FieldLabel optional>Lokasi / Venue</FieldLabel>
+                            <input type="text" name="location" value={formData.location} onChange={onChange} className={inputCls} placeholder="Nama Gedung / Kota" />
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="text-[10px] uppercase font-bold tracking-widest text-brand-text-secondary">Alamat Lengkap</label>
-                            <textarea name="address" value={formData.address || ''} onChange={onChange} className="w-full px-4 py-3 rounded-2xl border border-brand-border bg-white/5 text-brand-text-primary focus:ring-2 focus:ring-blue-500 outline-none transition-all min-h-[100px] resize-none" placeholder="Alamat lengkap lokasi acara"></textarea>
+                        <div>
+                            <FieldLabel optional>Alamat Lengkap</FieldLabel>
+                            <textarea name="address" value={formData.address || ''} onChange={onChange} className={inputCls + ' min-h-[80px] resize-none'} placeholder="Alamat lengkap lokasi acara" />
                         </div>
                     </div>
-                </CollapsibleSection>
+                </FormSection>
                 
                 {/* Section: Assigned Team Review */}
                 {mode === 'edit' && assignedTeam && assignedTeam.length > 0 && (
-                    <CollapsibleSection
-                        title="Tim yang Ditugaskan"
-                        defaultExpanded={true}
-                        variant="filled"
-                    >
+                    <FormSection title="Tim yang Ditugaskan">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {assignedTeam.map((member, idx) => (
-                                <div key={idx} className="flex items-center gap-3 p-3 bg-white/5 rounded-2xl border border-brand-border/50">
-                                    <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500 font-black text-xs border border-blue-500/20">
-                                        {member.name.substring(0, 2).toUpperCase()}
-                                    </div>
+                                <div key={idx} className="flex items-center gap-3 p-3 bg-brand-bg/50 rounded-xl border border-brand-border">
+                                    <AvatarDisplay
+                                        avatarBase64={(member as any).avatar ?? null}
+                                        name={member.name}
+                                        size="sm"
+                                        variant={member.role?.toLowerCase().includes('vendor') ? 'vendor' : 'team'}
+                                        className="shrink-0"
+                                    />
                                     <div className="flex-1 min-w-0">
                                         <div className="text-xs font-black text-brand-text-primary truncate">{member.name}</div>
                                         <div className="text-[10px] font-bold text-brand-text-secondary uppercase tracking-tight">{member.role}</div>
@@ -183,19 +177,16 @@ const ClientForm: React.FC<ClientFormProps> = ({
                                 </div>
                             ))}
                         </div>
-                        <div className="mt-4 p-3 bg-blue-500/5 border border-blue-500/10 rounded-xl">
+                        <div className="mt-3 p-3 bg-blue-500/5 border border-blue-500/10 rounded-xl">
                             <p className="text-[10px] text-blue-500/80 italic leading-relaxed font-medium">
-                                Catatan: Daftar ini adalah tim yang saat ini ditugaskan. Jika Anda mengubah tanggal, pastikan mereka tersedia (peringatan otomatis akan muncul jika terjadi bentrok).
+                                Daftar tim yang ditugaskan. Jika tanggal diubah, pastikan mereka tersedia.
                             </p>
                         </div>
-                    </CollapsibleSection>
+                    </FormSection>
                 )}
 
                 {/* Section 3: Financial & Package */}
-                <CollapsibleSection
-                    title="Detail Package & Pembayaran"
-                    defaultExpanded={true}
-                    variant="filled"
+                <FormSection title="Detail Package & Pembayaran"
                     status={formData.packageId ? 'valid' : undefined}
                     statusText={totalProject > 0 ? formatCurrency(totalProject) : undefined}
                 >
@@ -342,7 +333,7 @@ const ClientForm: React.FC<ClientFormProps> = ({
                             <textarea name="notes" value={formData.notes || ''} onChange={onChange} className="w-full px-4 py-3 rounded-2xl border border-brand-border bg-white/5 text-brand-text-primary focus:ring-2 focus:ring-blue-500 outline-none transition-all min-h-[80px] resize-none" placeholder="Catatan khusus..."></textarea>
                         </div>
                     </div>
-                </CollapsibleSection>
+                </FormSection>
             </form>
 
             {!inline && (

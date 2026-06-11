@@ -40,7 +40,12 @@ export const PublicLayout: React.FC = () => {
         location.pathname.startsWith('/p-packages/') || 
         location.pathname === '/p-packages';
 
-    const hideNavbar = isBookingPage || isPackagesPage;
+    const isLeadsPage =
+        location.pathname.startsWith('/public-leads') ||
+        location.pathname.startsWith('/leads/') ||
+        location.pathname === '/leads';
+
+    const hideNavbar = isBookingPage || isPackagesPage || isLeadsPage;
 
     return (
         <div className="min-h-screen bg-[#FAF9F6] selection:bg-[#B69255]/20 font-['Manrope',_sans-serif]">
