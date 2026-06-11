@@ -10,7 +10,13 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors()); // Mengizinkan request dari frontend (React)
+const corsOptions = {
+  origin: [process.env.FRONTEND_URL || 'http://localhost:3000', 'http://localhost:3000'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+};
+app.use(cors(corsOptions)); // Mengizinkan request dari frontend (React)
 app.use(express.json({ limit: '50mb' })); // Mengizinkan parsing request body berupa JSON dengan limit 50MB
 app.use(express.urlencoded({ limit: '50mb', extended: true })); // Mengizinkan parsing URL-encoded body dengan limit 50MB
 
