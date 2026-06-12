@@ -79,6 +79,9 @@ const PublicLeadsForm: React.FC = () => {
     }
     if (!whatsapp.trim()) {
       setError('No. WhatsApp wajib diisi.');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       await createPublicLead(vendorId ? Number(vendorId) : undefined, {
