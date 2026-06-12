@@ -1,4 +1,8 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+let rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+if (rawApiUrl.endsWith('/')) rawApiUrl = rawApiUrl.slice(0, -1);
+if (!rawApiUrl.endsWith('/api')) rawApiUrl += '/api';
+const API_URL = rawApiUrl;
+
 export const AUTH_TOKEN_STORAGE_KEY = 'vena-authToken';
 const REQUEST_TIMEOUT_MS = 15_000;
 
