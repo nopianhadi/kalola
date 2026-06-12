@@ -102,7 +102,7 @@ export async function createLead(payload: Omit<Lead, 'id' | 'createdAt' | 'updat
   return normalizeLead(data);
 }
 
-export async function createPublicLead(vendorId: number, payload: Omit<Lead, 'id' | 'createdAt' | 'updatedAt' | 'clientId'>): Promise<Lead> {
+export async function createPublicLead(vendorId: number | undefined, payload: Omit<Lead, 'id' | 'createdAt' | 'updatedAt' | 'clientId'>): Promise<Lead> {
   const data = await apiFetch<any>('/public/leads', {
     method: 'POST',
     body: JSON.stringify({ ...denormalizeLead(payload), vendor_id: vendorId }),

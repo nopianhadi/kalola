@@ -79,17 +79,9 @@ const PublicLeadsForm: React.FC = () => {
     }
     if (!whatsapp.trim()) {
       setError('No. WhatsApp wajib diisi.');
-      return;
-    }
-
-    if (!vendorId) {
-      setError('Vendor ID tidak ditemukan. Tautan tidak valid.');
-      return;
-    }
-
     setIsSubmitting(true);
     try {
-      await createPublicLead(Number(vendorId), {
+      await createPublicLead(vendorId ? Number(vendorId) : undefined, {
         name: name.trim(),
         city: city.trim(),
         whatsapp: whatsapp.trim(),

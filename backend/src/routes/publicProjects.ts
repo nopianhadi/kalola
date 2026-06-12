@@ -132,11 +132,20 @@ router.get('/portfolio', async (_req, res) => {
 router.post('/leads', async (req, res) => {
   try {
     const data = req.body;
-    const vendorId = data.vendor_id ? Number(data.vendor_id) : null;
+    let vendorId = data.vendor_id ? Number(data.vendor_id) : null;
     
     if (!vendorId) {
-      return res.status(400).json({ error: 'Vendor ID wajib diisi untuk form publik' });
+      const firstUser = await (prisma as any).users.findFirst({
+        where: { role: 'Admin' },
+        orderBy: { id: 'asc' },
+      });
+      vendorId = firstUser?.id ?? null;
     }
+
+    if (!vendorId) {
+      return res.status(400).json({ error: 'Sistem belum memiliki vendor/admin.' });
+    }
+
     if (!data.name || !data.whatsapp || !data.source) {
       return res.status(400).json({ error: 'Nama, WhatsApp, dan sumber wajib diisi' });
     }
