@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { LeadSource } from '@/types';
 import { REGIONS } from '@/types';
 import { getProfile } from '@/services/profile';
-import { createLead } from '@/services/leads';
+import { createPublicLead } from '@/services/leads';
 import { Profile } from '@/types';
 
 const SOURCE_OPTIONS = [
@@ -82,9 +82,14 @@ const PublicLeadsForm: React.FC = () => {
       return;
     }
 
+    if (!vendorId) {
+      setError('Vendor ID tidak ditemukan. Tautan tidak valid.');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      await createLead({
+      await createPublicLead(Number(vendorId), {
         name: name.trim(),
         city: city.trim(),
         whatsapp: whatsapp.trim(),

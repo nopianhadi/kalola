@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { sendLeadNotification } from '../utils/email.utils';
+import { sseManager } from '../sseManager';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -124,6 +126,51 @@ router.get('/portfolio', async (_req, res) => {
   } catch (error) {
     console.error('[GET /api/public/portfolio]', error);
     res.status(500).json({ error: 'Gagal memuat portfolio' });
+  }
+});
+
+router.post('/leads', async (req, res) => {
+  try {
+    const data = req.body;
+    const vendorId = data.vendor_id ? Number(data.vendor_id) : null;
+    
+    if (!vendorId) {
+      return res.status(400).json({ error: 'Vendor ID wajib diisi untuk form publik' });
+    }
+    if (!data.name || !data.whatsapp || !data.source) {
+      return res.status(400).json({ error: 'Nama, WhatsApp, dan sumber wajib diisi' });
+    }
+
+    const leadData = {
+      name: data.name,
+      city: data.city || null,
+      whatsapp: data.whatsapp,
+      source: data.source,
+      status: data.status || 'Baru',
+      notes: data.notes || null,
+      vendor_id: vendorId
+    };
+
+    const lead = await (prisma as any).leads.create({ data: leadData });
+    sseManager.broadcast('leads', 'created', { id: lead.id }, vendorId);
+
+    const vendorUser = await (prisma as any).users.findUnique({
+      where: { id: vendorId },
+      select: { email: true }
+    });
+    if (vendorUser?.email) {
+      await sendLeadNotification(vendorUser.email, {
+        name: lead.name,
+        email: 'Tidak dicantumkan',
+        phone: lead.whatsapp,
+        message: 'Lead baru dari ' + lead.source
+      });
+    }
+
+    res.status(201).json(lead);
+  } catch (error: any) {
+    console.error('[POST /api/public/leads] Error:', error?.message || error);
+    res.status(500).json({ error: 'Gagal membuat lead', detail: error?.message });
   }
 });
 
